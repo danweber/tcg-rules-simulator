@@ -1,0 +1,611 @@
+
+const Player = require('../models/player');
+const { Game } = require('../models/game');
+const Instance = require('../models/instance');
+const Mastergame = require('../models/mastergame');
+
+
+const shared = require('./shared'); // Assuming shared.js is in the same directory
+
+
+let mastergame = shared.mastergame;
+let gg = shared.gg;
+let game_list = shared.game_list;
+//let mastergame = new Mastergame();
+//let gg = new Game(mastergame);
+//game_list["bob"] = gg;
+//gg.start();                       
+//gg.go();
+
+// const { io } = require('../bin/www');
+
+//const fred = new Player('Bobby', game);
+
+var express = require('express');
+var router = express.Router();
+
+/* GET home page. */
+router.get('/', function (req, res, next) {
+  res.render('index', { title: 'dddddd' });
+});
+
+const path = require('path'); // Import the path module
+
+router.get('/ui', (req, res) => {
+
+  res.sendFile(__dirname + '/index.html');
+
+  // const message = 'Hello from routes/index.js!';
+  // global.io.emit('chat-message', message); // Emit the message to all connected clients
+  // res.send('Message sent');
+});
+
+
+router.get('/bob', (req, res) => {
+  res.send("xxx");
+});
+
+
+function escape_html(str) {
+  return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+}
+
+
+router.get('/command', (req, res) => {
+  let gid = clean(req.query.gid);
+  let pid = parseInt(req.query.pid);
+  if (!game_exists(gid)) { res.redirect('/new_game'); return; }
+  let game = game_list[gid];
+  let player = game.player(pid);
+
+  let cmd = req.query.cmd;
+  let cmd2 = req.query.cmd2;
+  let output = eval(cmd + cmd2);
+  let name = player.my_name;
+  //    console.log(output);
+  res.send("<pre>" + escape_html(output) + "</pre>" + "<hr>" +
+    "<form method=GET action=/game/command>" +
+    "<input name=pid value=" + req.query.id + " /> " +
+    "<input name=cmd value=\"" + req.query.cmd + "\" />" +
+    "<input type=submit value=go  /> " +
+    "<input name=cmd2  value=\"" + req.query.cmd2 + "\" />   </form>"
+  );
+  //    res.render('deck', { name, player });    
+});
+
+//router.use(express.text());
+
+router.get('/logs', (req, res) => {
+  let gid = clean(req.query.gid);
+  let n = clean(req.query.from);
+  let g = game_list[gid];
+  //  console.log("getting logs...");
+
+  if (!g) { res.send(); return; }
+  let _logs = g.logs(n);
+
+  let logs = _logs.join("\r\n");
+  res.send(logs);
+});
+
+// creative mode uses this
+router.get('/launch', (req, res) => {
+  let gid = clean(req.query.gid);
+  res.send(`<html><body>` +
+    `Launch <a href='/build/index.html?gid=${gid}&pid=1' >p1</a>  ` +
+    `and <a href='/build/index.html?gid=${gid}&pid=2' >p2</a>.`);
+});
+
+let rnd_words = ["time", "year", "people", "way", "day", "man", "woman", "thing", "life", "child", "world", "school", "state", "family", "student", "group", "country", "problem", "hand", "part", "place", "case", "week", "company", "system", "program", "question", "work", "government", "number", "night", "point", "home", "water", "room", "mother", "area", "money", "story", "fact", "month", "lot", "study", "books", "eye", "job", "word", "business", "issue", "side", "kind", "head", "house", "service", "friend", "father", "power", "hour", "game", "line", "end", "member", "law", "car", "city", "community", "name", "president", "team", "minute", "idea", "kid", "body", "information", "back", "parent", "face", "others", "level", "office", "door", "health", "person", "art", "war", "history", "party", "result", "charge", "morning", "reason", "research", "girl", "guy", "moment", "air", "teacher", "force", "education", "technology"]
+
+let prior_ip = "";
+router.post('/set_up_board', (req, res) => {
+
+  //console.log("Client IP?");
+
+  var ip = req.ip ||
+    (req.headers['x-forwarded-for'] || '').split(',').pop().trim();
+  if (prior_ip != ip) {
+    prior_ip = ip;
+    //console.log('Client IP b:', ip);
+  }
+  let gid = clean(req.query.gid);
+  let pid = parseInt(req.query.pid);
+  if (gid && (gid.startsWith("auto") || gid.startsWith("test"))) {
+    // oh we just completely wipe, did I do that on purpose?
+    game_list[gid] = new Game(mastergame, gid);
+    game_list[gid].start();
+    game_list[gid].go();
+  }
+
+  if (!gid) {
+    let index = Math.floor(Math.random() * rnd_words.length);
+    let word = rnd_words[index]
+    gid = word;
+    game_list[gid] = new Game(mastergame, gid);
+    game_list[gid].start();
+    game_list[gid].go();
+  }
+
+  if (!game_exists(gid)) { res.redirect('new111_game'); return; }
+  let game = game_list[gid];
+  let player = game.player(pid);
+  let board = req.query.board || req.body.board;
+
+  if (!board || board.length < 2 || JSON.stringify(board).length < 4) {
+    res.redirect(301, `/game/set_up_board`);
+    return;
+  }
+
+  let test_data = game._set_up_board(board);
+  if (test_data.length > 0) {
+    res.send(test_data);
+    return;
+  }
+  //  res.send(`board is ${JSON.stringify(board)} or ${board.length} we have ` + JSON.stringify(req.query)); return;
+  res.redirect(301, `/game/launch?gid=${gid}`);
+  return;
+
+})
+
+router.get('/set_up_board', (req, res) => {
+
+  res.send("<hr>" +
+
+    `<h1>Creative Mode</h1>` +
+
+    `<p>Creative mode can create situations not yet handled (like rules processing to remove eggs from the battle area).` +
+
+    `<p>ST15 versus ST16 is implemented, please report bugs in that.` +
+
+    `<p>Enter the board state and press "go" underneath. Make your own down below, or use a sample` +
+    `<h2>Sample Scenarios</h2>` +
+
+    `<h3>Blast digivolve + block + retalation</h3>` +
+
+    `Player 2 swings in. Player 1 blast digivolves and blocks. ` +
+    `Then Retaliation kills Player 1's digimon and overflow occurs.` +
+    "<form method=POST action=/game/set_up_board>" +
+    "<textarea rows=20 cols=80 name=board>\n" +
+    `#Digimon on field are space-separated.
+
+#Player 1 has Wargreymon out and MetalGreymon in hand
+P1:ST15-11
+HAND1:ST15-12
+
+#Player 2 has Bakemon with Tapirmon (retaliate) ready to attack, a suspended mon, and an empty hand
+#Within a digimon, cards in a stack are comma-separated top-to-bottom.
+#Status modifier of 'REST' can appear anywhere
+
+P2:ST16-06,ST16-04 ST16-02,REST
+HAND2:
+
+Turn:P2
+NTurn:3
+Phase:MAIN
+
+  </textarea> <br> <input type=submit value=go /> </form>` +
+
+    `<h3>Garurumon Board Wipe, effect order matters</h3>` +
+
+    `<p>Player 1 is ready to blast digivolve and end Player 2's field.` +
+
+    `<p>Player 2 has zero memory, but 5 cards in hand. Can they activate their effects in the right order to wipe Player 1's field and win?` +
+    "<form method=POST action=/game/set_up_board>" +
+    "<textarea rows=20 cols=80 name=board>\n" +
+    `WIPE
+Turn:P2
+NTurn:4
+Memory:0
+Phase:MAIN
+
+# Security empty.
+SECURITY1:
+SECURITY2:
+
+# Player 1 has a MetalGreymon that can blast digivolve and will get bonuses on redirect. They also have an Agumon.
+P1:ST15-11,ST15-02,ST15-01 ST15-02
+HAND1:ST15-12
+
+# Player 2 has WereGarurumon on field, and just enough cards in hand to win.
+P2:ST16-11
+HAND2:BT2-067 BT2-067 BT2-067 BT3-089 ST16-12
+
+# Players have some cards in deck to pull when digivolving.
+DECK1:ST15-02
+DECK2:BT3-089 BT3-089
+
+ </textarea> <br> <input type=submit value=go /> </form>` +
+
+    `<h3>Can P1 survive to their next turn?</h3>` +
+
+    `<p>Each player has 1 card left in security, but all of player 1's mon are suspended.` +
+    `<p>Player 2 has several mon waiting to attack on their turn.` +
+    `<p>What can player 1 do to win?</p>` +
+
+    "<form method=POST action=/game/set_up_board>" +
+    "<textarea rows=15 cols=60 name=board>\n" +
+    `SECURITY1:ST15-02
+SECURITY2:ST16-02
+P1:ST15-05,ST15-02,REST ST15-11,ST15-08,ST15-03,REST
+P2:ST16-04 ST16-05 ST16-06 ST16-07 
+# no help in player 1's deck
+DECK1:ST15-03 ST15-03 ST15-03
+HAND1:ST15-02 ST15-06 ST15-14 ST15-16
+HAND2:ST16-04 
+Turn:P1
+Phase:MAIN
+NTurn:6
+Memory:5
+</textarea> <br> <input type=submit value=go /> </form>` +
+
+
+    `<h3>Make your own</h3>` +
+
+    "<form method=POST action=/game/set_up_board>" +
+    "<textarea rows=15 cols=80 name=board>\n" +
+    `#Digimon on field are space-separated.
+#Cards in a stack are comma-separated.
+#Lines with # are comments and ignored.
+
+</textarea> <br> <input type=submit value=go /> </form>`
+  );
+  return;
+});
+
+
+
+if (false) {
+  res.send("<hr>" +
+    "<form method=GET action=/game/set_up_board>" +
+    "<textarea rows=5 cols=100 name=board>\n" +
+    `#ignore lines starting with #
+#each stack is read left-to-right as the top-to-bottom cards
+#status modifiers can appear anywhere
+P1:REST,ST15-12,ST15-11,ST15-02 ST15-05 ST15-03,ST15-01
+P2:ST16-05,ST16-02,ST16-01 ST16-13 ST16-13,ST16-01 REST,ST16-12
+Turn:P1
+Memory:4
+
+
+`+
+    "</textarea> <input name=gid value=xxx /> <input type=submit value=go /> </form>"
+  );
+  //    res.render('deck', { name, player });    
+
+}
+
+
+function clean(str) {
+  if (!str) return str;
+  //  console.log('cleaning');
+  // console.log(str);
+  return str.replace(/[^-a-z0-9_]/gi, '');
+}
+
+function n_clean(str) {
+  let i = parseInt(str);
+}
+
+
+function footer(gid, pid) {
+  gid = clean(gid);
+  pid = parseInt(pid);
+  return `<form method=POST><input type=hidden id=gid value=${gid} />` +
+    `<input type=hidden id=pid value=${pid} /> ` +
+    "COMMAND (hatch raise next) (play N, digivolve N M attack N M main N next) <input name=cmd />" +
+    "</form>";
+}
+
+
+router.post('/game_state', (req, res) => {
+  console.log("GAME STATE POST");
+  console.log(req.body);
+  let gid = clean(req.query.gid);
+  let pid = parseInt(req.query.pid);
+  if (!game_exists(gid)) { res.redirect('/new_game'); return; }
+  let game = game_list[gid];
+  let player = game.player(pid);
+  let verb = req.body.verb;
+  let arg1 = req.body.arg1;
+  let arg2 = req.body.arg2;
+
+  if (verb && verb != "") {
+    player.execute([verb, arg1, arg2])
+  } else {
+    let words = req.body.cmd.split(" ");
+    player.execute(words);
+  }
+  res.redirect(`game_state?gid=${gid}&pid=${pid}`);
+});
+
+router.get('/game_state', (req, res) => {
+  let gid = clean(req.query.gid);
+  let pid = parseInt(req.query.pid);
+  console.log("gid is " + gid);
+  let game = game_list[gid];
+  if (!game) {
+    game = new Game(mastergame, gid);
+    game_list[gid] = game;
+  }
+  let player = game.player(pid);
+  console.log("game is " + (game ? "Y" : "N"));
+  if (!game_exists(gid)) { res.redirect('/new_game'); return; }
+  console.log("before");
+  console.log(req.query);
+
+  let body = "<html><head><link rel='stylesheet' href='/stylesheets/style.css'></head><body><table style='width: 1000px;table-layout:fixed;' >";
+  body += "<tr><td style='width: 800px; overflow:hidden; overflow:auto;'>";
+
+  let plays = player.get_x_plays({});
+  console.log("PLAYS IS " + plays);
+
+  let controls = ux_blob(plays, player.get_field(), player.get_hand(), gid, pid);
+  let _ret = player.dump_better(pid == 2, controls) + "<hr>" + player.dump_better(pid == 1, controls);
+
+  let ret = game.dump_all(pid);
+  console.log("after" + _ret.length);
+  let bottom = "";
+  bottom += "<hr>x ";
+  bottom += plays;
+  bottom += "<hr>";
+  bottom += controls;
+
+
+  //  let all_of_it = game.dump_better();
+
+  // i hate how this got re-factored up in here
+  let all_of_it = body +
+    "<div><pre>" + (ret) + "</pre></div>" +
+    "</td><td><div>" +
+    "<div id=log style='width: 600px; height: 500px; overflow:auto;'>" +
+
+    "<pre>" + game.all_logs(pid) + "</pre>" +
+
+    "</div></div></td></tr></table>" +
+
+    "<script>document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;</script>" +
+
+    "<hr>" + bottom +
+    footer(gid, pid) +
+    "<hr>";
+
+
+  res.send(all_of_it);
+
+});
+
+
+router.get('/new_game', (req, res) => {
+  let gid = clean(req.query.gid);
+  let pid = parseInt(req.query.pid);
+  if (gid && !game_list[gid]) {
+    res.send("<p>This game doesn't exist.</p>" +
+      "<p>If this is an old link the game might be deleted or the server crashed. </p>" +
+      "<p>To make a game with this ID, <form action=new_game method=POST>" +
+      `<input type=hidden name=gid value=${gid} /> <input type=hidden name=pid value=${pid}  /> ` +
+      "<button type=submit name=go value='tap me' >tap here</button>" +
+      "</form>");
+  } else if (gid && game_list[gid]) {
+    res.send("<p>A game already exists here.</p>" +
+      `<a href=/game/main_page?gid=${gid}&pid=${pid}>Go here</a> to get to it` +
+      ", or <a href=/game/new_game>make a new one</a>");
+  } else {
+    res.send("<p>Pick a short word or number to identify your game:</p>" +
+      "<form method=POST action=new_game ><input name=gid /></form>");
+  }
+});
+
+function game_exists(gid) { return gid && game_list[gid] };
+
+router.post('/new_game', (req, res) => {
+  // console.log(req);
+  console.log(req.body);
+  console.log(req.body.gid);
+  let gid = clean(req.body.gid);
+  console.log("clean value " + gid);
+  if (!gid) { res.redirect('/game/new_game'); return; }
+  if (game_exists(gid)) {
+    res.send("<p>A game already exists here.</p>" +
+      "<a href=/game/main_page>Go here to get to it, or <a href=/game/new_game>make a new one</a>");
+  } else {
+    let game = new Game(mastergame, gid);
+    game_list[gid] = game;
+    game.start();
+
+    game.go();
+
+
+
+    let ret = `<h1>game started<h1>` +
+      `<a href=game_state?gid=${gid}&pid=1>PLAYER ONE HERE</a>`
+      + "<hr>" +
+      `<a href=game_state?gid=${gid}&pid=2>PLAYER TWO HERE</a>`;
+
+    res.send(ret);
+    //    res.redirect(`/game/main_page?gid=${gid}`);
+  }
+});
+
+function thingy(input) {
+  return "empty";
+}
+
+function ux_blob(get_plays_str, field, hand, gid, pid) {
+  let get_plays = JSON.parse(get_plays_str);
+  let ret = `applesauce
+  <form  method=POST><table border=1>
+  <tr><td colspan=2> `;
+  for (i in get_plays) {
+    let x = get_plays[i];
+    ret += `<button type=button onclick=stuff('${i}') value=${i}1  `;
+    if (x === true || Object.keys(x).length > 0) { ret += " true "; } else { ret += " disabled=disabed  " }
+    ret += ` >${i}</button>  `;
+  }
+
+  ret += ` <button type=buttpn onclick=stuff('NEXT')>NEXT</button> <input type=hidden name=cmd id=thing value=3 />
+  <input type=hidden name=gid3 value=${gid} /> <span id=prep> </span> <input type=hidden name=pid3 value=${pid} />
+
+  <tr><td> ACTION: <input name=verb id=verb type=hidden /> <td> <select id=arg1 name="arg1" onchange="next_level()" /> <td> <select id=arg2 name="arg2" /> <td> <button id=go name=go type=submit value=111>GO</button>
+</td>
+
+</table>
+</form>
+<script>
+let plays = ${get_plays_str};
+let field = ${field};
+field[0] = {"index": 0, name: "Player" };
+let hand = ${hand};
+function clear_opt(sel) {
+  let length = sel.options.length - 1;
+  for(i = length; i >= 0; i--) {
+     sel.remove(i);
+  }
+}
+
+function stuff(str) {
+  if (str == "HATCH" || str == 'RAISE' || str == 'NEXT') {
+    document.getElementById('thing').value = str;
+    document.getElementById('go').click();
+    return;
+  }
+  document.getElementById('verb').value = str;
+  populate(str);
+}
+
+// for play, use hand
+// for digi, use hand then field
+// for attack, use field then field
+// for main
+// for use, use hand
+let refs = { "PLAY": [hand],
+             "DIGIVOLVE": [hand, field],
+             "ATTACK": [field, field],
+             "USE": [hand],
+             "MAIN": [field]
+};
+
+function next_level(ref) {
+  return function() {
+  let sel2 = document.getElementById('arg2');
+  clear_opt(sel2);
+
+  let e = document.getElementById('arg1');
+  let i = e.selectedIndex;
+  let o = e[i];
+  if (!o) return;
+  console.log("XXX");
+  console.log(e, i, o);
+  console.log("kids are " + o.kids);
+  if (o.kids && Array.isArray(o.kids)) {
+  for (t of o.kids) {
+    var opt2 = document.createElement('option');
+    opt2.value = t;
+    opt2.innerText = " " + t + " " + (ref[t].name || ref[t].name()) + " ";; 
+    sel2.appendChild(opt2);
+  }
+}  else {
+  //
+}
+}
+}
+
+function populate(str) {
+  console.log(hand);
+  console.log(str);
+  console.log();
+  let sel = document.getElementById('arg1');
+  clear_opt(sel);
+  let thingy = plays[str];
+  first = null;
+  for (let i in thingy) {
+    let arg1 = thingy[i];
+
+    let next_step = Array.isArray(arg1); // don't need to do this each loop
+    let ref2 = refs[str][1];
+    sel.onchange = next_level(ref2);
+
+
+    let key = next_step ? i : arg1;
+    console.log("key is " + key + " and i is " + i + " and next step is " + next_step);
+    var opt = document.createElement('option');
+    opt.value= key;
+    if (!first) first = key;
+    //    opt.onChange = function () {console.log(key)};
+    // for play, use hand
+    // for digi, use hand then field
+    // for attack, use field then field
+    // for main
+    // for use, use hand
+    let ref = refs[str][0];
+    // what info we display to let them choose
+    opt.innerText =  ref[key].name + " " + (ref[key].id||"");
+    console.log(33);
+    opt.kids = arg1;
+    console.log(44);
+   
+    sel.appendChild(opt);
+
+  }
+  console.log(1);
+  console.log(sel);
+  console.log(2);
+  console.log(sel.options);
+  console.log(3);
+  console.log(sel.options[0]);
+  sel.options[0].value = first;
+  console.log(sel.onchange);
+  if (sel.onchange) sel.onchange();
+}
+</script>`;
+  return ret;
+}
+
+router.post('/set_up_board', (req, res) => {
+
+  //console.log("Client IP?");
+  var ip = req.ip ||
+    (req.headers['x-forwarded-for'] || '').split(',').pop().trim();
+  //console.log('Client IP:', ip);
+
+  let gid = clean(req.query.gid);
+  let pid = parseInt(req.query.pid);
+  //  if (!game_exists(req.query.id)) { res.redirect('/new_game'); return; }
+
+  //et player = (req.query.id == 1) ? game.Player1 : game.Player2;
+  //  const player = new Player(playerName);// .getPlayerHand(playerName);
+
+  if (game_exists(req.query.gid)) { game._set_up_board(req.query.board) };
+  res.send("<hr>" +
+    "<form method=GET action=/game/set_up_board>" +
+    "<textarea rows=5 cols=100 name=board>\n" +
+    `#ignore lines starting with #
+#each stack is read left-to-right as the top-to-bottom cards
+#status modifiers can appear anywhere
+P1:REST,ST15-12,ST15-11,ST15-02 ST15-05 ST15-03,ST15-01
+P2:ST16-05,ST16-02,ST16-01 ST16-13 ST16-13,ST16-01 REST,ST16-12
+Turn:P1
+Memory:4
+
+
+# Retaliate test 
+# P1 has big attackers ready to go, some with big stacks, 
+P1:ST15-13 ST15-13,ST15-08 ST15-12,ST15-05,ST15-01 ST15-13 ST15-13 ST15-13 ST15-13
+DECK1:ST15-15
+# P2 has skullmammothmon ST16-13 on top of ST16-10, 12K blocker on top of inherited Retaliation 
+# gotsumon, native retaliation, tapirmon inherited, then gotsumon on tapirmon for both
+P2:ST16-13,ST16-10,ST16-01,REST ST16-05,REST  ST16-05,ST16-04,REST   ST16-08,ST16-04,REST  ST16-04,REST
+Turn:P1
+Memory:2
+x
+
+`+
+    "</textarea>  <input name=gid value=bob /> <input type=submit value=go /> </form>"
+    + req.query);
+  //    res.render('deck', { name, player });     
+
+});
+
+
+
+module.exports = router;

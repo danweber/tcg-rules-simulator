@@ -1,0 +1,22 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** VanillaMon (DW1-04) *****
+[DW1-04]
+Card Info
+Name                VanillaMon
+Colour              White
+Card Type           Digimon
+Play Cost           3
+DP                  5000 DP
+Level               3
+Form                Rookie
+Attribute           Data
+Type                Reptile
+Rarity              Common
+Digivolution Requirements
+Colour         Red
+Level          2
+Digivolve Cost 0
+Card Restriction
+

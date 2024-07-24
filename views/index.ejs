@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>
+        <%= title %>
+    </title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+</head>
+
+<body>
+    <h1>
+        <%= title %>
+    </h1>
+
+    <h1>This will be sticking around, I've got a need to write card processing engines and I'm looking for an outlet.</li>
+        <p>If you've got another sim project looking for help, tell me. </p>
+     <p>Check for updates <a href="http://tcg-sim.ddns.net:3001/">here</a>.</p>
+
+
+    <h1> Prior stuff</h1>
+
+
+    <%- announce %>
+        <p>We're ready for a <i>slightly</i> bigger audience, but we still really need bug testing and feeback.</p>
+        <p>The game defaults to ST15 versus ST16 (with two added cards, see below). You can set up a mirror match if you
+            want.</p>
+        <p>We hate the UI but it gets the job done for now. UI development would be an excellent standalone project, and
+            someone with
+            more experience would have something better in less than a day.</p>
+        <ul>Quick start
+            <li><b>You have to press "Send" or "Tick" to first populate the game after loading the page.</b></li>
+            <li>All user-input happens in the UI box at the top.</li>
+            <li><img style="max-width:200px; height:auto" src="/public/images/choose.png"></li>
+            <li>If you need to choose something (which effect, which target, to block) it'll be in that same list.</li>
+            <li><img style="max-width:200px; height:auto" src="/public/images/mobile.png"></li>
+            <li>The game will auto-play all the rules quickly, and you'll see the endstate on the board while it pops up
+                messages saying what happened. This is probably more user-friendly than before when you had to manually
+                'tick' each step of the game.
+            <li>You may still need to press "TICK" once certain places to move the game forward. <b>Basically, if "TICK"
+                    is blue, press it</b> or else answer the waiting question.</li><img
+                style="max-width:200px; height:auto" src="/public/images/tick.png">
+            <li>The egg zone will have a pixel-art background, if it exists. The trash will have a black background, if
+                it
+                exists.</li><img style="max-width:200px; height:auto" src="/public/images/field.png">
+            <li>You can't see your security or deck, but the lengths are posted in the log at the start of each turn
+            </li>
+            <li>Because ST15 versus ST16 has no interruptive effects, and those were very important to test, I made up
+                Armormon (Agumon with Armor Purge), and then gave Matt Piercemon (Garurumon that pierces) for balance.
+                OC DO
+                NOT STEAL!!1one </li>
+        </ul>
+        <h2>Got that? Great, get started!</h2>
+        <p>There is no mulligan, your opening hand may suck. <a href="#mulligan">See below</a> for why.</p>
+        <script>
+            function buildURL() {
+                const baseUrl = "/build/index.html?pid=1&gid=<%= word %>and";
+                ;
+                const select1 = document.getElementById("p1");
+                const select2 = document.getElementById("p2");
+
+                const option1 = select1.value;
+                const option2 = select2.value;
+
+                const url = `${baseUrl}${option1}and${option2}andbot2`;
+                window.location.href = url; // Redirect to the constructed URL
+
+            }
+        </script>
+
+        <select id="p1">
+            <option value="duke1">RED Gallantmon ST7</option>
+            <option value="vee1">BLUE Ulforceveedramon ST8</option>
+            <option value="green1">GREEN Double Typhoon ST17 only ST17 cards</option>
+            <option value="greenx1">GREEN Double Typhoon with cards outside ST17</option>
+            <option value="tai1" SELECTED>BLACK Dragon of Courage ST15</option>
+            <option value="matt1">PURPLE Wolf of Friendship ST16</option>
+        </select>
+        <select id="p2">
+            <option value="duke2">RED Gallantmon ST7</option>
+            <option value="vee2">BLUE Ulforceveedramon ST8</option>
+            <option value="green2">GREEN Double Typhoon ST17 only ST17 cards</option>
+            <option value="greenx2">GREEN Double Typhoon with cards outside ST17</option>
+            <option value="tai2">BLACK Dragon of Courage ST15</option>
+            <option value="matt2" SELECTED>PURPLE Wolf of Friendship ST16</option>
+        </select>
+        <button onclick="buildURL()">Start</button>
+
+
+
+        <h2> Two player </h2>
+
+        <p>If you want to try, open <a href="/build/index.html?gid=<%= word %>&pid=1">this </a> in one tab and <a
+                href="/build/index.html?gid=<%= word %>&pid=2">this</a> in another. There's <a href="#mulligan">no mulligan</a> right now.</p>
+        <h2>Recent Changes</h2>
+        <p>Ulforceveedramon and Gallantmon decks are here. What deck should be next? (We need a yellow.)</p>
+            <p> ST17 is available. The "just ST17" even includes ST17 Magnamon, that should be good for a laugh.</p>
+            <h2>Want creative mode? </h2>
+            <p>Several examples can be found <a href="/game/set_up_board">here </a>. Starting in creative mode may
+                require
+                pressing 'tick' to advance game state.</p>
+            <h2>Feedback</h2>
+            <p>On Discord for now <a href="https://discord.gg/yaKjwAEG">invite link</a> or reach out to the team member
+                who
+                helped you</p>
+            <p>Say stuff you want, there's a suggested list of requests down below</p>
+            <h2>Bugs</h2>
+            <p>If you try to break the software by messing with the inputs you'll succeed and it won't be interesting.
+                If
+                you
+                breaking the game logic by playing a weird set of cards, that <b>is</b> interesting.</p>
+            <ul>Known bugs
+                <li>ST8 goldrapidmon's first effect always targets 1 regardless of tamer count</li>
+                <li>Searchers where you can pick 1 A and 1 B don't currently validate your choices if you choose 2 A
+                </li>
+                <li>ST17 Henry's Bio-Merge is broken, will probably hold off on this one for a bit</li>
+                <li>Return-to-hand has 2 bugs: Rapidmon's immunity not applying, and the bounced instance remains able
+                    to respond</li>
+                    <li>Gaia Force only destroyed the top card of MegaGargomon? I hven't been able to reproduce this independelty but I've got the logs so I'll try replaying the exact scenario again.</li>
+            </ul>
+            <ul>Bugs we think are fixed but might still be around
+                <li>Decking out doesn't end the game.</li>
+                <li>Purple card effects that let player target cards in hand would reveal those targets to both players
+                </li>
+                <li>[Your Turn] and [Opponent's Turn] effects correctly restricted</li>
+                <li>When attacking a player vs when attacking a digimon</li>
+                <li>You can select "up to N" even when it's just "N"
+
+            </ul>
+            <ul>Bugs you should report
+                <li>Cards in ST15 versus ST16 not doing the right thing</li>
+                <li>Mirror match issues.</li>
+                <li>Accidental UI lockups.</li>
+            </ul>
+            <ul>What not to report
+                <li>How a cheating player can cheat. </li>
+                <li>Situations that you cannot get into with ST15 or ST16 or ST17. </li>
+            </ul>
+            <ul>Reproducing issues
+                <li>Each gid uses the same random seed at same start for debugging purposes. If you want it to be really
+                    random,
+                    start the gid with "rand". If you want both players to have the same seed (meaning they'll get a
+                    similar
+                    mix
+                    of levels, tamers, and options) prefix the seed with "same". </li>
+                <li>You can reset the game by putting "reset" in the instruction box in the top left and hitting Send.
+                </li>
+                <li>Creative mode can be found <a href="/game/set_up_board">here </a> </li>
+                <li>Start the gid with "matt" for a purple mirror match, start it with "tai" for a black mirror-match.
+            </ul>
+            <h2 id=mulligan>Mulligan?</h2>
+            Three reasons why not:
+            <ol>
+                <li>Doing it right means asking each player simultaneously</li>
+                <li>Having bad cards is good for testing. Try playing weird stuff.</li>
+                <li>It's a feature competing with other features.</li>
+            </ol>
+            <h2>Other stuff</h2>
+            <ul>Design decisions you may or may not notice
+                <li>You are prompted to activate an event where the cost can't be paid. For example, suspending Matt to
+                    gain
+                    a
+                    memory, even if Matt is already suspended. This should be changed to not being able to choose at
+                    all,
+                    although right now it's helping to test the tried-to-pay-the-cost-but-failed logic.</li>
+                <li>You can also choose effects that have used up their once-per-turn, but the effect immediately fails.
+                    These
+                    shouldn't even <i>trigger</i> but the effect on gameplay is nil</li>
+                <li>The game gives away if your opponent <i>could</i> choose to blast digivolve. It's easy to make it
+                    just
+                    always pause. Maybe I'll do that.</li>
+                <li>There is a similar issue for any other effect that might play from hand.</li>
+                <li><s>Right now color is ignored except in two cases: first, making sure you have a color for playing
+                        an
+                        option.
+                        The second is for Solarmon's searcher effect, because I wanted it to be able to fail during
+                        testing.</s></li>
+                <li>If an effect has 0 or 1 targets, the game will autochoose and continue. This was a design choice and
+                    it
+                    might be wrong if people want to notice what's going on.</li>
+                <li>Something that chooses a target when there's only one acts the same as something that has a forced
+                    target (think Matt suspending itself). This is probably confusing and should be remdeiated.</li>
+                <li><s>Your option card is in the trash immediately after activation. It should actually hang around
+                        null
+                        space
+                        until it's done.</s></li>
+                <li>Retaliation might activate on mutual battle death. It won't do anything, you won't notice unless
+                    youu
+                    watch
+                    closely. But it shouldn't activate at all, per rulings</li>
+                <li>'Choose up to' for de-digi asks even if your only choice has 1 or less cards to be de-digi'd. Is
+                    there
+                    any effect that could possibly interrupt here? If not, this is a good quality-of-life fix.</li>
+                <li>If you have 2 separate &lt;Security A +1&gt; effects, it will show as &lt;Security A +2&gt; although
+                    the
+                    rules dictate it's not SA+2, it's specifically two SA+1's. </li>
+            </ul>
+            <ul>More details:
+                <li>For now the game somewhat depends on you knowing what's going on. If Agumon's effects activate at
+                    start
+                    of
+                    main I hope you know what that means. This can certainly be made better but other tasks were more
+                    important.
+                </li>
+                <li>If you're on phone the logs are probably not visible because they're on the right. Landscape will
+                    show
+                    them
+                    but you'll end up scrolling a lot.</li>
+                <li>The UI could be a separate project. The API is pretty easy and the server does all the work, even
+                    telling
+                    you what cards move where.</li>
+            </ul>
+            <h2>What's next?</h2>
+            <ul><b>We need feedback on what should be worked on.</b> Like, do you want..
+                <li>bugs fixed in current cards?</li>
+                <li><s>auto-step so you don't have to press 'tick'?</s></li>
+                <li>more cards implemented?</i>
+                <li>PvE so your opponent autoplays?</li>
+                <li>being able to click/tap on cards to play them?</li>
+                <li><s>digimon on field labelled with current ATK/SA/conditions?</s></li>
+                <li>text showing which explicit effect is being activated (not just the mon doing it)?</li>
+                <li><s>make sure cards that can't trigger aren't even put into the trigger list?</s> No, everything that
+                    triggers should trigger, if we need cleanup it takes place later.</li>
+                <li>fewer extraneous popup messages?</li>
+                <li><b>more</b> descriptive text during game play?</li>
+                <li>don't need to press 'send' or 'tick' to sync on first load?</li>
+                <li>auto-skipping non-activatable effects?</li>
+                <li>make logging on mobile be better</li>
+                <li>choose the deck for each side?</li>
+                <li>build your own deck from cards available?</li>
+                <li>YOLO and dump in all the cards in the game to see what happens?</li>
+                <li>better creative mode without needing to write text?</li>
+                <li>write your own cards?</li>
+            </ul>
+            <ul>Still to do
+                <li>Mulligan. It's obviously necessary in the end, but to demonstrate the game engine works that's not
+                    the
+                    interesting part. Althrough right now being left with a crappy hand is good for debugging because it
+                    forces
+                    lots of weird plays. </li>
+                <li>That includes rules-processing. You can't get that in ST15 versus ST16 but with creative mode and
+                    the
+                    added
+                    cards you could get to a situation where that should happen.</li>
+            </ul>
+            <ul>Immediate Next Steps
+                <li>The only major component of the rules not implemented are rules processing.</li>
+                <li>Stress test things like a responder-to-responder-to-responder -- what's the longest chain that can
+                    be
+                    formed? Right now I've got onplay to deletion to memory but I'm sure I can do better.</li>
+                <li>Stress test interrupter chains. Implementing &lt;Decoy&gt; could let some insane chains form.</li>
+                <li>Verifying complicated rules configurations of interrupters and rules processing</li>
+                <li>Showcasing situations where order-of-effects matters</li>
+            </ul>
+            <ul>We need help with:
+                <li><b>Feedback</b> see above list for sample suggestions</li>
+                <li>the UI, really sometimes I try to tap card to use it, we wrote it know that won't work but I still
+                    try</li>
+                <li>understanding Azure, like why does it sometimes take 4 minutes to serve a static file</li>
+                <li>design discussions</li>
+                <li>writing fun scenarios</li>
+                <li>testing things that are already implemented, particularly in weird ways</li>
+                <li>card parser to read text</li>
+                <li>writing test cases</li>
+                <li>implementing verbs </li>
+            </ul>
+            <!-- <%= text %> -->
+</body>
+
+</html>

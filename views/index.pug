@@ -1,0 +1,110 @@
+extends layout
+
+block content
+  h1= title
+
+  p Don't pass this around yet. I want to keep the audience small because it's not ready for a lot of people. This is a technology demonstration.
+
+  p If you try to break the software by messing with the inputs you'll succeed and it won't be interesting. If you breaking the game logic by playing a weird set of cards, that #[b is] interesting.
+  
+  p This is only ST15 versus ST16 (with two added cards, see below). 
+
+  p I hate the UI but it gets the job done for now. I'd love to pass UI development off to someone else. Someone with more experience would have something better in less than a day.
+
+  ul Quick start
+
+   li You might have to press "Send" or "Tick" to first populate the game after loading the page.
+   li For now all user-input happens in the UI box at the top.
+   li #[img(style="max-width:200px; height:auto" src="/public/images/choose.png")]
+   li If you need to choose something (which effect, which target, to block) it'll be in that same list.
+   li #[img(style="max-width:200px; height:auto" src="/public/images/mobile.png")]
+   li After some moves (anything that involves effects, or attacking, the game will pause on purpose. The point of the rule simulator is to be able to stop at various points, rewind, and see what's happening, so this was built in from the start. For now, just press "tick" to move the game forward.
+   li Basically, if "TICK" is blue, press it.
+   img(style="max-width:200px; height:auto" src="/public/images/tick.png")
+   li The egg zone will have a pixel-art background, if it exists. The trash will have a black background, if it exists.
+   img(style="max-width:200px; height:auto" src="/public/images/field.png")
+   li Because ST15 versus ST16 has no interruptive effects, and those were very important to test, I made up Armormon (Agumon with Armor Purge), and then gave Matt Piercemon (Garurumon that pierces) for balance. OC DO NOT STEAL!!1one 
+
+  h2 Got that? Great, get started!
+
+  p If you want to try, open #[a(href=`/build/index.html?gid=${word}&pid=1`) this ] in one tab and  #[a(href=`/build/index.html?gid=${word}&pid=2`) this] in another. There's no mulligan right now.
+
+  h2 Want creative mode? 
+
+  p Several examples can be found #[a(href=`/game/set_up_board`) here ]
+
+  h2 Bugs
+
+  ul Known bugs
+
+   li Decking out doesn't end the game.
+   li Armor-purge versus armor-purge only lets one player save mon
+   li User isn't prompted on all optional effects
+   li 
+     s Lament of Friendship can target cards in hand.
+   li On-Deletion effects will still activate if the card is no longer in the trash 
+   li "Must attack" effect can only attack opponent's digimon, not the player, and the digimon will still suspend even if it can't attack
+   li MetalGarurumon can discard more than 3 cards for his when-digivolve effect
+
+  ul Bugs I think are fixed but might still be around 
+   li Sometimes things in the egg zone or the trash get activated or targetted.
+   li Once-per-turn may or may not be working
+
+  ul Bugs you should report  
+
+    li Cards in ST15 versus ST16 not doing the right thing
+    li Accidental UI lockups.
+
+  ul What not to report
+
+    li How a cheating player can cheat. 
+    li Situations that you cannot get into in an ST15-versus-ST16 match.  
+
+  ul Reproducing issues
+
+   li Each gid uses the same random seed at same start for debugging purposes. If you want it to be really random, start the gid with "rand". If you want both players to have the same seed (meaning they'll get a similar mix of levels, tamers, and options) prefix the seed with "same". 
+   li You can reset the game by putting "reset" in the instruction box in the top left and hitting Send. 
+   li Creative mode can be found #[a(href=`/game/set_up_board`) here ] 
+
+  h2 Other stuff
+
+  ul Design decisions you may or may not notice
+    li You are prompted to activate an event where the cost can't be paid. For example, suspending Matt to gain a memory, even if Matt is already suspended. This should be changed to not being able to choose at all, although right now it's helping to test the tried-to-pay-the-cost-but-failed logic.
+    li You can also choose effects that have used up their once-per-turn, but the effect immediately fails.
+    li The game gives away if your opponent #[i could] choose to blast digivolve. It's easy to make it just always pause. Maybe I'll do that.
+    li Right now color is ignored except in two cases: first, making sure you have a color for playing an option. The second is for Solarmon's searcher effect, because I wanted it to be able to fail during testing.
+    li If an effect has 0 or 1 targets, the game will autochoose and continue. This was a design choice and it might be wrong if people want to notice what's going on.
+    li Your option card is in the trash immediately after activation. It should actually hang around null space until it's done.
+    li Retaliation might activate on mutual battle death. It won't do anything, you won't notice unless youu watch closely. But it shouldn't activate at all.
+
+  ul More details:
+
+   li For now the game somewhat depends on you knowing what's going on. If Agumon's effects activate at start of main I hope you know what that means. This can certainly be made better but other tasks were more important.
+   li I think I've gotten rid of the UI bug where the wrong player can control the game during questions, leading to weird situations, but it might still be around.
+   li If you're on phone the logs are probably not visible because they're on the right. Landscape will show them but you'll end up scrolling a lot.
+   li The UI could be a separate project. The API is pretty easy and the server does all the work, even telling you what cards move where.
+   
+  ul Still to do 
+
+   li Mulligan. It's obviously necessary in the end, but to demonstrate the game engine works that's not the interesting part.
+   li Mirror matches. I expect some thing will break when both people are running ST16.
+   li That includes rules-processing. You can't get that in ST15 versus ST16 but with creative mode and the added cards you could get to a situation where that should happen.
+ 
+  ul Immediate Next Steps 
+   
+   li The only major component of the rules not implemented are rules processing.
+   li Stress test things like a responder-to-responder-to-responder -- what's the longest chain that can be formed? Right now I've got onplay to deletion to memory but I'm sure I can do better.
+   li Stress test interrupter chains. Implementing &lt;Decoy&gt; could let some insane chains form.
+   li Verifying complicated rules configurations of interrupters and rules processing
+   li Showcasing situations where order-of-effects matters
+   
+  ul Stuff I could use help with 
+
+   li the UI, really sometimes I try to tap card to use it, I wrote the thing and know that won't work but I still try
+   li design discussions
+   li testing things that are already implemented, particularly in weird ways
+   li card parser to read text
+   li writing test cases
+   li implementing verbs 
+   
+

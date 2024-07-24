@@ -1,0 +1,30 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** YellowVaxMon (DW1-05) *****
+[DW1-05]
+Card Info
+Name                YellowVaxMon
+Japanese            パタモン
+Traditional Chinese 巴達獸
+Simplified Chinese  巴达兽
+Korean              파닥몬
+Colour              Yellow
+Card Type           Digimon
+Play Cost           10
+DP                  10000 DP
+Level               5
+Form                Ultimate
+Attribute           Data
+Type                Mammal
+Rarity              Super_Rare
+Digivolution Requirements
+Colour         Yellow
+Level          4
+Digivolve Cost 6
+Alt. Digivolution Requirements
+[Digivolve] Lv.4 w/[Vaccine] trait: Cost 2
+Card Effect(s)
+Inherited Effect
+[Your Turn] [Once Per Turn] When a card is added to your security stack, gain 1 memory.
+Card Restriction

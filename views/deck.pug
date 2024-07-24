@@ -1,0 +1,15 @@
+html 
+  head 
+    title Player's Deck 
+  body 
+    h1 #{name}'s Deck 
+    ul 
+      each card in player.deck 
+        li= card.summary
+    form(action='/game/shuffle-card', method='POST')
+      button(type='Submit') shuffle 
+
+    form(action='/game/command', method='GET')
+      input(type='text' name="cmd") 
+
+    
