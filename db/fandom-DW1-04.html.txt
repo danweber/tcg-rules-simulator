@@ -1,0 +1,22 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** VanillaMon (DW1-04) *****
+[DW1-04]
+Card Info
+Name                VanillaMon
+Colour              White
+Card Type           Monster
+Play Cost           3
+DP                  5000 DP
+Level               3
+Form                Junior
+Attribute           WIND
+Type                Flying_Reptile
+Rarity              Banal
+Evolution Requirements
+Colour         Red
+Level          2
+Evolve Cost 0
+Card Restriction
+
