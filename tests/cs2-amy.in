@@ -1,0 +1,58 @@
+VERSION:2
+# [Start of Your Turn] If you have a monster, gain 1 memory.
+# [Main] By suspending this Tamer, until the end of your opponent's turn, 1 of your opponent's Monsters gains \"[Start of Your Main Phase] Attack with this Monster\"."
+FIELD2:Amy1,CS2-Aggr Mon,CS2-02
+HAND2:CS2-Aggr
+# phoenix in sources, shouldn't activate
+FIELD1:Tauntee,CS1-10,CS1-08,CS1-03
+EGGZONE1:Other,CS1-05,CS1-04
+SECURITY2:CS2-02
+HAND1:CS1-02 CS1-02
+DECK1:CS1-02
+
+GAME:P2 T2 HATCHING 9
+DUMP:EGGZONE,EGGS
+CMD:MAIN
+DUMP:EGGZONE,EGGS
+
+CMD:PLAY CS2-Aggr Amy2
+EFFECT-TREE
+GET-CHOICES
+DUMP
+
+ECHO: -- activate amy we just played
+CMD:MAIN Amy2
+EFFECT-TREE
+GET-CHOICES
+DUMP
+STEP:TO:0
+EFFECT-TREE
+GET-CHOICES
+DUMP
+
+ECHO: -- activate the other
+CMD:MAIN Amy1
+EFFECT-TREE
+GET-CHOICES
+DUMP
+STEP:TO:0
+EFFECT-TREE
+GET-CHOICES
+DUMP
+
+CMD:PASS
+DUMP
+
+CMD:RAISE
+EFFECT-TREE
+GET-CHOICES
+DUMP:DP,SECURITY
+
+ECHO: -- choose either amy forced effect
+STEP:TO:0
+EFFECT-TREE
+GET-CHOICES
+DUMP:DP,SECURITY
+
+EXIT
+

@@ -1,0 +1,15 @@
+VERSION:2
+# [When Attacking] Delete an opponent's Monster with less than 2000 DP
+
+FIELD1:First,CS1-02 Second,CS1-02 Third,DW1-Van
+FIELD2:WhenAtt,DW1-Van,CS2-05 
+SECURITY1:DW1-Van
+GAME:P2 T3 MAIN 6
+DUMP:DP
+
+CMD:ATTACK WhenAtt Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:TRASH,DP
+EXIT
+
+

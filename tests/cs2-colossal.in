@@ -1,0 +1,23 @@
+VERSION:2
+# [Your Turn] When this Monster attacks one of your opponent's Monster, delete a level 5 or lower Monster.",
+FIELD1:Sneaky,CS1-Sneaky,REST X1,CS1-04 X2,CS1-08 X3,CS1-12 X4,CS1-17 Sneaky2,CS1-Sneaky,REST
+SECURITY1:CS1-02
+FIELD2:Attacker1,CS2-Colossal Attacker2,CS2-Colossal Attacker3,CS2-Colossal
+GAME:P2 T3 MAIN 6
+DUMP
+
+ECHO: -- attack1 in sneaky, then kill it and attack stops
+CMD:ATTACK Attacker1 Sneaky
+STEP:AUTOANSWER:CAPTURE
+DUMP
+
+ECHO: -- attack2 in other sneaky, kill X1
+CMD:ATTACK Attacker2 Sneaky2
+STEP:AUTOANSWER:CAPTURE
+DUMP
+
+ECHO: -- not attacking monster, nothing to kill
+CMD:ATTACK Attacker3 Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP,TRASH
+

@@ -1,0 +1,15 @@
+VERSION:2
+# [Your Turn] When this Monster attacks, trash the top card of your opponent's security stack.
+FIELD1:Attack1,CS1-12 Attack2,CS1-12 Attack3,CS1-12
+SECURITY2:DW1-Van DW1-Van DW1-Van
+GAME:P1 T2 MAIN 3
+DUMP:SECURITY,TRASH
+
+ECHO: -- Attack with first, two things end up removed
+CMD:ATTACK Attack1 Player
+DUMP:SECURITY,TRASH
+
+
+ECHO: -- Attack with second, I win
+CMD:ATTACK Attack2 Player
+DUMP:SECURITY,TRASH

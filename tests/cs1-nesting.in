@@ -1,0 +1,47 @@
+VERSION:2
+# For stepping through nested effects.
+
+# P2 attacks, triggering:
+## trigger 1: their own [WA] and opponents "when being attacked"
+# The first [WA] happens, deleting something, triggering:
+## trigger 2: that thing's [on deletion] and P2's "when a monster is deleted"
+# The [on deletion] happens, playing something out. This triggers:
+## trigger 3: two things on P1's side (neither of which will have an effect, but both still trigger)
+
+
+FIELD1:WhenBeingAtt,CS1-05 WhenPlay1,CS1-06 WhenPlay2,CS1-06 Phoenix1,CS1-Phoenix Phoenix2,CS1-Phoenix
+FIELD2:WhenAtt,DW1-Van,CS2-05 
+SECURITY1:DW1-Van
+GAME:P2 T3 MAIN 6
+DUMP:DP
+
+CMD:ATTACK WhenAtt Player
+
+STEP:TO:0
+DUMP:DP
+
+ECHO: --- should be three levels deep
+EFFECT-TREE
+
+# activate useless effects.
+# First, pick one:
+STEP:TO:0
+# Now, say yes:
+STEP:TO:0
+# Now, say yes to the other:
+
+STEP:TO:0
+
+ECHO: -- 
+DUMP:DP
+
+ECHO: -- one 1 effect left
+# we should be waiting for the Ice Shield effect from step 1 now
+EFFECT-TREE
+
+ECHO: -- finish it off
+STEP:AUTOANSWER:CAPTURE
+DUMP
+EXIT
+
+
