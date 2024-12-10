@@ -1,0 +1,14 @@
+VERSION:2
+# [All Turns] When an attack target is switched, by suspending this Tamer, \uff1cDraw 2\uff1e.",
+# There's only one blocker? this effect isn't very good.
+FIELD1:Gideon,CS1-Gideon Blocker,CS1-Obsidian
+FIELD2:Attack1,DW1-Van
+DECK1:CS1-02 CS1-03 CS1-04
+GAME:P2 T3 MAIN 8
+DUMP:HAND,DECK
+
+ECHO: -- P2 attacks, block happens
+CMD:ATTACK Attack1 Player
+STEP:TO:1
+STEP:AUTOANSWER:CAPTURE
+DUMP:HAND,DECK

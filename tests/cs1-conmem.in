@@ -1,0 +1,19 @@
+VERSION:2
+# Gain 9 memory. Then, draw 1 card.
+FIELD1:Yellow,CS1-02
+FIELD2:Suspend1,DW1-Van Suspend2,DW1-Van Safe,DW1-Van
+GAME:P1 T3 MAIN 4
+HAND1:CS1-Confusing CS1-Confusing
+DECK1:CS1-02 CS1-02
+DUMP:HAND
+
+ECHO: -- Use option. End up at 4 - 12 + 9 = 1  and draw
+CMD:PLAY CS1-Confusing
+DUMP:HAND
+
+ECHO: -- Try to use again. Can't, not enough memory.
+CMD:PLAY CS1-Confusing
+DUMP:HAND
+
+
+
