@@ -1191,15 +1191,19 @@ export class SolidEffectLoop {
             // draw 1 for each color
             let c1;
             if (c1 = w.n_count_tgt) {
+                // we modify one of our arguments, ad-hoc guessing right now
                 if (!for_each_count_target(w, this.game, this.effect.source, p)) {
                     this.s = FakeStep.FINISH_REPEAT_LOOP;
                     return false;
                 }
             }
             if (c1 = w.n_repeat) {
-                let i;
+                // we repeat our action for each thing we find
+                let i: number;
                 logger.info(`looking repeat for each, target ${c1.toString()} ${c1.raw_text}`);
-                i = this.game.find_target(w.n_repeat, GameEvent.STACK_ADD, this.effect.source, this, Location.SECURITY).length;
+               // i = this.game.find_target(w.n_repeat, GameEvent.STACK_ADD, this.effect.source, this, Location.SECURITY).length;
+                i = w.n_repeat.test(this.game, this.effect.source ).length //  this.effect.source, this, Location.SECURITY).length;
+
                 logger.info("I IS " + i);
                 if (i == 0) {
                     this.game.log("No for-each, skipping");
@@ -1207,13 +1211,17 @@ export class SolidEffectLoop {
                     return false;
                 }
                 // I worry this is going to stay applied in future turns
-
-
                 this.n_repeat = i;
             }
-
+            if (c1 = atomic.per_unit) {
+                // we repeat our action for each of the things we just did
+                let x = this.effect.effects[this.n_effect - 1].cost_paid;
+                if (x) this.n_repeat = x;
+                logger.info("n repeat now " + this.n_repeat);
+            }
 
             if (w.n_mod == "previous sub") {
+                // re-use prior targets
                 logger.info("using targets from previous weirdo " + this.weirdo_count);
                 let w_prev = this.effect.effects[this.n_effect].events[this.weirdo_count - 1];
                 this.chosen_targets = [];
@@ -1802,9 +1810,9 @@ export class SolidEffectLoop {
 
             }
 
-
-            // for things like 'for each card discarded, get 1 memory'
-            if (atomic.per_unit) {
+            // for things like 'for each card discarded, get 1 memory'. 
+            // This is one action of N things
+            if (atomic.per_unit && false) {
                 // start at 1 because we've already got one
                 logger.debug("this.n_effect is " + this.n_effect);
                 let prior_paid = this.effect.effects[this.n_effect - 1].cost_paid;

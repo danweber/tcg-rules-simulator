@@ -107,6 +107,9 @@ export enum GameTestType {
     TRASH_COUNT_NOT_USED_YET = 4,
 
     RESPONDING_TO = 5,
+
+    CARDS_IN_LOCATION = 6
+
 };
 
 export class GameTest {
@@ -116,10 +119,18 @@ export class GameTest {
     condition?: InterruptCondition;
     count: number = 1;
 
-    constructor(type: GameTestType, td?: TargetDesc, condition?: InterruptCondition, count?: string) {
+    constructor(type: GameTestType, td?: TargetDesc,
+         condition?: InterruptCondition, count?: string,
+         text?: string
+        ) {
         this.type = type;
         this.td = td;
-        if (td) this.raw_text = td.raw_text;
+        if (td) {
+            this.raw_text = td.raw_text;
+        } else {
+            // trim garbage off either end
+            this.raw_text = text?.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '');
+        }
         this.condition = condition;
         if (count) this.count = parseInt(count);
     }
@@ -130,6 +141,23 @@ export class GameTest {
     // should the source just be built in?
     //    test(g: Game, source: TargetSource): Instance[] | CardLocation[] {
     test(g: Game, source: TargetSource, subs?: SubEffect[]): string[] {
+        if (this.type === GameTestType.CARDS_IN_LOCATION) {
+            logger.info(`testing for ${this.raw_text} / ${this.count}`);
+            let n = 0;
+            for (let p of [source.get_player(), source.get_player().other_player] ) {
+                logger.info(`for P${p.player_num} has ${p.trash.length} trash, and ${p.hand.length} hand`);
+            }
+            if (this.raw_text === "your trash") {
+                n = source.get_player().trash.length;
+            } else if (this.raw_text === "your opponent's hand") {
+                n = source.get_player().other_player.hand.length;
+            } else {
+                logger.error("BAD CARD TEST: " + this.raw_text);
+            }
+            n = Math.floor(n / this.count);
+            return new Array(n).fill("CARD"); 
+        }
+    
         if (this.type == GameTestType.TARGET_EXISTS) {
             if (!this.td) return []
             let l = Location.UNKNOWN;

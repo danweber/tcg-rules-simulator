@@ -382,8 +382,8 @@ export interface SubEffect {
 	n?: number;
 	n_mult?: number; // right now only used for per-each on persistent effects
 	n_count_tgt?: TargetDesc; // are these used?
-	n_repeat?: TargetDesc;
-	n_test?: GameTest;
+	n_repeat?: GameTest; // do subeffect N times
+	n_test?: GameTest; // "reduce by a further N"
 
 	negated?: boolean; // set in the 4-step 
 	cost_change?: any[];

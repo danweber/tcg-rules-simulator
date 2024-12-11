@@ -506,8 +506,10 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
     // 2. dna evo conditions
 
-    if (line.match(/^.?.?DNA_Evolve/)) {
-        if (card) card.dnaevolve = line.substring(line.indexOf("]"));
+    // eat the extra fields that showed up around December 9th
+    if (m = line.match(/^.?.?DNA.Evolve\](.*?)(Evolve unsuspended)/i)) {
+        console.error(m, 511);
+        if (card) card.dnaevolve = m[2].trim();
         line = "";
     }
     // The name of this card/Monster is also treated as [AAA]/[BBB].
@@ -1186,26 +1188,26 @@ function parse_at(line: string): PhaseTrigger | false {
 
 function parse_when(line: string): InterruptCondition[] {
     // I should abandon this layer
-    let _obj: InterruptCondition | InterruptCondition[] = _parse_when(line);                                             
-    let ret: InterruptCondition[] = [];                                                                                  
-    if (Array.isArray(_obj)) {                                                                                           
-        for (let obj of _obj) {                                                                                          
-            let ic = new InterruptCondition();                                                                           
-            ic.ge = obj.ge; ic.td = obj.td; ic.td2 = obj.td2; ic.cause = obj.cause;                                      
-            ic.source = obj.source;                                                                                      
-            ret.push(ic);                                                                                                
-        }                                                                                                                
-    } else {                                                                                                             
-        let obj = _obj;                                                                                                  
-        let ic = new InterruptCondition();                                                                               
-        ic.ge = obj.ge; ic.td = obj.td; ic.td2 = obj.td2; ic.cause = obj.cause;                                          
-        ic.source = obj.source;                                                                                          
-        ret.push(ic);                                                                                                    
-    }                                                                                                                    
-    return ret;                                                                                                          
+    let _obj: InterruptCondition | InterruptCondition[] = _parse_when(line);
+    let ret: InterruptCondition[] = [];
+    if (Array.isArray(_obj)) {
+        for (let obj of _obj) {
+            let ic = new InterruptCondition();
+            ic.ge = obj.ge; ic.td = obj.td; ic.td2 = obj.td2; ic.cause = obj.cause;
+            ic.source = obj.source;
+            ret.push(ic);
+        }
+    } else {
+        let obj = _obj;
+        let ic = new InterruptCondition();
+        ic.ge = obj.ge; ic.td = obj.td; ic.td2 = obj.td2; ic.cause = obj.cause;
+        ic.source = obj.source;
+        ret.push(ic);
+    }
+    return ret;
 }
 
-function _parse_when(line: string): InterruptCondition  | InterruptCondition[] {
+function _parse_when(line: string): InterruptCondition | InterruptCondition[] {
 
     let m;
     logger.info("parse_when: " + line);
@@ -1534,7 +1536,7 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
         choose: number,
         n: number, immune: boolean, n_mod: string, n_max: number,
         n_count_tgt?: TargetDesc, // "suspend 1 monster for each tamer"
-        n_repeat?: TargetDesc, // repeat (Devolve 1) N times
+        n_repeat?: GameTest, // repeat (Devolve 1) N times
         cause: EventCause,
         cost_change?: any,
         delayed_effect?: SolidEffect2,
@@ -1612,28 +1614,36 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
 
     // could this clause be more generic for the above? modify the prior thing?
     // for each X, delete y. or for each X, modify the N of your previous action.
-
     // For each X, Do y.  
     if (m = line.match(/^For each (.*),(.*)/i)) {
         foreach = m[1];
         line = m[2];
     }
+
+
+    // some foreach are "for each N on field, do a thing"
+    // others are "for each N you did, do a thing"
     // This Monster gets +1000 DP for each of your opponent's suspended Tamers
     // Do y for each X.
-    if (m = line.match(/(.*) for each (.*)/i)) {
+    // for eachX, gain Y.
+    if (m = line.match(/(.*) for (?:each|every) (.*)/i)) {
         foreach = m[2];
         line = m[1];
     }
     if (foreach) {
         logger.info("foreach: " + foreach);
-        //console.error(foreach);
-        if (foreach.match(/card (trashed|returned|placed)/)) {
+        if (m = foreach.match(/(\d+) cards in (.*)/i)) {
+            thing.n_repeat = new GameTest(GameTestType.CARDS_IN_LOCATION,
+                undefined, undefined, m[1], m[2]);
+        } else if (foreach.match(/(card|tamer) (?:this.effect )?(trashed|returned|placed|suspended)/i)) {
             atomic.per_unit = true;
             // keywords cannot be altered; todo make this able to identify keyword effects
-        } else if (line.includes("Draw ") || line.includes("De-Evolve")) {
+        } else if (line.includes("Draw ") || line.includes("De-Evolve") || line.includes("Security A")) {
             logger.info("REPEAT KEYWORD");
-            thing.n_repeat = new TargetDesc(foreach);
+
+            thing.n_repeat = new GameTest(GameTestType.TARGET_EXISTS, new TargetDesc(foreach));
         } else {
+            // how many targets we can hit
             thing.n_count_tgt = new TargetDesc(foreach);
         }
     }
@@ -2801,10 +2811,11 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
                 //console.error(x);
                 thing.td = x;
                 thing.choose = x.count();
-            } else if (m = line.match(/^\w+ (\d|all) of (.*?)$/i)) {
+            } else if (m = line.match(/^\w+( up to)? (\d|all) of (.*?)$/i)) {
                 // delete 2 of your opponent's monster
-                thing.choose = parse_number(m[1]);
-                thing.td = new TargetDesc(m[2]);
+                if (m[1]) thing.n_mod = "upto";
+                thing.choose = parse_number(m[2]);
+                thing.td = new TargetDesc(m[3]);
                 /*
                 if (m[3]) {
                     thing.n_mod = "foreach";
