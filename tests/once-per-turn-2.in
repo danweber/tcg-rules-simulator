@@ -1,0 +1,32 @@
+VERSION:2
+
+#There are three monsters on player 1's field, with a friendly label of Attacker1, Attacker2, Attacker3.
+#Each is described as LABEL,CARD,CARD. You can have an arbitrary number of cards and don't need to explain how they got stacked that way.
+#Cards are identified as "SET-Prefix". If there's a set called "BT10" and only 1 monster in it starts with "Fred" then "BT10-Fred" can be used to identify it. You can also use the full ID.
+FIELD1:Attacker1,DW1-Vanilla,DW1-Birder Attacker2,DW1-Vanilla,DW1-Birder Attacker3,DW1-Vanilla,DW1-Birder
+
+#Player 2 has a monster labelled "Tank" that is at REST (turned sideways). It's called "Tank" because it's got 10k strength and will just get crashed into.
+FIELD2:Tank,DW1-YellowVax,REST
+
+#This is a compact field. It's Player 1's turn. The Turn number is 3. We're in the MAIN phase, and the turn player has 7 memory.
+GAME:P1 T3 MAIN 7
+#We're dumping the board state.
+DUMP
+
+#This is an API command. We're ATTACKING from Attacker1 into Tank. What should happen is that Attacker1 dies, but also that Player 1 loses 2 memory.
+CMD:ATTACK Attacker1 Tank
+DUMP
+
+#Do the same for the next attacker.
+CMD:ATTACK Attacker2 Tank
+DUMP
+
+#And the third.
+CMD:ATTACK Attacker3 Tank
+DUMP
+
+# You can see the sample output from the above with this command line:
+#    FILE=once-per-turn GAME=test1 URL=http://localhost:3001; curl -X POST -s  "${URL}/game/set_up_board?gid=$GAME&board=$(node test.js $FILE.in)"
+# The expected output should go into "once-per-turn-2.out". If it's not doing the right thing, you can manually change the expected output.
+# Once you have both .in and .out, you can test with:
+#    ./test.sh once-per-turn-2

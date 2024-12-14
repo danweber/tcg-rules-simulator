@@ -1,0 +1,17 @@
+VERSION:2
+# "[Your Turn] When this Monster attacks, one of your opponent's Monsters get -2000 DP for the turn."
+FIELD1:Attacker,DW1-Vanilla,CS1-03 Green,DW1-Birder
+FIELD2:Vic0,CS1-02 Vic1,CS1-02,REST Vic2,DW1-Vanilla,REST
+SECURITY2:CS1-02
+HAND1:DW1-Standup
+GAME:P1 T2 MAIN 5
+DUMP:DP
+ECHO: -- Attack once with Attacker, kill Vic0 with effect and Vic1 with attack
+CMD:ATTACK Attacker Vic1
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP
+ECHO: -- This isn't once per turn! Restand and do it again. I only survive into Vic2 because it gets its DP reduced.
+CMD:PLAY DW1-Standup
+STEP:AUTOANSWER
+CMD:ATTACK Attacker Vic2
+DUMP:DP
