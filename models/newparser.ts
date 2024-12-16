@@ -1640,7 +1640,7 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
     // could this clause be more generic for the above? modify the prior thing?
     // for each X, delete y. or for each X, modify the N of your previous action.
     // For each X, Do y.  
-    if (m = line.match(/^For each (.*),(.*)/i)) {
+    if (m = line.match(/^For (?:each|every) (.*),(.*)/i)) {
         foreach = m[1];
         line = m[2];
     }

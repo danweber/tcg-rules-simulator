@@ -143,6 +143,8 @@ router.post('/set_up_board', (req, res) => {
 
   //console.log("Client IP?");
 
+  let bot1 = req.body.bot1 ? "1" : "0"
+  let bot2 = req.body.bot2 ? "1" : "0";
   var ip = req.ip ||
     (req.headers['x-forwarded-for'] || '').split(',').pop().trim();
   if (prior_ip != ip) {
@@ -154,7 +156,7 @@ router.post('/set_up_board', (req, res) => {
   let launch = parseInt(req.query.launch || req.body.launch);
   if (gid && (gid.startsWith("auto") || gid.startsWith("test"))) {
     // oh we just completely wipe, did I do that on purpose?
-    game_list[gid] = new Game(mastergame, gid);
+    game_list[gid] = new Game(mastergame, gid, [], "", "", bot1, bot2);
     game_list[gid].start();
     game_list[gid].go();
   }
@@ -163,7 +165,7 @@ router.post('/set_up_board', (req, res) => {
     let index = Math.floor(Math.random() * rnd_words.length);
     let word = rnd_words[index]
     gid = word;
-    game_list[gid] = new Game(mastergame, gid);
+    game_list[gid] = new Game(mastergame, gid, [], "", "", bot1, bot2);
     game_list[gid].start();
     game_list[gid].go();
   }
@@ -268,14 +270,18 @@ router.post('/game_state', (req, res) => {
   let verb = req.body.verb;
   let arg1 = req.body.arg1;
   let arg2 = req.body.arg2;
-
+  let output;
   if (verb && verb != "") {
     player.execute([verb, arg1, arg2])
   } else {
     let words = req.body.cmd.split(" ");
-    player.execute(words);
+    output = player.execute(words);
   }
+  if (output) {
+    res.send("<pre>" + output + "</pre>"); 
+  } else {
   res.redirect(`game_state?gid=${gid}&pid=${pid}`);
+  }
 });
 
 router.get('/game_state', (req, res) => {

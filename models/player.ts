@@ -911,6 +911,7 @@ export class Player {
         }
         logger.silly(Phase[this.game.phase]);
 
+    
         if (cmd == "ANSWER") {
             logger.debug(`words is ${words.join(":::")}`);
             // this is 
@@ -931,6 +932,10 @@ export class Player {
         if (!this.xxx_has_control()) {
             // nothing below should run
             return "no control";
+        }
+
+        if (cmd === "DUMP") {
+            return this.game.dump("HAND,TRASH,SECURITY,DECK,EGGS,EGGZONE", 1);
         }
 
         if (this.game.phase == Phase.HATCHING) {

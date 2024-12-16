@@ -691,7 +691,6 @@ export class Card {
             for (let _evo of [spec, fusion, burst]) {
                 for (let evo of _evo.split("\n")) {
                     if (evo === "-") continue;
-                    console.log(694, evo);
                     if (m = evo.match(/^.Evolve.(.*)/)) {
                         this.parse_special_evolve(m[1].trim(), {}) 
                     } else if (m = evo.match(/.DNA.Evolve.(.*)/)) {
