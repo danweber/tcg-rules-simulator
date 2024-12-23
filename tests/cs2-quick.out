@@ -1,0 +1,36 @@
+FIELD1:Four1,CS1-06 Four2,CS1-06 Four3,CS1-07 Five1,CS1-08 Five2,CS1-08 Five3,CS1-08 Five4,CS1-09
+FIELD2:
+TRASH1:
+TRASH2:
+EGGZONE1:
+EGGZONE2:Xxx,CS2-01
+GAME:P2 T3 MAIN 9
+ECHO: -- Use first quick slash, kill the level 4s
+FIELD1:Five1,CS1-08 Five2,CS1-08 Five3,CS1-08 Five4,CS1-09
+FIELD2:
+TRASH1:CS1-06 CS1-06 CS1-07
+TRASH2:CS2-13
+GAME:P2 T3 MAIN 3
+ECHO: -- Use second quick slash, kill the level 5s, Phoenix all come back
+EFFECT-TREE:DSE DEPTH 1 DONE:use Quick Slash
+EFFECT-TREE:RES DEPTH 2 DONE:Quick Slash
+EFFECT-TREE:RES DEPTH 3 Phoenix Defender, Phoenix Defender, Phoenix Defender
+FIELD1:
+FIELD2:
+GAME:P2 T3 MAIN -3
+ECHO: -- pick first pheonix
+EFFECT-TREE:DSE DEPTH 1 DONE:use Quick Slash
+EFFECT-TREE:RES DEPTH 2 DONE:Quick Slash
+EFFECT-TREE:RES DEPTH 3 Phoenix Defender, Phoenix Defender, DONE:Phoenix Defender
+FIELD1:I9,CS1-08
+FIELD2:
+GAME:P2 T3 MAIN -3
+ECHO: -- pick second pheonix... all effects insta-resolve now
+EFFECT-TREE:NOTHING
+FIELD1:I9,CS1-08 I10,CS1-08 I11,CS1-08
+FIELD2:
+GAME:P1 T4 HATCHING 3
+ECHO: ----- NOTHING LEFT
+FIELD1:I9,CS1-08 I10,CS1-08 I11,CS1-08
+FIELD2:
+GAME:P1 T4 HATCHING 3

@@ -1,0 +1,14 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** Standup (DW1-08) *****
+[DW1-08]
+Card Info
+Name                Standup
+Colour              Green
+Card Type           Option
+Use Cost            4
+Rarity              Uncommon
+Card Effect(s)
+[Main] Unsuspend 1 of your Monster.
+Card Restriction

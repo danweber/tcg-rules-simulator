@@ -1,0 +1,21 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** PlainGarurumon (DW1-01) *****
+[DW1-01]
+Card Info
+Name                PlainGarurumon
+Colour              Purple
+Card Type           Monster
+Play Cost           7
+DP                  6000 DP
+Level               6
+Form                Ultimate
+Attribute           EARTH
+Type                Beast_Man
+Rarity              Common
+Evolution Requirements
+Colour         Purple
+Level          5
+Evolve Cost 2
+Card Restriction

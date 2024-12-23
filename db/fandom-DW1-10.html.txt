@@ -1,0 +1,26 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** Trasher (DW1-10) *****
+[DW1-10]
+Card Info
+Name                Trasher
+Colour              Purple / White
+Card Type           Monster
+Play Cost           2
+DP                  1000 DP
+Level               3
+Form                Wee Laddie
+Attribute           EARTH
+Type                Zombie
+Rarity              Unusual
+Evolution Requirements
+Colour         Purple
+Level          2
+Evolve Cost 0
+Card Effect(s)
+[When Attacking] If you have 20 or more cards in your trash, suspend 1 of your opponent's Monsters.
+Inherited Effect
+[When Attacking] Trash the top 3 cards of your deck.
+Card Restriction
+# can still give an inherited

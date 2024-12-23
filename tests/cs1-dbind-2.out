@@ -1,0 +1,16 @@
+FIELD1:Green,DW1-Birder Yellow,CS1-02
+FIELD2:Suspend1,DW1-Vanillamon Suspend2,DW1-Vanillamon Safe,DW1-Vanillamon
+HAND1:CS1-13
+HAND2:
+GAME:P1 T3 MAIN 9
+ECHO: -- Now use option. Tough to see what happened, other tests will need to be more fine-grained.
+CAPTURE:Target VanillaMon 3
+CAPTURE:Target VanillaMon 4
+CAPTURE:Target VanillaMon 5
+CAPTURE:Target VanillaMon 3
+CAPTURE:Target VanillaMon 4
+FIELD1:Green,DW1-Birder Yellow,CS1-02
+FIELD2:Suspend2,DW1-Vanillamon,REST Safe,DW1-Vanillamon
+HAND1:
+HAND2:DW1-Vanillamon
+GAME:P1 T3 MAIN 2
