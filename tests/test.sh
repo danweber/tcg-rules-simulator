@@ -15,6 +15,7 @@ fi
 BLUE="[0;34m"
 NORMAL="[0m"
 URL=http://localhost:3001
+#URL=https://digi-viz.com
 fail=0
 for FILE in $files2; do
     echo ${BLUE}${FILE}${NORMAL}

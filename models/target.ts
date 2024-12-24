@@ -1612,7 +1612,7 @@ export class SubTargetDesc {
 
 
 
-        if (m = str.match(/^(the )?\[(.*)\].(in one of its traits|trait)\s*(.*)/)) {
+        if (m = str.match(/^(the )?\[(.*)\].(in (?:one|any) of its traits|trait)\s*(.*)/)) {
             let verb = (m[3] == "trait") ? "has_trait" : "trait_contains";
             let traits = m[2];
             // if traits has ] followed by non-\, this isn't a good match
@@ -1655,7 +1655,7 @@ export class SubTargetDesc {
         str = str.trim();
         logger.debug("yyy here");
         // is the below used any more?
-        if (m = str.match(/^(card )?with( the)? \[(.*)\].(in one of its traits|trait)\s*$/)) {
+        if (m = str.match(/^(card )?with( the)? \[(.*)\].(in (?:one|any) of its traits|trait)\s*$/)) {
             let traits = m[3];
             logger.info("traitsx is " + traits);
             logger.info("traitsx match is " + traits.match(/\][\[]/));

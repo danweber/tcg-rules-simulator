@@ -243,8 +243,12 @@ export class Card {
     parse_fusion_evolve(line: string, evo: any) {
         //  [mon1] + [mon2] : Cost 0",
         // [DNA_Evolve] blue Lv.4 + green Lv.4 : Cost 0
-        let [left, right] = line.split("+");
-        left = left.trim() + " : Cost 0";
+        let m = line.match(/(.*)\+(.*)\s*:\s*Cost (\d)+/)
+        if (!m) {
+            return;
+        }
+        let left = m[1].trim()+ " : Cost 0"
+        let right = m[2].trim() + " : Cost 0"   
         let l = this._parse_special_evolve(left, {}, true);
         let r = this._parse_special_evolve(right, {}, true);
         let cost = r.cost;
@@ -336,7 +340,7 @@ export class Card {
             evo.cost = parseInt(m[3]);
             // (level 3)? w/[OneWord] in.its.name
             // Lv.6 w/[xxx]\u00a0in its name w/o [yyy]\u00a0trait: Cost 1
-        } else if (m = line.match(/^\s*(Lv.(\d))? ?w\/\[?(\w*)\]?.in.its.name(\s*w.o \[(.*?)\].trait)?\s*: Cost (\d)$/)) {
+        } else if (m = line.match(/^\s*(Lv.(\d))? ?w\/\[?(\w*)\]?.in.its.name(\s*w.o \[(.*?)\].trait)?\s*: Cost (\d)(.*)$/)) {
             //console.error(m);
             if (m[2]) evo.level = parseInt(m[2]);
             evo.name_contains = m[3];
