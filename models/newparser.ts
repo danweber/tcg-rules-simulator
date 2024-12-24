@@ -990,7 +990,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     // You may X. Then, if Y, do V, (and W, and Z until T).
     // You may X. If you did, Y, then Z.
     //                  1                 2    3                               4          5
-    if (m = line.match(/(.*)\. (?:Then, )?(If (.*?|you d.*?|this effect .*?)), (.*), (?:and|then) (.*?)\./i)) {
+    if (m = line.match(/(.*)\. (?:Then, )?(If (.*?|you d.*?|this effect .*?)), (.*), (?:and|then) (.*)\./i)) {
         let [a1, l1] = parse_atomic(m[1], label);
         let clause2 = m[2] + ", " + m[4];
         let [a2, l2] = parse_atomic(clause2, label);
@@ -1014,15 +1014,19 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
         // just a 2 secntence thing
     }
 
+    // some effects contain periods within them, such as "give your opponent '[start of main] Attack.'" and <Rush>."
+    // we should token out the quotes before we get here. for now, check that third clause isn't degenerate
     // X. Then, Y. Z.
     if (m = line.match(/(.*[.,]) Then,? (.*?)\.(.*?)\./i)) {
-        let [a1, l1] = parse_atomic(m[1], label);
-        let [a2, l2] = parse_atomic(m[2], label);
-        let [a3, l3] = parse_atomic(m[3], label);
-        atomics.push(a1, a2, a3);
-        solid.effects.push(a1, a2, a3);
-        line = l1 + " " + l2 + " " + l3;
-        // just a 2 secntence thing
+        if (m[3].length > 4) {
+            let [a1, l1] = parse_atomic(m[1], label);
+            let [a2, l2] = parse_atomic(m[2], label);
+            let [a3, l3] = parse_atomic(m[3], label);
+            atomics.push(a1, a2, a3);
+            solid.effects.push(a1, a2, a3);
+            line = l1 + " " + l2 + " " + l3;
+            // just a 2 secntence thing
+        }
     }
 
     // We don't want to hit "REVEAL X, IF IT IS" here
@@ -1601,7 +1605,6 @@ function parse_give_status(s: string) {
 
 //export
 function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?: any): [AtomicEffect2, string] {
-
     logger.info("atomic " + line);
 
     // bullshit I shouldn't need, I think it's just for eating keywords
@@ -2414,8 +2417,7 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
         logger.info("new line: " + line);
     }
 
-
-    //    if (parserdebug) logger.debug("RECURSIVE?: " + line);
+        //    if (parserdebug) logger.debug("RECURSIVE?: " + line);
     // since this is recursive it needs to be one of the first ones.
     if (m = line.match(/(.*)gains? "(.*)"/i)) {
         if (parserdebug) logger.info("FOUND RECURSIVE");
@@ -2448,6 +2450,11 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
         thing.td = new TargetDesc(tgt);
         line = "";
     }
+
+
+
+
+
 
 
 
