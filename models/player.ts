@@ -1187,7 +1187,7 @@ export class Player {
                     x = { command: "HATCH", text: "Hatch an egg", ver: uuidv4() };
                     ret.push(x)
                 }
-                last.command = "MAIN";
+                last.command = "NEXT";
                 last.text = "Go to Main Phase";
                 ret.push(last);
 

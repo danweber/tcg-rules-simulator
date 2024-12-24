@@ -381,7 +381,7 @@ export class ResolutionLoop { // 1 of N
             logger.info(this.rand + "DDD our list is now " + this.collected_events.length + " long");
             let label = "rules effects";
             if ('label' in this.current!) label = this.current.label;
-            this.game.announce(p + "Done processing " + label);
+            this.game.log(p + "Done processing " + label);
 
 
             // Maybe I don't need this, if I'm doing it in effectchooser, but I 
@@ -2137,7 +2137,7 @@ export class XX {
             //player.do_delete(this.chosen_target);
         } else if (weirdo.game_event == GameEvent.CREATE_PENDING_EFFECT) {
             game.log("Making pending effect");
-            console.error(2110, "pending for " + p);
+            logger.info("pending for " + p);
             let player = game.get_n_player(p);
             let ts: TargetSource;
             if (false && "suspended" in weirdo.spec_source!) {
@@ -2180,7 +2180,6 @@ export class XX {
                     logger.info(`op is ${o_p}`);
                     // giving a status condition to "all of" monsters 
                     if (weirdo.td.conjunction == Conjunction.PLAYER) {
-                        console.log(`PLAYER NOW text is ${weirdo.td}`);
                         if (true || weirdo.td.text?.match(/security/i)) {
                             // their monsters, or your monsters
                             let pid = weirdo.td.text?.match(/your/) ? p : o_p;

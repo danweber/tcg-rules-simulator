@@ -311,7 +311,6 @@ export class Card {
         // Lv.6 w/[xxx]\u00a0in its name w/o [yyy]\u00a0trait: Cost 1
         //     console.error(line);
         let m;
-
         // red level 4: only used for fusions
         if (m = line.match(/^(red|blue|yellow|green|black|purple|white) Lv.(\d)\s+: Cost (\d+)$/i)) {
             // It's not too late to make colors a bitmap. Then we just 
@@ -322,11 +321,12 @@ export class Card {
         } else if (m = line.match(/^Lv.(\d)\s*: Cost (\d)$/i)) {
             evo.level = parseInt(m[1]);
             evo.cost = parseInt(m[2]);
+            // what;s this clause for?
         } else if (m = line.match(/^\s*\[?([\w ]*)\]?\s*: Cost (\d)$/i)) {
             evo.name_is = m[1];
             evo.cost = parseInt(m[2]);
-            // [monone/montwo] in.its.name
-        } else if (m = line.match(/^\s*\[(\w*)\]\[(\w*)\]\s*: Cost (\d)$/i)) {
+            // [monone/montwo] name
+        } else if (m = line.match(/^\s*\[(\w*)\]\/\[(\w*)\]\s*: Cost (\d)$/i)) {
             evo.name_is = m[1];
             evo.cost = parseInt(m[3]);
             if (!no_push) this.evolve_conditions.push(evo);

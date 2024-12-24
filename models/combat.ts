@@ -414,7 +414,6 @@ export class CombatLoop {
             if (this.attacker.has_keyword("Ice Clad") || this.defender_i.has_keyword("Ice Clad")) {
                 compare = "source_count";
             }
-            console.error(compare);
             let attacker_value = compare === "dp" ? this.attacker.dp() : this.attacker.get_source_count();
             let defender_value = compare === "dp" ? this.defender_i.dp() : this.defender_i.get_source_count();
 

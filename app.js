@@ -78,7 +78,7 @@ if (true) {
     app.set('view engine', 'ejs');
     /*
     let base_version = "v0.9.4.18";
-    let patchlevel = 0;20.0
+    let patchlevel = 0;20.09.5.3
     let ver = base_verison;
     if (patchlevel > 0) ver += "." + patchlevel;
     */
@@ -86,7 +86,7 @@ if (true) {
     let index = Math.floor(Math.random() * words.length);
     let word = words[index]
     const url = req.protocol + '://' + req.get('host') + req.originalUrl;
-    const title =  'Rule Simulator v0.9.5.3.2';
+    const title =  'Rule Simulator v0.9.5.3.3';
     console.log("version is " + title);
     res.render('index', { title: title, word: word, text: url, test: env_test});
   });
