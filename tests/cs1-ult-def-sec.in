@@ -1,0 +1,39 @@
+VERSION:2
+# [Main] Until the end of your opponent's turn, all of your Monsters cannot be deleted in battle.
+SECURITY1:CS1-UltimateDefense
+FIELD1:Tiny1,CS1-02,REST Tiny2,CS1-02,REST
+FIELD2:Attack1,DW1-Van Attack2,DW1-Van Attack3,DW1-Van Attack4,DW1-Van
+HAND2:DW1-09
+SECURITY1:CS1-04 CS1-UltimateDefense
+GAME:P2 T3 MAIN 8
+DUMP:SECURITY
+ECHO: -- P2 attacks, reveals security a thing
+CMD:ATTACK Attack1 Player
+STEP:AUTOANSWER
+DUMP:SECURITY,DP
+
+#EXIT
+
+ECHO: -- P2 attacks, can't kill a thing
+CMD:ATTACK Attack2 Tiny1
+DUMP:SECURITY,DP
+
+#EXIT
+
+ECHO: -- P2 attacks, reveals CS1-04
+CMD:ATTACK Attack3 Player
+DUMP:SECURITY,DP
+
+ECHO: -- sit it down...
+CMD:PLAY DW1-Sitdown
+STEP:AUTOANSWER:-1:CAPTURE
+DUMP:SECURITY,DP
+
+ECHO: -- and attack into it, with nothing happening
+CMD:ATTACK Attack4 I7
+DUMP:SECURITY,DP
+
+
+
+
+

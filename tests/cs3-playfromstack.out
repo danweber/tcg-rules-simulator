@@ -1,0 +1,13 @@
+FIELD1:Bird,CS3-Chirpflare,CS3-Fairyfeatherling,CS3-Fairyfeatherling,CS3-Beaklet,4000DP
+FIELD2:Shield,CS1-04,REST,4500DP
+HAND1:
+HAND2:
+GAME:P1 T3 MAIN 8
+ECHO: ---- attack in, mon gets played out
+CAPTURE:Target FairyFeatherling FIELD-CS3-02
+CAPTURE:Target FairyFeatherling FIELD-CS3-02
+FIELD1:I3,CS3-Fairyfeatherling,2000DP
+FIELD2:Shield,CS1-04,REST,4500DP
+HAND1:
+HAND2:
+GAME:P1 T3 MAIN 5
