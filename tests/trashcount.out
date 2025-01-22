@@ -1,0 +1,11 @@
+FIELD1:Attacker1,DW1-Trasher,1000DP Attacker2,DW1-Trasher,1000DP
+FIELD2:Target,DW1-Warpredmonster,2000DP
+GAME:P1 T3 MAIN 3
+ECHO: -- attack, only 19 in trash
+FIELD1:Attacker2,DW1-Trasher
+FIELD2:Target,DW1-Warpredmonster
+GAME:P1 T3 MAIN 3
+ECHO: -- attack, now 20 in trash
+FIELD1:
+FIELD2:Target,DW1-Warpredmonster,REST
+GAME:P1 T3 MAIN 3

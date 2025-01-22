@@ -1,0 +1,46 @@
+VERSION:2
+# [Opponent's Turn] This Monster cannot be deleted in battle.
+FIELD1:Defender,CS1-11,REST
+# CS2-10 has piercing but that shouldn't matter
+FIELD2:Same,CS1-11 Bigger,CS2-10
+DECK1:DW1-Van
+GAME:P2 T2 MAIN 3
+DUMP:DP
+
+ECHO: -- Attack with something bigger, defender lives
+CMD:ATTACK Bigger Defender
+DUMP:DP
+
+ECHO: -- Versus each other, only defender lives as it's an "oppenent's turn" effect
+CMD:ATTACK Same Defender
+DUMP:DP
+
+EXIT
+
+
+
+ECHO: -- Attacks, Victim gets penalized
+CMD:ATTACK Attacker Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP
+ECHO -- Stand up and attack again
+CMD:PLAY DW1-Standup
+#Stand up the second
+STEP:TO:1
+# I don't know why this one is needed, there are no more choices.
+STEP:TO:0
+CMD:ATTACK Attacker Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP
+
+CMD:PASS
+CMD:MAIN
+ECHO: -- attack again, another 800 DP lost
+CMD:ATTACK Mon1 Attacker
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP
+
+ECHO: -- pass turn, all DP losses go away
+CMD:PASS
+DUMP:DP
+EXIT

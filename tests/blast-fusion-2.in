@@ -1,0 +1,33 @@
+VERSION:2
+# blast, bugt don't get rid of attacker (defender does disappear)
+FIELD1:Blue,CS2-AnimeSword,CS2-01 Yellow1,CS1-Obsidian,CS1-01 Yellow2,CS1-Onyx,REST Yellow3,CS1-Onyx,CS1-01,REST
+FIELD2:Attacker,CS2-ShieldSmasher Bogey1,CS2-ShieldSmasher Boger2,CS2-02
+HAND1:CS2-Rampager CS2-Colossal DW1-Van CS1-AdamantiumShield
+SECURITY1:DW1-Van
+GAME:P2 T3 MAIN 3
+DUMP:HAND,DP
+
+ECHO: -- attack into Yellow3, get dp boost, trigger blast
+CMD:ATTACK Attacker Yellow3
+EFFECT-TREE
+GET-CHOICES
+DUMP:HAND,DP
+
+
+ECHO: -- blast, removing target
+STEP:TO:4
+EFFECT-TREE
+GET-CHOICES
+DUMP:HAND,DP
+
+ECHO: -- take out bogey1, then bogey2 automatically dies to death
+STEP:TO:1
+EFFECT-TREE
+GET-CHOICES
+DUMP:HAND,DP,SECURITY
+
+ECHO: -- do not block, the attack should end
+STEP:TO:0
+EFFECT-TREE
+GET-CHOICES
+DUMP:HAND,DP,SECURITY
