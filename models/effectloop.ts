@@ -2622,9 +2622,31 @@ export class XX {
                 cl.extract().move_to(Location.REVEAL);
             }
             return true; // assume success
+        } else if (weirdo.game_event == GameEvent.PLUG) {
+            // move an instance under something, counts for removal
+            console.error(2627, "remove");
+            let recipient: Instance = weirdo.chosen_target2;
+            if (target.kind == "Instance") {
+                let i: Instance = target;
+                let c = i.top();
+                if (!c) return false;
+                c.extract().move_to(Location.FIELD, recipient, "PLUG-BOTTOM");
+    
+                let top;
+                while (top = i.pile[0])
+                    top.extract().move_to(Location.TRASH);
+    
+                game._remove_instance(i.id);
+                i.do_removal("nul", "plugged");
+    
+            } else {
+                let c:CardLocation = target;
+                c.extract().move_to(Location.FIELD, recipient, "PLUG-BOTTOM");
+            }
+            return true;
         } else if (weirdo.game_event == GameEvent.TUCK) {
             // move an instance under something, counts for removal
-            console.error(2598, "remove");
+            console.error(2645, "remove");
             // check ordering
             let recipient: Instance = weirdo.chosen_target2;
             let i: Instance = target;
@@ -2638,7 +2660,7 @@ export class XX {
                 top.extract().move_to(Location.TRASH);
 
             game._remove_instance(i.id);
-            i.do_removal("nul", "removed");
+            i.do_removal("nul", "tucked");
             return true;
 
 

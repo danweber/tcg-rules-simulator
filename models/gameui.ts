@@ -94,8 +94,8 @@ class GameUI {
 
             let p: Player = game.get_n_player(pid);
 
-            // play, evolve, attack/answer, main, next, use, hatch, raise
-            if (game_command && game_command.match && game_command.match(/^[PEAMNUHR]/)) {
+            // play, evolve, attack/answer, main, next, use, hatch, raise, link
+            if (game_command && game_command.match && game_command.match(/^[PEAMNUHRL]/)) {
                 // assume legit command
                 // bad commands here can absolutely break the game
                 console.log("a executing string " + game_command);

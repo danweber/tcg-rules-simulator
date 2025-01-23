@@ -182,6 +182,7 @@ export enum GameEvent {
 	CHANGE_INFORMATION,
 	USE,
 	SHUFFLE,
+	PLUG, 
 };
 
 

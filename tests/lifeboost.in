@@ -3,7 +3,7 @@ VERSION:2
 #[Security] All of your Monsters gain +500 DP.
 #Security Effect
 #[Security] Add this card to your hand.
-FIELD1:Tamer,CS1-Gideon Mon,CS1-02 Agu,ST15-02
+FIELD1:Tamer,CS1-Gideon Mon,CS1-02
 FIELD2:Enemy,CS2-02
 EGGZONE1:Here,CS1-02,CS1-01
 HAND1:DW1-Lifeboost

@@ -1,6 +1,6 @@
 
 import { Player } from './player';
-import { Card, CardLocation, Color, EvolveCondition, KeywordArray } from './card';
+import { Card, CardLocation, Color, EvolveCondition, KeywordArray, LinkCondition } from './card';
 import { Game } from './game';
 import { Location } from './location';
 import { Phase, PhaseTrigger, TriggerMap } from './phase';
@@ -967,6 +967,8 @@ export class Instance {
         }
         return false;
     }
+    get_link_requirements(): LinkCondition[] { return this.top().link_requirements };
+    
     get_color_count(): number { if (this.top().is_two_color()) return 2; return 1; }
     // move away from this function
     // why would an *instance* ever need to check 2-color?
@@ -1171,7 +1173,6 @@ export class Instance {
 
 
         for (let plug of this.plugged) {
-            console.error(1174, plug.link_dp);
             if (plug.link_dp) dp += plug.dp;
         }
 

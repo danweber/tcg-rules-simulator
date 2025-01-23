@@ -22,7 +22,7 @@ export function string_to_location(s: string): Location {
         case "trash": return Location.TRASH;
         case "hand": return Location.HAND;
         case "security": return Location.SECURITY;
-        case "security": return Location.SECURITY;
+        case "field": return Location.FIELD;
     }
     return Location.UNKNOWN;
 }

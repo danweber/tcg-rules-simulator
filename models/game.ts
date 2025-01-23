@@ -1345,6 +1345,25 @@ export class Game {
         if (!this.waiting_answer()) { this.root_loop.step(); }
     }
 
+    link(p: Player, source: CardLocation | Instance, recipient: Instance, cost: number) {
+        let e: SubEffect[] = [];
+        e.push({
+            // is GAME_FLOW right? Don't play by effects end up in here?
+            cause: EventCause.GAME_FLOW,
+            game_event: GameEvent.PLUG,
+            label: "plug",
+            chosen_target: source,
+            chosen_target2: recipient,
+            td: new TargetDesc(""),
+            n_player: p.player_num,
+        });
+        let x = new DirectedSubEffectLoop(this, e, 1);
+        this.root_loop.add_res_loop(x);
+        this.gamestep = GameStep.IN_LOOP;
+        if (!this.waiting_answer()) { this.root_loop.step(); }
+        if (!this.waiting_answer()) { this.root_loop.step(); }
+    }
+
     // right now "source" is your hand... does this
     // function even care where it's played from?
     play_or_use_from_source(p: Player, card: Card, label: string) {

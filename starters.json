@@ -1061,11 +1061,13 @@
     "cardType": "Monster",
     "color": "Green",
     "digiXros": "-",
-    "evolveCondition": [{ "color": "Green", "cost": "0", "level": "2" }],
+      "evolveCondition": [
+          { "color": "Green", "cost": "0", "level": "2" }
+      ],
     "evolveEffect": "",
     "dnaEvolve": "-",
     "dp": "2000",
-    "effect": "[Your Turn] [Once Per Turn] When this Digimon gets linked, you may delete 1 of your opponent's Monsters with DP less than or equal to this Monster's DP.",
+    "effect": "[Your Turn] [Once Per Turn] When this Monster gets linked, you may delete 1 of your opponent's Monsters with DP less than or equal to this Monster's DP.",
     "form": "Rookie",
     "id": "CS3-02",
     "linkRequirement": "[Link][Bird] trait: Cost 1",

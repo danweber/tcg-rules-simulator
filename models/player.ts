@@ -1,7 +1,7 @@
 import { Game, UserQuestion } from './game';
 import { all_colors, Card, CardLocation, Color } from './card';
 import { Instance } from './instance';
-import { Location } from './location';
+import { Location, location_to_string, string_to_location } from './location';
 import { StarterDecks } from './starterdecks';
 
 
@@ -19,6 +19,7 @@ type PlaceList = { [key: string]: string; };
 
 import { createLogger } from "./logger";
 import { EffectAndTarget } from './util';
+import { plugin } from 'mongoose';
 const logger = createLogger('player');
 
 interface Hash {
@@ -32,9 +33,19 @@ export interface Command {
     last_id?: number;
     evo_left?: any; // location obj
     evo_right?: any; // location obj
+    link_source?: any,
+    link_target?: any,
     cost?: string;
     evo_target?: string;
     evo_card?: any;
+}
+
+interface LinkOptions {
+    from_hand?: boolean,
+    from_field?: boolean,
+    source?: TargetSource,
+    target_instance?: TargetDesc,
+    to_plug?: TargetDesc
 }
 
 interface Args {
@@ -676,6 +687,42 @@ export class Player {
         return ret;
     }
 
+
+    // in theory, what restrictions would we have?
+    // 
+    get_all_links({ from_hand = true, from_field = true, to_plug = undefined,
+        source = undefined
+    }: LinkOptions = {}):
+        (Array<[CardLocation | Instance, Instance, number]>) {
+        let ret: Array<[CardLocation | Instance, Instance, number]> = [];
+
+        // from_hand and from_field aren't being checked
+        let plug_candidates: (CardLocation | Instance)[] | undefined = undefined;
+        if (to_plug && source) {
+
+        }
+        if (!plug_candidates) {
+            plug_candidates = this.hand.map((c, i) => new CardLocation(this.game, this.player_num, Location.HAND, i));
+            plug_candidates.push(... this.field);
+        }
+
+        for (let pc of plug_candidates) {
+            let lcs = pc.get_link_requirements();
+            if (lcs.length == 0) continue;
+            for (let i of this.field) {
+                if (pc === i) continue; // can't link to self
+                let costs: number[] = Card.can_evolve_into(i, lcs);
+                for (let cost of costs) {
+                    ret.push([pc, i, cost]);
+                }
+
+            }
+        }
+
+
+        return ret;
+    }
+
     // CARDINTO: always cardlocation, if undefined then hand
     // LEFT: usually instance, if undefined then field
     // RIGHT: only for fusion, if undefined field
@@ -1059,6 +1106,13 @@ export class Player {
             // the above may not return, we have to get back 
             // to them in step(), which will land us in 
             // process_game_flow eventually
+        } else if (cmd.startsWith("LIN")) {
+            // LOCATION INDEX INSTANCE
+            this.game.no_control();
+            let l: Location = string_to_location(word1);
+            this.link(l, arg2, arg3, { cost: arg4 });
+            this.game.step();
+
         } else if (cmd == "MAIN") {
             // TO DO: verify this is an actual effect *and* that it's my turn
 
@@ -1254,6 +1308,9 @@ export class Player {
         let can_main: EvolveArray = {};
         let verbose_main: Command[] = [];
 
+        // can_link, we're no longer maintaining this
+        let verbose_link: Command[] = [];
+
         let v_key: string;
         let v_value: string;
 
@@ -1297,6 +1354,27 @@ export class Player {
             }
         }
 
+        let all_links = this.get_all_links();
+
+        for (let link of all_links) {
+            let card: CardLocation | Instance, instance: Instance, cost: number;
+            [card, instance, cost] = link;
+            let card_location:string = Location[card.location];
+            let card_index = ("index" in card) ? card.index : card.id;
+            let instance_id = instance.id;
+            v_key = `LINK ${card_location} ${card_index} ${instance.id} ${cost}`;
+            let card_label: string = ("index" in card) ? card.id : card.name();
+            v_value = `Link ${card_label} to ${instance.get_name()} ${instance.id}`;
+            let link_source = { location: card_location, id: card_index};
+            let link_target = { location: "FIELD", id: instance_id, name: instance.name() };
+            verbose_link.push({ command: v_key, text: v_value, 
+                link_source: link_source,
+                link_target: link_target,
+                cost: String(cost),
+                ver: uuidv4() });
+            
+        }
+
         [verbose_attack, can_attack] = this.get_attacker_array();
 
         // ignoring Main effects in egg zone, hand, trash for now
@@ -1316,12 +1394,31 @@ export class Player {
                 "MAIN": can_main
             });
         }
-        let ret: Command[] = [first].concat(verbose_evolve).concat(verbose_play).concat(verbose_attack).concat(verbose_main);
+        let ret: Command[] = [first].concat(verbose_evolve).concat(verbose_play).concat(verbose_attack).concat(verbose_link).concat(verbose_main);
         ret.push(last);
 
         return JSON.stringify(ret);
     }
 
+    // nominally returns empty string on success, error string on error
+    link(location: Location, index: number, instance_id: number, args: { cost: number}): string {
+        let all_links = this.get_all_links();
+        let _plugger: CardLocation|Instance, _index, _inst, _cost;
+        let match = false;
+        for ([_plugger, _inst, _cost] of all_links) {
+            if (_plugger.location != location) continue;
+            if ("card" in _plugger && _plugger.index !== index) continue;
+            if (!("card" in _plugger) && _plugger.id !== index) continue;
+            if (_cost !== args.cost) continue;
+            match = true;
+            break;
+        }
+        if (!match) return "no link match"; 
+        this.game.link(this, _plugger!, _inst!, _cost!);
+        return "";
+    }
+
+            
     // nominally returns empty string on success, error string on error
     evolve(hand_number: number, instance_id: number, instance2_id: number,
         args: { cost: number, force_unused?: boolean, free?: boolean }): string {
@@ -1765,7 +1862,7 @@ export class Player {
 
         let moves = self ? JSON.parse(this.get_x_plays({ verbose: true, sort: false })) : null;
         let eggzone = this.egg_zone ? this.egg_zone.JSON_instance() : null;
-        let field = this.field.map(x => x.JSON_instance()).filter( x => x );
+        let field = this.field.map(x => x.JSON_instance()).filter(x => x);
         let hand: any = { count: this.hand.length };
         let security: any = { count: this.security.length };
         let eggs = { count: this.eggs.length };

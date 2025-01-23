@@ -102,6 +102,15 @@ function parse_color(text: string): Color[] {
 export interface LinkCondition {
     cost: number;
     trait?: string;
+    // below here might be plemented
+    color?: Color;
+    level?: number;
+    tamer?: boolean;
+    text?: string; // only used for errors, but maybe can be used normally
+    two_color?: boolean; // this should be "color_count"
+    name_is?: string; // TODO: make array
+    name_contains?: string; // TODO: make array
+
 }
 
 export interface EvolveCondition {
@@ -114,7 +123,7 @@ export interface EvolveCondition {
     trait?: string;
     //targ3et?: null;
 
-    name_is: string; // TODO: make array
+    name_is?: string; // TODO: make array
     name_contains?: string; // TODO: make array
 }
 
@@ -257,7 +266,7 @@ export class Card {
     retrieve_prior_location() { return this.prior_location; }
 
     parse_link_requirement(line: string, evo: any) {
-        let m = line.match(/^\[(.*?)\] trait: cost (\d+)/i);
+        let m = line.match(/^\[(.*?)\].trait: cost (\d+)/i);
         if (m) {
             let [, trait, cost] = m;
             let link = { trait: trait, cost: parseInt(cost) };
@@ -1309,7 +1318,8 @@ export class Card {
 
     }
 
-    static can_evolve_into(base: Instance | CardLocation, conditions: EvolveCondition[]) {
+    // same logic for 
+    static can_evolve_into(base: Instance | CardLocation, conditions: (LinkCondition|EvolveCondition)[]) {
         let ret = [];
         for (let evo_cond of conditions) {
             if (evo_cond.text) logger.error("unknown evo condition: " + evo_cond.text);
@@ -1518,6 +1528,7 @@ export class CardLocation {
     has_trait(s: string) {
         return this.card.has_trait(s);
     }
+    get_link_requirements(): LinkCondition[] { return this.card.link_requirements };
     has_stack_add(): boolean { return !!this.card.has_stack_add(); }
     color_count(): number { return this.card.colors.length; }
     is_token(): boolean { return this.card.is_token(); }
