@@ -544,6 +544,8 @@ export class CombatLoop {
                 this.s = CombatStep.DONE_WITH_SEC_CHECKS;
                 return false;
             }
+            this.defender_p.security[this.defender_p.security.length -1].flip_face_up(true);
+            this.game.ui_card_move(); // to show face up sec
             let sec_card: Card = this.defender_p.security.pop()!;
             this.game.log('Card removed from stack...');
             sec_card.move_to(Location.NULLZONE);

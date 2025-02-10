@@ -741,7 +741,7 @@ export class Player {
         let ret: Array<[CardLocation, CardLocation | Instance, CardLocation | Instance | undefined, 'evo' | 'fusion' | 'burst', number?]> = [];
         // we recalculate a lot of things repeatedly, this is ripe for optimization
 
-        logger.info(`EVO TEST into ${into} left ${left?.toString()} right ${right?.toString()} source ${source && source.id()} `);
+        logger.debug(`EVO TEST into ${into} left ${left?.toString()} right ${right?.toString()} source ${source && source.id()} `);
 
         let cards = undefined;
         if (into && source)
@@ -1405,10 +1405,12 @@ export class Player {
         let all_links = this.get_all_links();
         let _plugger: CardLocation|Instance, _index, _inst, _cost;
         let match = false;
+        //console.log(1408, location, index, instance_id, args);
         for ([_plugger, _inst, _cost] of all_links) {
             if (_plugger.location != location) continue;
             if ("card" in _plugger && _plugger.index !== index) continue;
             if (!("card" in _plugger) && _plugger.id !== index) continue;
+            if (_inst.id !== instance_id) continue;
             if (_cost !== args.cost) continue;
             match = true;
             break;
@@ -1622,8 +1624,9 @@ export class Player {
 
             let place = key.startsWith("EGGZONE") ? Location.EGGZONE : Location.FIELD;
 
-            let plug = false;
             for (let i = 0; i < instances.length; i++) {
+                let plug = false;
+
                 logger.info(`making mon ${i} of ${instances.length} `);
                 if (instances[i].length < 2) {
                     // empty or near-empty text, don't make;
@@ -1637,6 +1640,7 @@ export class Player {
                     thing.set_label(cards[0]);
                     cards = cards.splice(1);
                 }
+
                 for (let j = 0; j < cards.length; j++) {
                     let text = cards[j].trim();
                     if (text == "REST") {
@@ -1868,16 +1872,20 @@ export class Player {
         let eggs = { count: this.eggs.length };
         let deck = { count: this.deck.length };
         let reveal: any = { count: this.reveal.length };
+        let nullzone: any = { count: this.nullzone.length };
         let relative_memory: number = (this.game.get_memory() * (this.game.turn_player == this.player_num ? 1 : -1));
         let search: any = { count: this.search?.length };
+        // search is private
         if (self == true) {
-            hand['cards'] = this.hand.map(x => `${x.id}@${x.colors_s()}`);
-            search['cards'] = this.search?.map(x => `${x.id}@${x.colors_s()}`);
+            hand['cards'] = this.hand.map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`);
+            search['cards'] = this.search?.map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`);
         }
-        security['cards'] = this.security.map(c => c.face_up ? `${c.id}@${c.colors_s()}` : `DOWN`);
-        reveal['cards'] = this.reveal.map(x => `${x.id}@${x.colors_s()}`);
+        security['cards'] = this.security.map(c => c.face_up ? `${c.id}@${c.colors_s()}@${c.card_instance_id}` : `DOWN`);
+        reveal['cards'] = this.reveal.map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`);
+        nullzone['cards'] = this.nullzone.map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`);
+        
 
-        let trash = this.trash.map(x => x.id);
+        let trash = this.trash.map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`);
         let player = {
             moves: moves,
             eggzone: eggzone,
@@ -1890,6 +1898,7 @@ export class Player {
             reveal: reveal,
             relative_memory: relative_memory,
             search: search,
+            nullzone: nullzone,
             card_data: undefined
         };
         return player;

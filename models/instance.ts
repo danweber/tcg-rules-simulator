@@ -143,6 +143,15 @@ export class Instance {
             ret += "•" + s + "<br/>";
         }
         )
+        // special case for linkDP, while we figure out what it does
+        for (let plug of this.plugged) {
+  //          if (plug.link_dp) {
+    //            dp += plug.link_dp;
+//            ret += "• +" dp +  + s + "<br/>";
+      //  }
+    }
+
+
         //    effects.array.forEach(element => {
         //        
         //   });
@@ -163,6 +172,7 @@ export class Instance {
         // don't need Security A here, it'll be handled elsewhere
 
         for (let word of this.get_all_keywords()) {
+            // checking has_keyword filters out Security A but maybe we should just filter it out otherwise
             if (this.has_keyword(word)) { ret += this.keyword(word); }
         }
         if (!short) {
@@ -412,8 +422,8 @@ export class Instance {
             suspended: this.suspended,
             // why were we using the x.card_instance_id?
             // stack: this.pile.map(x => `${x.id}@${x.card_instance_id}`),
-            stack: this.pile.map(x => `${x.id}@${x.colors_s()}`),
-            plugs: this.plugged.map(x => `${x.id}@${x.colors_s()}`),
+            stack: this.pile.map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`),
+            plugs: this.plugged.reverse().map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`),
             sa: this.get_sa(),
             loc: this.location,
             location: Location[this.location],
@@ -517,7 +527,7 @@ export class Instance {
                         match = Instance.match_move(g_fx, my_matching_rx);
 
                         // I think *most* things are going to be in this clause
-                    } else if (ge == GameEvent.SUSPEND || ge == GameEvent.DELETE || ge == GameEvent.PLAY || ge == GameEvent.EVOLVE) {
+                    } else if (ge == GameEvent.SUSPEND || ge == GameEvent.DELETE || ge == GameEvent.PLAY || ge == GameEvent.EVOLVE || ge == GameEvent.PLUG) {
                         logger.debug(" conjunction of game fx is " + Conjunction[g_fx.td.conjunction]);
                         logger.debug(" conjunction of my fn is  " + Conjunction[my_matching_rx.td.conjunction]);
 
@@ -546,7 +556,11 @@ export class Instance {
                         } else {
                             match = my_matching_rx.td.matches(g_fx.chosen_target, me, this.game);
                         }
-
+                        if (my_matching_rx.td2) {
+                            // if a second target, make sure it matches, too.
+                            if (!my_matching_rx.td2.matches(g_fx.chosen_target2, me, this.game))
+                                match = false;
+                        }
 
                     } else if (ge == GameEvent.ATTACK_DECLARE) {
                         // removed debug code a03547b881e70c410a41e6dc4f650ba0f1a3a64b
@@ -621,12 +635,13 @@ export class Instance {
             // Kind of weird what there would ever be effects there.
             if (g_fx.chosen_target && g_fx.chosen_target.location == Location.EGGZONE) continue;
             let ge = g_fx.game_event;
+            if (ge == GameEvent.NIL) continue;
+
             let match = false;
             for (let my_interrupter of my_interrupters) {
 
                 if (Instance.match_certain_effect(g_fx, my_interrupter, n_me_player)) {
                     logger.info("events kinds match up: " + GameEvent[ge]);
-                    if (ge == GameEvent.NIL) continue;
                     //  if (my_matching_rx.cause && (my_matching_rx.cause & g_fx.cause!) == 0) {
 
                     if (my_interrupter.cause && (my_interrupter.cause & g_fx.cause) == 0) {
@@ -714,7 +729,7 @@ export class Instance {
             (actual == cand) ||
             (actual == GameEvent.TARGETED_CARD_MOVE && cand == GameEvent.MOVE_CARD) ||
             (cand == GameEvent.ALL_REMOVAL &&
-                [GameEvent.ALL_REMOVAL, GameEvent.DELETE, GameEvent.STACK_ADD, GameEvent.FIELD_TO_HAND].includes(actual)) ||
+                [GameEvent.ALL_REMOVAL, GameEvent.DELETE, GameEvent.STACK_ADD, GameEvent.FIELD_TO_HAND, GameEvent.TUCK, GameEvent.PLUG].includes(actual)) ||
             (cand == GameEvent.ALL_REMOVAL && actual == GameEvent.TARGETED_CARD_MOVE && actual_event.chosen_target.location == Location.FIELD) ||
             // add_card_to_hand can be BOUNCE or DRAW
             (cand == GameEvent.ADD_CARD_TO_HAND &&
@@ -1173,7 +1188,7 @@ export class Instance {
 
 
         for (let plug of this.plugged) {
-            if (plug.link_dp) dp += plug.dp;
+            if (plug.link_dp) dp += plug.link_dp;
         }
 
         // TODO: this should use the above functions that calculate active effects
@@ -1348,7 +1363,7 @@ export class Instance {
     }
 
 
-
+    // Maybe refactor with previous function; only advantage here is that it short-circuits
     // This is unlikely to do the right thing for searching "cards with <Keyword>" 
     get_new_effects_by_keyword(label: string): string[] {
         let ret = [];
@@ -1364,6 +1379,13 @@ export class Instance {
                     ret.push(a);
                 }
             }
+            for (let i = 0; i < this.plugged.length; i++) {
+                let t = this.plugged[i];
+                if (a = t.has_keyword(label, "linked")) { // linked
+                    ret.push(a);
+                }
+            }
+
         }
         // duped from card::has_keyword
         let regexp = new RegExp(label.replaceAll(/[ _]/ig, "."), "i");
@@ -1671,11 +1693,17 @@ export class Instance {
             let card = this.pile[i];
             logger.debug("MOVING CARD " + card.name + " TO TRASH");
             if (i < this.pile.length - 1) {
-                this.push_to_trash(card);
+                this.push_to_trash(card); 
             } else {
                 this.push_to_location(location, card, position);
             }
         }
+        let plug;
+        for (let i = 0; i < this.plugged.length; i++) {
+            let plug = this.plugged[i];
+            this.push_to_trash(plug); 
+        }
+
 
         // do I really need to remove an instance?
         this.me_player._remove_instance(this.id);

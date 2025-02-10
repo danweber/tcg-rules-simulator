@@ -755,6 +755,8 @@ export class TargetDesc {
             text = "";
         }
 
+        // TODO: from-place needs to be its own routine
+
         // FROM PLACE BEGIN
         if (m = text.match(/(.*)(in|from) (your|the) trash/i)) {
             let x = new SubTargetDesc("trash");
@@ -766,6 +768,10 @@ export class TargetDesc {
             let t = m[3] ? "hand-or-trash" : "hand";
             if (m[4]) t += "-or-field";
             let x = new SubTargetDesc(t);
+            this.targets.push(x)
+            text = m[1];
+        } else if (m = text.match(/(.*)(in|from) your battle area or trash?/i)) {
+            let x = new SubTargetDesc("field-or-trash");
             this.targets.push(x)
             text = m[1];
         } else if (m = text.match(/(.*)(in|from) your hand\s*(or trash)?/i)) {
@@ -1661,7 +1667,7 @@ export class SubTargetDesc {
         }*/
 
         // I should anchor-left here, but it breaks some test cases
-        if (m = str.match(/(.*)\s*level (\d+)\s*(or (higher|lower))?( card)?\s*(.*)$/)) {
+        if (m = str.match(/(.*)\s*(?:level|Lv.)\s*(\d+)\s*(or (higher|lower))?( card)?\s*(.*)$/)) {
             let prefix = m[1];
             let level = m[2];
             let compare = m[4];
@@ -1866,6 +1872,10 @@ export class SubTargetDesc {
         if (arg == "hand-or-trash") {
             this.testword = StatusTestWord.LOCATION;
             this.n = Location.HAND | Location.TRASH;
+        }
+        if (arg == "field-or-trash") {
+            this.testword = StatusTestWord.LOCATION;
+            this.n = Location.FIELD | Location.TRASH;
         }
         if (arg == "hand-or-field") {
             this.testword = StatusTestWord.LOCATION;

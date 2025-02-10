@@ -952,7 +952,8 @@ export class SolidEffectLoop {
                 let answers = [{
                     command: "1", text: `Activate ${text}${verb}`, ver: uuidv4(),
                     card: this.effect.card_label, instance_id: this.effect.source.id(),
-                    fulltext: atomic_effect.raw_text
+                    fulltext: atomic_effect.raw_text,
+                    alltext: this.effect.raw_text
                 },
                 {
                     command: "2", text: "Don't pay/activate", ver: uuidv4(),
@@ -3402,9 +3403,11 @@ function get_modified_cost(origcost: number, weirdo: SubEffect): [number, string
     if (weirdo.n_mod == "reduced") {
         check_floodgate();
         delta -= weirdo.n!;
+        logger.info("delta now " + delta);
     }
     if (weirdo.cost_change) {
         for (let submod of weirdo.cost_change) {
+            logger.info("submod: " + submod.n_mod + " " + submod.n);
             if (submod.n_mod == "reduced")
                 delta -= submod.n;
         }

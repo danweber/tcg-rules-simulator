@@ -164,6 +164,7 @@ const AtomicKeywords: string[] = [
 ];
 
 function parse_number(input: string): number {
+    if (!input) return 0;
     let i = input.toLowerCase();
     if (i == "all" || i == "any") return ALL_OF;
     if (i.startsWith("those")) return ALL_OF; // multiple IT
@@ -243,7 +244,7 @@ export class SolidEffect2 {
         this.effects = [];
         this.raw_text = "";
         this.label = "";
-        this.card_label = "";
+        this.card_label = "uu?";
         //  this.solid2 = this;
         //this.atomics = [];
     }
@@ -802,8 +803,8 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     if (!Solid_is_triggered(solid) && !solid.keywords.includes("[Security]")) {
         //// RESPONDS TO! all "WHEN" stuff should be here
         if (m = line.match(/^When (.*?),(.*)/)) {
-            if (m[1].includes("use this card") || m[1].includes("play this card")
-                || m[1].includes("evolve into this card")) {
+            // "when ... this card ...," is probably an interrupt on the play/use/evo of this card
+            if (m[1].includes("this card")) {
                 logger.warn("play interrupt " + m[1]);
                 // I need to flag that this effect is present before an instance is made
                 // ... is there any cardlocation that interrupts play *besides* self?
@@ -842,16 +843,16 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
         logger.info("for each looking backwards: " + m[1]);
         line = "";
         if (m[1]) { // does "Y" sentence exist.
-            let [a0, l0] = parse_atomic(m[1], label);
+            let [a0, l0] = parse_atomic(m[1], label, solid, card);
             atomics.push(a0);
             line = l0;
         }
-        let [a1, l1] = parse_atomic(m[4], label); // "X" sentence, 
+        let [a1, l1] = parse_atomic(m[4], label, solid, card); // "X" sentence, 
         atomics.push(a1);
         line += " " + l1;
         // See if there's a second part.
         if (m[4] && m[4].length > 2) {
-            let [a2, l2] = parse_atomic(m[4], label);
+            let [a2, l2] = parse_atomic(m[4], label, solid, card);
             atomics.push(a2);
             line += " " + l2;
         }
@@ -871,10 +872,10 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     if (m = line.match(/^\s*(Search your security stack).\s*(?:and)?\s*(.*)\.(.*)\.\s*Then\s*(.*)/i)) {
         // if i push, they end up in the wrong order. darn.
         logger.info("split: searcher");
-        let [a1,] = parse_atomic(m[1], label, solid);
-        let [a2,] = parse_atomic(m[2], label, solid);
-        let [a3,] = parse_atomic(m[3], label, solid);
-        let [a4,] = parse_atomic(m[4], label, solid);
+        let [a1,] = parse_atomic(m[1], label, solid, card);
+        let [a2,] = parse_atomic(m[2], label, solid, card);
+        let [a3,] = parse_atomic(m[3], label, solid, card);
+        let [a4,] = parse_atomic(m[4], label, solid, card);
         atomics.push(a4, a3, a2, a1);
         //      atomics.push(a1);
         //       line = "";
@@ -913,16 +914,16 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
         logger.info("split: for each looking backwards: " + m[1]);
         line = "";
         if (m[1]) { // does "Y" sentence exist.
-            let [a0, l0] = parse_atomic(m[1], label, solid);
+            let [a0, l0] = parse_atomic(m[1], label, solid, card);
             atomics.push(a0); // I'm pushing this in first!!!
             line = l0;
         }
-        let [a1, l1] = parse_atomic(m[3], label, solid);
+        let [a1, l1] = parse_atomic(m[3], label, solid, card);
         atomics.push(a1);
         line += " " + l1;
         // See if there's a second part.
         if (m[6] && m[4].length > 2) {
-            let [a2, l2] = parse_atomic(m[6], label, solid);
+            let [a2, l2] = parse_atomic(m[6], label, solid, card);
             atomics.push(a2);
             line += " " + l2;
         }
@@ -935,11 +936,11 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     if (m = line.match(/^(?:If (.*),)?\s*by (.*?), (.*?)\.(.*)/i)) {
         // where does the "cost / effect" logic go? 
         logger.info("split: (if X,) by Y, Z.");
-        let [a1, l1] = parse_atomic(m[2], label, solid);
+        let [a1, l1] = parse_atomic(m[2], label, solid, card);
         a1.is_cost = true;
         a1.optional = true;
         if (m[1]) a1.test_condition = parse_if(m[1]);
-        let [a2, l2] = parse_atomic(m[3], label, solid);
+        let [a2, l2] = parse_atomic(m[3], label, solid, card);
         // todo: have a cancels? flag on the atomic
         if (a2.events[0].game_event == GameEvent.CANCEL) {
             logger.info("is a canceller");
@@ -953,9 +954,9 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     if (m = line.match(/^you may ([^.]*?) to (.*?)\.(.*)/i)) {
         logger.info("split: old style cost");
         // where does the "cost / effect" logic go? 
-        let [a1, l1] = parse_atomic(m[1], label, solid);
+        let [a1, l1] = parse_atomic(m[1], label, solid, card);
         a1.is_cost = true;
-        let [a2, l2] = parse_atomic(m[2], label, solid);
+        let [a2, l2] = parse_atomic(m[2], label, solid, card);
         if (a2.events[0].game_event == GameEvent.CANCEL)
             solid.cancels = true;
 
@@ -981,8 +982,8 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
             let left = m[2] + m[3] + " " + time;
             let right = m[2] + m[4] + " " + time;
             logger.info(`left is ${left} and right is ${right}`);
-            let [a1, l1] = parse_atomic(left, label, solid);
-            let [a2, l2] = parse_atomic(right, label, solid);
+            let [a1, l1] = parse_atomic(left, label, solid, card);
+            let [a2, l2] = parse_atomic(right, label, solid, card);
             atomics.push(a1, a2);
             solid.effects.push(a1, a2);
             line = l1 + " " + l2;
@@ -996,9 +997,9 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
     if (m = line.match(/(.*) (If (you d.*?|this effect .*?))Then, (.*?)\./i)) {
         logger.info("split: X. if it did/n't happen, Y. Then Z.");
-        let [a1, l1] = parse_atomic(m[1], label);
-        let [a2, l2] = parse_atomic(m[2], label);
-        let [a3, l3] = parse_atomic(m[4], label);
+        let [a1, l1] = parse_atomic(m[1], label, solid, card);
+        let [a2, l2] = parse_atomic(m[2], label, solid, card);
+        let [a3, l3] = parse_atomic(m[4], label, solid, card);
         atomics.push(a1, a2, a3);
         solid.effects.push(a1, a2, a3);
         line = l1 + " " + l2 + " " + l3;
@@ -1009,10 +1010,10 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     //                  1                 2    3                               4          5
     if (m = line.match(/(.*)\. (?:Then, )?(If (.*?|you d.*?|this effect .*?)), (.*), (?:and|then) (.*)\./i)) {
         logger.info("split: X. if it did/n't happen, Y and  Z.");
-        let [a1, l1] = parse_atomic(m[1], label);
+        let [a1, l1] = parse_atomic(m[1], label, solid, card);
         let clause2 = m[2] + ", " + m[4];
-        let [a2, l2] = parse_atomic(clause2, label);
-        let [a3, l3] = parse_atomic(m[5], label, solid, { previous_if: true }); // not independent!
+        let [a2, l2] = parse_atomic(clause2, label, solid, card);
+        let [a3, l3] = parse_atomic(m[5], label, solid, card, { previous_if: true }); // not independent!
         atomics.push(a1, a2, a3);
         solid.effects.push(a1, a2, a3);
         line = l1 + " " + l2 + " " + l3;
@@ -1024,9 +1025,9 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     // X. Then, if Y, by Z, W.
     if (m = line.match(/(.*) Then, (if .*?, by .*?),(.*)\./i)) {
         logger.info("split: X. Then if Y, by W, Z.");
-        let [a1, l1] = parse_atomic(m[1], label);
-        let [a2, l2] = parse_atomic(m[2], label);
-        let [a3, l3] = parse_atomic(m[3], label);
+        let [a1, l1] = parse_atomic(m[1], label, solid, card);
+        let [a2, l2] = parse_atomic(m[2], label, solid, card);
+        let [a3, l3] = parse_atomic(m[3], label, solid, card);
         atomics.push(a1, a2, a3);
         solid.effects.push(a1, a2, a3);
         line = l1 + " " + l2 + " " + l3;
@@ -1039,9 +1040,9 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     if (m = line.match(/(.*[.,]) Then,? (.*?)\.(.*?)\./i)) {
         if (m[3].length > 4) {
             logger.info("split: X. Then Y. Z.");
-            let [a1, l1] = parse_atomic(m[1], label);
-            let [a2, l2] = parse_atomic(m[2], label);
-            let [a3, l3] = parse_atomic(m[3], label);
+            let [a1, l1] = parse_atomic(m[1], label, solid, card);
+            let [a2, l2] = parse_atomic(m[2], label, solid, card);
+            let [a3, l3] = parse_atomic(m[3], label, solid, card);
             atomics.push(a1, a2, a3);
             solid.effects.push(a1, a2, a3);
             line = l1 + " " + l2 + " " + l3;
@@ -1052,16 +1053,16 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     // We don't want to hit "REVEAL X, IF IT IS" here
     if (m = line.match(/^([^Reveal].*)\. (If (.*))/i)) {
         logger.info(`split: non-searcher <${m[1]}> && <${m[2]}>`);
-        let [a1, l1] = parse_atomic(m[1], label, solid);
+        let [a1, l1] = parse_atomic(m[1], label, solid, card);
         logger.info("l1 is now " + l1);
-        let [a2, l2] = parse_atomic(m[2], label, solid);
+        let [a2, l2] = parse_atomic(m[2], label, solid, card);
         // console.error(1041, "a1", a1, "l1", l1, "a2", a2, "l2", l2, "done");
         atomics.push(a1, a2);
         if (m = line.match(/(.*) Then,(.*)/i)) {
             // is this clause intended?
             logger.info(`split:  extra then? <${m[1]}> && <${m[2]}>`);
-            let [a1, l1] = parse_atomic(m[1], label);
-            let [a2, l2] = parse_atomic(m[2], label);
+            let [a1, l1] = parse_atomic(m[1], label, solid, card);
+            let [a2, l2] = parse_atomic(m[2], label, solid, card);
             atomics.push(a1, a2);
             solid.effects.push(a1, a2);
             line = l1 + " " + l2;
@@ -1073,8 +1074,8 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
     if (m = line.match(/(.*[.,]) Then,? (.*)/i)) {
         logger.info("split: X then Y");
-        let [a1, l1] = parse_atomic(m[1], label);
-        let [a2, l2] = parse_atomic(m[2], label);
+        let [a1, l1] = parse_atomic(m[1], label, solid, card);
+        let [a2, l2] = parse_atomic(m[2], label, solid, card);
         atomics.push(a1, a2);
         solid.effects.push(a1, a2);
         line = l1 + " " + l2;
@@ -1085,8 +1086,8 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
     if (m = line.match(/(.*)\. (At .*)/i)) {
         logger.info("split: X. At (Y, Z).");
-        let [a1, l1] = parse_atomic(m[1], label);
-        let [a2, l2] = parse_atomic(m[2], label);
+        let [a1, l1] = parse_atomic(m[1], label, solid, card);
+        let [a2, l2] = parse_atomic(m[2], label, solid, card);
         atomics.push(a1, a2);
         solid.effects.push(a1, a2);
         line = l1 + " " + l2;
@@ -1096,8 +1097,8 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     // <draw 1> and trash 1 shouldn't be atomic. 
     if (m = line.match(/^(＜.*?＞)\s*and (.*)/i)) {
         logger.info("split: keyword and Y.");
-        let [a1, l1] = parse_atomic(m[1], label, solid);
-        let [a2, l2] = parse_atomic(m[2], label, solid);
+        let [a1, l1] = parse_atomic(m[1], label, solid, card);
+        let [a2, l2] = parse_atomic(m[2], label, solid, card);
         atomics.push(a1, a2);
         solid.effects.push(a1, a2);
         line = l1 + " " + l2;
@@ -1113,8 +1114,8 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     } else {
         if (m = line.match(/(.*?)\. (.*)/i)) {
             logger.info("split: X. Y. breaking into two sentences.");
-            let [a1, l1] = parse_atomic(m[1], label, solid);
-            let [a2, l2] = parse_atomic(m[2], label, solid);
+            let [a1, l1] = parse_atomic(m[1], label, solid, card);
+            let [a2, l2] = parse_atomic(m[2], label, solid, card);
             atomics.push(a1, a2);
             solid.effects.push(a1, a2);
             line = l1 + " " + l2;
@@ -1124,7 +1125,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
     if (line.length > 1) {
         logger.info("split: single effect");
-        let [_atom, _line] = parse_atomic(line, label, solid);
+        let [_atom, _line] = parse_atomic(line, label, solid, card);
         line = _line;
         atomics.push(_atom);
         solid.effects.push(_atom);
@@ -1276,6 +1277,11 @@ function _parse_when(line: string): InterruptCondition | InterruptCondition[] {
     let m;
     logger.info("parse_when: " + line);
 
+
+    // remember we cn have both:
+    // you would play this card
+    // this card would be played
+
     // INTERRUPTIVE .  should I capture both "would" and "would be"?
     if (m = line.match(/(.*) would ()(.*)/)) {
         line = m[1].trim() + " " + m[3].trim();
@@ -1329,9 +1335,19 @@ function _parse_when(line: string): InterruptCondition | InterruptCondition[] {
         return int_evo;
     }
 
-
-    // interrupt play/use
+    
     logger.info(line);
+    // interrupt play/use, 3rd person. ignoring clauses like "from the hand" for now
+    
+    if (m = line.match(/(.*) be (play|use)e?d?(.*)/)) {
+        let verbed: InterruptCondition = {
+            ge: strToEvent(m[2]),
+            td: new TargetDesc(m[1]),
+        };
+        return verbed;
+    }
+
+    // interrupt play/use, 2nd person
     if (m = line.match(/(you) (play|use) (.*)/)) {
         let verbed: InterruptCondition = {
             ge: strToEvent(m[2]),
@@ -1373,9 +1389,21 @@ function _parse_when(line: string): InterruptCondition | InterruptCondition[] {
         return deleted_in_battle;
     }
 
+    // gets linked... note that td2 is what gets linked. we could further say "linked by a XXX" in theory
+    if (m = line.match(/(.*) gets linked/i)) {
+        let plug_evo: InterruptCondition = {
+            ge: GameEvent.PLUG,
+            td: new TargetDesc(""),
+            td2: new TargetDesc(m[1]),
+            cause: EventCause.ALL
+        }
+        return plug_evo;
+    }
+
+
+
     // is played or be played
     if (m = line.match(/an opponent's monster .. played or evolve.(.*)/i)) {
-        logger.warn("only handling evo condition");
         let int_evo: InterruptCondition = {
             ge: GameEvent.EVOLVE,
             td: new TargetDesc("their monster"),
@@ -1579,7 +1607,7 @@ function _parse_when(line: string): InterruptCondition | InterruptCondition[] {
 }
 
 // TODO: move *all* status effets in here
-function parse_give_status(s: string): StatusCondition | false {
+function parse_give_status(s: string, card: Card): StatusCondition | false {
     let m;
     let stat_cond: StatusCondition;
     // 2. get DP
@@ -1613,9 +1641,11 @@ function parse_give_status(s: string): StatusCondition | false {
             if (word.match(/Alliance/i)) {
                 keywords[word] = word;
                 let s = new SolidEffect2();
+                s.card_label = card ? card.card_id : "no_card";
                 s.label = "[Alliance]"; // gifted alliance in brackets?
                 make_alliance(s);
                 solid.push(s);
+                s.raw_text = "<Alliance>";
             } else if (word.match(/Jamming/i)) {
                 keywords[word] = word;
                 //   solid.label = "[Jamming]"
@@ -1626,7 +1656,8 @@ function parse_give_status(s: string): StatusCondition | false {
                 keywords[word] = word;
                 let [fx, test] = Translator.check_for_keywords(word, [], []);
                 // parsing "word" works for alliance
-                let [_0, nested_solid_effect, _1] = new_parse_line(word, undefined, word, "main"); // how could we pass through a card here, we won't have any card keywords
+                let [_0, nested_solid_effect, _1] = new_parse_line(word, undefined, word, "main"); 
+                // how could we pass through a card here, we won't have any card keywords
                 // if we have no effects, our attempts at parsing the keyword failed
                 if (nested_solid_effect.effects.length > 0)
                     solid.push(nested_solid_effect);
@@ -1651,7 +1682,9 @@ function parse_give_status(s: string): StatusCondition | false {
 }
 
 //export
-function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?: any): [AtomicEffect2, string] {
+function parse_atomic(line: string, label: string, solid: SolidEffect2, 
+    card: Card | undefined,  flags?: any
+): [AtomicEffect2, string] {
     logger.info("atomic " + line);
     if (!solid) logger.info("Warning, no solid");
     // bullshit I shouldn't need, I think it's just for eating keywords
@@ -1700,7 +1733,7 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
         if (m[1].match(/(the )?end of (the )?battle/)) {
             p = Phase.END_OF_BATTLE;
         }
-        let [_a, delayed, _b, _c] = new_parse_line(m[2], undefined, label, "main");
+        let [_a, delayed, _b, _c] = new_parse_line(m[2], card, label, "main");
         thing.game_event = GameEvent.CREATE_PENDING_EFFECT;
         thing.choose = 0;
         thing.delayed_effect = delayed;
@@ -1783,6 +1816,9 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
             atomic.per_unit = true;
             // for each X this thing VERBed
         } else if (foreach.match(/(card|tamer) (?:this.effect )?(trashed|returned|placed|suspended)/i)) {
+            atomic.per_unit = true;
+            // "for each one" means "for each thing we just did"
+        } else if (foreach === "one") {
             atomic.per_unit = true;
             // keywords cannot be altered; todo make this able to identify keyword effects
         } else if (line.includes("Draw ") || line.includes("De-Evolve") || line.includes("Security A")) {
@@ -2344,6 +2380,8 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
         thing.n = parseInt(m[2]);
         thing.n_mod = "reduced";
         line = "";
+        logger.info("MODIFY_COST: " + thing.n + " " + thing.n_mod);
+
     }
 
     // built for stack summon
@@ -2362,7 +2400,7 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
             numbers = true;
         }
         // a x b c c
-        //Lv.4 w/[xxx]/[Rareyym]\u00a0in its name x Lv.4 w/[Puppet]\u00a0trait
+        //Lv.4 w/[xxx]/[Rareyym]\u00a0in its name x Lv.4 w/[Dog]\u00a0trait
         //       3 Lv.4 [Zabbo]\u00a0trait monster cards w/different card numbers
         let multi = new MultiTargetDesc(tgt);
         //      console.error(multi);
@@ -2389,7 +2427,6 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
 
     // place this monster to
     if (m = line.match(/place (.*) to (?:1|one) of (.*?)(as its bottom evolution card.?)?$/i)) {
-        console.error(2389, m);
         thing.game_event = GameEvent.TUCK;
         thing.choose = 1;
         thing.td = new TargetDesc(m[1]);
@@ -2429,14 +2466,24 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
 
 
     // placing 1 lv 5 or lower (x or y) from your trash as this monster's bottom card
-    if (m = line.match(/plac(e|ing) (.* from your (hand|trash)) as this monster's bottom (.*)card/i)) {
-        let tgt = m[2];
-        thing.game_event = GameEvent.TARGETED_CARD_MOVE;
+    if (m = line.match(/plac(e|ing) (up to (\d) )?(.* from your (.*))\s*(as this monster's bottom (.*)card|under it)/i)) {
+        let tgt = m[4];
+        thing.n_mod = `bottom`; // where the added cards go... is this even necessary?
+        if (m[2]) thing.n_mod += "upto ";
+        let n;
+        if (n = tgt.match(/(.*)with different names(.*)/)) {
+            let s = n[1].trim() + " " + n[2].trim();
+            tgt = s;
+            thing.n_mod += "different name";
+        }
+        // targeted_card_move, or stack_add?
+        // if i can pull from field or trash, stack_add, otherwise targeted_card_move
+        // this needs some more though
+        thing.game_event = m[5].includes("battle area") ? GameEvent.STACK_ADD : GameEvent.TARGETED_CARD_MOVE; 
         thing.n = 1;
-        thing.choose = parse_number(tgt);
+        thing.choose = parse_number(m[3]) || 1;
         thing.td = new TargetDesc(tgt); // from
         thing.td2 = new TargetDesc('self');
-        thing.n_mod = `bottom`;
         line = "";
     }
 
@@ -2579,7 +2626,7 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
         if (parserdebug) logger.info("FOUND RECURSIVE");
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
 
-        let [_0, nested_solid_effect, _1] = new_parse_line(m[2], undefined, label, "main"); // how could we pass through a card here, we won't have any card keywords
+        let [_0, nested_solid_effect, _1] = new_parse_line(m[2], card, label, "main"); // how could we pass through a card here, we won't have any card keywords
         // we don't give card keywords by effect inside quote marks
         if (parserdebug) logger.info(`NESTED EFFECT: ${_0} ${nested_solid_effect} ${_1}`);
         stat_cond = {
@@ -3234,8 +3281,8 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
     // or (gains <Keyword>)and (+2000 DP), the space before "and" often gets eated
     // figuring out how to break m[1] from m[2] is hard
     if (m = line.match(/(.*) (g.*)\s*and (.*?)\s*\.?\s*$/)) {
-        let s1 = parse_give_status(m[2]);
-        let s2 = parse_give_status(m[3]);
+        let s1 = parse_give_status(m[2], card!);
+        let s2 = parse_give_status(m[3], card!);
         if (s1 && s2) {
             if (!thing.choose) thing.choose = 1; //?
             s1.exp_description = expiration;
@@ -3255,7 +3302,7 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
         // if editing this check blocker-dp-boost
         if (!thing.choose) thing.choose = 1;
-        let x = parse_give_status(`${m[2]} ${m[3]}`);
+        let x = parse_give_status(`${m[2]} ${m[3]}`, card!);
         if (x) {
 
             x.exp_description = expiration;
@@ -3428,7 +3475,7 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
         if (parserdebug) logger.info(`effect gain: ${m[1]} gets ${m[3]}`);
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
         if (!thing.choose) thing.choose = 1;
-        let x = parse_give_status(`${m[2]} ${m[3]}`);
+        let x = parse_give_status(`${m[2]} ${m[3]}`, card!);
         if (x) {
             x.exp_description = expiration;
             stat_cond = x;
@@ -3476,7 +3523,7 @@ function parse_atomic(line: string, label: string, solid?: SolidEffect2, flags?:
 }
 
 
-// move away from this
+// doing keywords like this is no longer needed
 function make_alliance(solid: SolidEffect2): void {
     //let solid = new SolidEffect2;
     //solid.label = "Alliance";
@@ -3500,6 +3547,7 @@ function make_alliance(solid: SolidEffect2): void {
         label: "alliance", td: new TargetDesc("your unsuspended monster")
     };
     let cost = new AtomicEffect2();
+    cost.raw_text = "suspending 1 of your other Monsters";
     cost.optional = true;
     cost.events = [suspend_other];
     cost.weirdo = suspend_other;
@@ -3558,7 +3606,7 @@ function make_alliance(solid: SolidEffect2): void {
         }]
     };
     t.events.push(alliance_sa);
-
+    t.raw_text = "add the suspended Monster's DP to this Monster and it gains ＜Security A. +1＞";
     t.weirdo = alliance_sa;
     solid.effects.push(t);
     if (parserdebug) logger.debug("SET RESPOND TO ON 3 " + t);

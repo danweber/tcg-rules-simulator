@@ -714,6 +714,12 @@ export class Game {
     }
 
     _remove_instance(i: number) {
+
+        let inst = this.get_instance(i);
+        let top;
+      //  while (top = inst.pile[0])
+        //    top.extract().move_to(Location.TRASH);
+
         delete this.instances[i];
     }
 

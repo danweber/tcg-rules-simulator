@@ -14,7 +14,7 @@ export class TranslatorSingleton {
     pairs: [string, string][] = [];
 
 
-    keywords: KeywordArray = {};
+    private keywords: KeywordArray = {};
 
     constructor() {
         try {
@@ -40,14 +40,14 @@ export class TranslatorSingleton {
         } catch (e) {
             throw (e);
         }
-        //        console.error(this.pairs);
-        //        console.error(this.keywords);
+            //   console.error(this.pairs);
+             //  console.error(111111);
+             //  console.error(this.keywords);
     }
 
     private escape_regexp(str: string) {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
     }
-
 
     private reminder_replace(line: string) {
         let m;
@@ -61,6 +61,7 @@ export class TranslatorSingleton {
             let reminder: string = m[4];
             let rest: string = m[5];
 
+            // simple
             if (!this.keywords[keyword]) {
                 this.keywords[keyword] = reminder;
                 //console.error(`ZZZ [${keyword}] [${reminder}]`);
@@ -74,9 +75,22 @@ export class TranslatorSingleton {
     }
 
     get_reminder(word: string) {
-        return this.keywords["＜" + word + "＞"];
+        
+        let tag = "＜" + word + "＞";
+        if (this.keywords[tag]) {
+            return this.keywords[tag];
+        }
+        for (const key in this.keywords) {
+            if (this.keywords.hasOwnProperty(key)) {
+                // todo: precalculate these
+                let re = new RegExp(key, "ig");
+                tag = tag.replaceAll(re, this.keywords[key]);
+            }
+        }
+        return tag;
     }
 
+    // 
     text(_input: string): string {
         //        console.error(`_input length is ${_input.length}`);
         let lines = _input.split("\n");

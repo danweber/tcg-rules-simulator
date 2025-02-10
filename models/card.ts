@@ -191,7 +191,7 @@ export class Card {
     readonly e_color?: number; // make obsolete
     readonly e_level?: number; // make obsolete
     readonly text: string;
-    readonly mon_form: string = "x";
+    readonly mon_form: string[] = [];
     readonly mon_type: string[] = [];
     readonly mon_attribute: string = "x";
     summary: string;
@@ -202,7 +202,7 @@ export class Card {
     readonly link_dp?: number;
     readonly link_effect?: string;
     readonly link_requirements: LinkCondition[] = [];
-    
+
     security_text: string;
     //    readonly main_good_effects: 
     //  readonly n_me_player: number;
@@ -266,7 +266,7 @@ export class Card {
     retrieve_prior_location() { return this.prior_location; }
 
     parse_link_requirement(line: string, evo: any) {
-        let m = line.match(/^\[(.*?)\].trait: cost (\d+)/i);
+        let m = line.match(/^\s*\[(.*?)\].trait: cost (\d+)/i);
         if (m) {
             let [, trait, cost] = m;
             let link = { trait: trait, cost: parseInt(cost) };
@@ -495,7 +495,7 @@ export class Card {
                     } else
                         // [Champion | Data | Shield] [Yel.]
                         if (m = line.match(/\[(.*?)\|(.*?)\|(.*?)\] \[(.*)\]/)) {
-                            this.mon_form = m[1].trim();
+                            this.mon_form = m[1].trim().split("/")
                             this.mon_attribute = m[2].trim();
                             this.mon_type = m[3].trim().split("/");
                             this.colors = abbr_parse_color(m[4]);
@@ -565,7 +565,7 @@ export class Card {
                         if (line.startsWith("Play Cost")) this.p_cost = parseInt(line.after("Play Cost"));
                         if (line.startsWith("Use Cost")) this.u_cost = parseInt(line.after("Use Cost"));
                         if (line.startsWith("Card Type")) { this.n_type = word_to_type(line.after("Card Type")); this.type = types[this.n_type]; }
-                        if (line.startsWith("Form")) this.mon_form = line.after("Form");
+                        if (line.startsWith("Form")) this.mon_form = line.after("Form").split("/");
                         if (line.startsWith("Attribute")) this.mon_attribute = line.after("Attribute");
                         if (line.startsWith("Type")) this.mon_type = line.after("Type").split("/");
 
@@ -695,7 +695,7 @@ export class Card {
                 this.p_cost = parseInt(blob.playCost);
             this.mon_type = blob.type.split("/");
             this.mon_attribute = blob.attribute;
-            this.mon_form = blob.form;
+            this.mon_form = blob.form.split("/");
         } else {
             this.id = blob.cardid;
             this.card_id = this.id;
@@ -741,19 +741,19 @@ export class Card {
             for (let _evo of [spec, fusion, burst, link]) {
                 if (_evo)
                     for (let evo of _evo.split("\n")) {
-                    if (evo === "-") continue;
-                    if (m = evo.match(/^.Evolve.(.*)/)) {
-                        this.parse_special_evolve(m[1].trim(), {})
-                    } else if (m = evo.match(/.DNA.Evolve.(.*)/)) {
-                        this.parse_fusion_evolve(m[1].trim(), {})
-                    } else if (m = evo.match(/.Burst.Evolve.(.*)/)) {
-                        this.parse_burst_evolve(m[1].trim(), {})
-                    } else if (m = evo.match(/.Link.(.*)/)) {
-                        this.parse_link_requirement(m[1].trim(), {})
-                    } else {
-                        console.error(701, evo);
+                        if (evo === "-") continue;
+                        if (m = evo.match(/^.Evolve.(.*)/)) {
+                            this.parse_special_evolve(m[1].trim(), {})
+                        } else if (m = evo.match(/.DNA.Evolve.(.*)/)) {
+                            this.parse_fusion_evolve(m[1].trim(), {})
+                        } else if (m = evo.match(/.Burst.Evolve.(.*)/)) {
+                            this.parse_burst_evolve(m[1].trim(), {})
+                        } else if (m = evo.match(/.Link.(.*)/)) {
+                            this.parse_link_requirement(m[1].trim(), {})
+                        } else {
+                            console.error(701, evo);
+                        }
                     }
-                }
             }
             // parse evolve conditions here
             ////// uugh, we parse them both here and in 
@@ -787,7 +787,7 @@ export class Card {
             securityeffects = this.string_array(blob.securityEffect).reverse();
             linkeffects = this.string_array(blob.linkEffect).reverse();
 
-            
+
         } else {
             this.e_cost = parseInt(blob.ecost);
             this.e_color = parseInt(blob.ecostcolor);
@@ -826,8 +826,8 @@ export class Card {
 
         function new_parse_effects(effects: string[], thus: Card, mode: "main" | "inherited" | "security" | "link" = "main") {
             let new_effects: SolidEffect[] = (mode == "main") ? thus.new_effects :
-                ((mode == "inherited") ? thus.new_inherited_effects : 
-                ((mode == "link") ? thus.new_link_effects : thus.new_security_effects));
+                ((mode == "inherited") ? thus.new_inherited_effects :
+                    ((mode == "link") ? thus.new_link_effects : thus.new_security_effects));
             for (let i = effects.length - 1; i >= 0; i--) {
 
                 let l = effects[i];
@@ -864,7 +864,7 @@ export class Card {
                     logger.debug("NO REMNANT, COMPLETELY PARSED: " + s.toString());
 
                     if (true) {
-                        logger.debug("this keywords " + thus.name + " are " + 
+                        logger.debug("this keywords " + thus.name + " are " +
                             Object.values(thus.card_keywords).join(",") + " and " +
                             Object.values(thus.card_inherited_keywords) + " or " + Object.values(thus.card_linked_keywords));
                         logger.debug("GEN 3 CARD PARSING");
@@ -1066,9 +1066,9 @@ export class Card {
         return c;
     }
 
-    static hidden: Location[] = [Location.NEW, Location.DECK, Location.EGGDECK, Location.SECURITY, Location.HAND];
+    static hidden: Location[] = [Location.NEW, Location.DECK, Location.EGGDECK, Location.HAND];
     static visible: Location[] = [Location.FIELD, Location.EGGZONE, Location.TRASH, Location.REVEAL, Location.TOKENDECK, Location.TOKENTRASH, Location.NULLZONE, Location.OPTZONE];
-
+    static maybe: Location[] = [Location.SECURITY];
 
     // finds the card in the place it was at, in case we need it
     // return self (is this necessary)
@@ -1096,6 +1096,62 @@ export class Card {
         this.prior_location = undefined;
     }
 
+    flip_face_up(up: boolean) {
+        this.face_up = up;
+        if (!up) { 
+            this.card_instance_id == -1;
+            return;
+        }
+        if (up && this.card_instance_id == -1) { // newly face-up, need id
+            this.card_instance_id = this.game!.next_card_id();
+        }
+        return;
+
+    }
+
+    assign_id(l: Location, instance?: Instance, order?: string): void {
+        
+        if (Card.maybe.includes(this.location)) {
+            if (!this.face_up) { 
+                this.card_instance_id == -1;
+                return;
+            }
+            if (this.face_up && this.card_instance_id == -1) { // newly face-up, need id
+                this.card_instance_id = this.game!.next_card_id();
+            }
+            return;
+          }
+        
+        let from = "";
+        // TODO: face-up in security is public...
+        if (Card.hidden.includes(this.location)) from = "hidden";
+        if (Card.visible.includes(this.location)) from = "public";
+        let to = "";
+        if (Card.hidden.includes(l)) to = "hidden";
+        if (Card.visible.includes(l)) to = "public";
+        if (Card.maybe.includes(l)) {
+            to = this.face_up ? "public" : "hidden";
+        }
+        // hey, when we shuffle face-up cards, do we keep the ID?
+
+        if (from == "" || to == "") {
+            logger.error(`from is ${from} and to is ${to}`);
+            logger.error(`from ${Location[this.location]} to ${Location[l]}`);
+            let a: any = null; a.bad_card_1(this.location);
+        }
+
+
+        if (from == "public" && to == "hidden") {
+            this.card_instance_id = -1;
+        } else if (from == "hidden" && to == "public") {
+            this.card_instance_id = this.game!.next_card_id();
+        } else if (from == to) {
+            // nothing
+        } else {
+            let a: any = null; a.bad_move_2(this.location);
+        }
+
+    }
     // oooh, maybe *this* should do the re-constructor! That way it's
     // all in one place!
     move_to(l: Location, instance?: Instance, order?: string): void {
@@ -1123,31 +1179,8 @@ export class Card {
                 l = Location.TOKENTRASH;
             }
         }
-        let from = "";
-        // TODO: face-up in security is public...
-        if (Card.hidden.includes(this.location)) from = "hidden";
-        if (Card.visible.includes(this.location)) from = "public";
-        let to = "";
-        if (Card.hidden.includes(l)) to = "hidden";
-        if (Card.visible.includes(l)) to = "public";
 
-        if (from == "" || to == "") {
-            logger.error(`from is ${from} and to is ${to}`);
-            logger.error(`from ${Location[this.location]} to ${Location[l]}`);
-            let a: any = null; a.bad_card(this.location);
-        }
-
-        if (from == "public" && to == "hidden") {
-            this.card_instance_id = -1;
-        } else if (from == "hidden" && to == "public") {
-            this.card_instance_id = this.game!.next_card_id();
-        } else if (from == to) {
-            // nothing
-        } else {
-            let a: any = null; a.bad_move(this.location);
-        }
-
-        logger.debug(`RESETTING FACE ${this.get_name()} WAS ${this.face_up}...`);
+        this.assign_id(l, instance, order);
         this.face_up = false; // reset whenever it moves
 
         // we need to know the instance and index, too
@@ -1232,7 +1265,7 @@ export class Card {
     // right now nothing distinguishes type, attribute, or form
     public trait_contains(str: string): boolean {
         str = str.toUpperCase();
-        let my_traits = [this.mon_attribute, this.mon_form, ...this.mon_type];
+        let my_traits = [this.mon_attribute, ...this.mon_form, ...this.mon_type];
         if (this.trait_rule) {
             let m;
             if (m = this.trait_rule.match(/has( the)? \[(.*)\]/i)) {
@@ -1243,7 +1276,7 @@ export class Card {
     }
     public has_trait(str: string): boolean {
         str = str.toUpperCase();
-        let my_traits = [this.mon_attribute, this.mon_form, ...this.mon_type];
+        let my_traits = [this.mon_attribute, ...this.mon_form, ...this.mon_type];
         if (this.trait_rule) {
             let m;
             if (m = this.trait_rule.match(/has( the)? \[(.*)\]/i)) {
@@ -1291,24 +1324,24 @@ export class Card {
             return this.card_linked_keywords;
         }
         if (kind != "main") console.error("unknown keyword filter " + kind);
-          return this.card_keywords;
+        return this.card_keywords;
     }
 
     // TODO: get rid of object[] return if we can... unless it's how we get <draw>???
-    public has_keyword(keyword: string, kind: string): (string | false) {
+    public has_keyword(keyword: string, kind: "main" | "linked" | "inherited"): (string | false) {
         //        logger.debug("lookinf ro card keyword" + keyword);
         // case-sensitive?
         let regexp = new RegExp(keyword.replaceAll(/[ _]/ig, "."), "i");
         // logger.debug("regexp is " + regexp + " and keywords be " + Object.keys(this.card_keywords).join(","));
         let keywordlist;
-        if (kind === "main") 
+        if (kind === "main")
             keywordlist = this.card_keywords;
         else if (kind === "linked")
             keywordlist = this.card_linked_keywords;
-        else 
+        else {
             keywordlist = this.card_inherited_keywords;
-
-        if (kind !== "inherited") logger.error("unrecognized type");    
+            if (kind !== "inherited") logger.error("unrecognized type " + kind);
+        }
         //logger.warn("keys" + JSON.stringify(keywordlist));
         // I'd like to just look this up directly without case matching
 
@@ -1318,8 +1351,8 @@ export class Card {
 
     }
 
-    // same logic for 
-    static can_evolve_into(base: Instance | CardLocation, conditions: (LinkCondition|EvolveCondition)[]) {
+    // same logic for link and
+    static can_evolve_into(base: Instance | CardLocation, conditions: (LinkCondition | EvolveCondition)[]) {
         let ret = [];
         for (let evo_cond of conditions) {
             if (evo_cond.text) logger.error("unknown evo condition: " + evo_cond.text);
@@ -1394,7 +1427,7 @@ export class Card {
 // A CardInstance is self-aware of its location; this may
 // involves some double-entry bookkeeping.
 export class UnusedCardInstance {
-    
+
 
 }
 
@@ -1549,7 +1582,7 @@ export class CardLocation {
         if (!this.instance) return false;
         let i = this.game.get_instance(this.instance!);
         return this.location === Location.FIELD
-            && i.is_monster() 
+            && i.is_monster()
             && this.index < this.pile.length - 1; // not top card, we 
         // could have done this check in Game::get_targets()
     };
