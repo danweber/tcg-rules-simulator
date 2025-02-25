@@ -1,0 +1,19 @@
+VERSION:2
+#[When Attacking] If you have 20 or more cards in your trash, unsuspend this monster
+FIELD1:Attacker1,DW1-Trasher Attacker2,DW1-Trasher
+# 19 cards
+TRASH1:DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02 DW1-02
+FIELD2:Target,DW1-03
+GAME:P1 T3 MAIN 3
+SECURITY2:DW1-03 DW1-03 DW1-03
+DUMP:DP
+
+ECHO: -- attack, only 19 in trash
+CMD:ATTACK Attacker1 Player
+DUMP
+
+ECHO: -- attack, now 20 in trash
+CMD:ATTACK Attacker2 Player
+DUMP
+
+EXIT

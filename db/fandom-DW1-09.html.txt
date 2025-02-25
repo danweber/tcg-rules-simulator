@@ -1,0 +1,14 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** Sitdown (DW1-09) *****
+[DW1-09]
+Card Info
+Name                Sitdown
+Colour              White
+Card Type           Option
+Use Cost            4
+Rarity              Uncommon
+Card Effect(s)
+[Main] Suspend 1 of your opponent's Monsters.
+Card Restriction

@@ -1,0 +1,15 @@
+VERSION:2
+# plain evo and don't get the [if dna] effect. TODO: recognize "when"
+FIELD1:Blue,CS2-Colossal,CS2-01 Yellow,CS1-Obsidian,CS1-01
+HAND1:CS2-Rampager
+FIELD2:5k,DW1-Van One,CS2-03 Two,CS2-03 Three,CS2-02
+GAME:P1 T4 MAIN 7
+DUMP:DP
+
+ECHO: --- FUZOR ---
+
+
+#  card, left, cost, [right, newlabel (new label not used yet)]
+CMD:EVO CS2-Rampage Blue
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP

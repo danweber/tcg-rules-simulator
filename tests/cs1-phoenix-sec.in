@@ -1,0 +1,15 @@
+VERSION:2
+# [Security] Play this card without paying its cost.
+FIELD1:
+FIELD2:Attack1,DW1-Van Attack2,DW1-Van Blue,CS2-02
+SECURITY1:CS1-Phoenix
+HAND2:CS2-Quick
+GAME:P2 T2 MAIN 7
+DUMP
+ECHO: -- Attack, Phoenix plays out
+CMD:ATTACK Attack1 Player
+DUMP
+ECHO: -- delete by option, it rerises
+CMD:PLAY CS2-Quick
+STEP:AUTOANSWER:CAPTURE
+DUMP

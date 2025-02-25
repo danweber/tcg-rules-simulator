@@ -1,0 +1,25 @@
+VERSION:2
+# [When Attacking] Trash the top 3 cards of your deck.
+FIELD1:Attacker1,DW1-Van,DW1-Trasher Attacker2,DW1-Van,DW1-Trasher Attacker3,DW1-Van,DW1-Trasher Noticer,DW1-Birder
+DECK1:CS1-02 CS1-03 CS1-04 CS1-05
+TRASH1:CS1-06
+SECURITY2:CS2-02 CS2-02 CS2-02 CS2-02
+GAME:P1 T3 MAIN 3
+DUMP:TRASH,DECK,DP
+
+ECHO: -- attack, cards go to trash, noticer gives +100 DP to something
+CMD:ATTACK Attacker1 Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:TRASH,DECK,DP
+
+ECHO: -- attack, cards go to trash, just 1 because we're empty, noticer gives +100 DP to something
+CMD:ATTACK Attacker2 Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:TRASH,DECK,DP
+
+ECHO: -- attack, nothing goes to trash, noticer doesn't notice anything
+CMD:ATTACK Attacker3 Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:TRASH,DECK,DP
+
+EXIT

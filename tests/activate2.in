@@ -1,0 +1,16 @@
+VERSION:2
+
+TITLE: Activate N of M effects
+TEXT: Player chooses, 1 at a time, an effect from a list. No repeats allowed. 
+
+FIELD2:Van,DW1-Van Big,DW1-Big Paper,CS1-02
+FIELD1:Green,CS3-02
+HAND1:CS3-04
+GAME:P1 T3 MAIN 6
+DUMP:DP
+GET-X-PLAYS
+
+ECHO: ----- play ----
+CMD:PLAY CS3-04
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP

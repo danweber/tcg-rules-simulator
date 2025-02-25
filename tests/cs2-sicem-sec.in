@@ -1,0 +1,23 @@
+VERSION:2
+#[Security] One of your Monsters gets +5000 DP until the end of your turn
+FIELD1:Attacker,CS1-11
+FIELD2:Guy,CS2-02
+SECURITY2:CS2-Sicem
+DECK2:CS2-02
+DECK1:CS1-02
+GAME:P1 T3 MAIN 4
+DUMP:DP,SECURITY
+
+ECHO: -- swing in
+CMD:ATTACK Attacker Player
+DUMP:DP
+
+ECHO: -- on other turn, still boost
+CMD:PASS
+CMD:MAIN
+DUMP:DP
+
+ECHO: -- goes away on one more turn pass
+CMD:PASS
+DUMP:DP
+EXIT

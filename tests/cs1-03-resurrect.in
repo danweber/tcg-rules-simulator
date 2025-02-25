@@ -1,0 +1,13 @@
+VERSION:2
+#\uff1cResurrection\uff1e (When this Monster with evolution cards is deleted, play this card without paying the cost.
+FIELD1:Attacker,CS1-03,DW1-Van Sourceless,CS1-03
+FIELD2:Tank,CS2-12,REST
+GAME:P1 T2 MAIN 5
+DUMP
+
+ECHO: -- Attack into Tank, die, then resurrect by mandatory effect.
+CMD:ATTACK Attacker Tank
+DUMP
+ECHO: -- Attack without sources, stay ded
+CMD:ATTACK Sourceless Tank
+DUMP:TRASH

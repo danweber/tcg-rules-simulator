@@ -1,0 +1,28 @@
+VERSION:2
+
+# if my effect is prevented, I can still use it later
+
+FIELD2:Evader,CS1-02,PLUG,CS3-02 Vic1,DW1-Van,REST Vic2,DW1-Van,REST
+FIELD1:Deleter,DW1-Big,CS2-05
+EGGZONE1:CS3-01
+HAND1:DW1-Standup
+
+GAME:P1 T4 MAIN 8
+GET-X-PLAYS
+DUMP:HAND,KEYWORDS
+
+CMD:ATTACK Deleter Vic1
+STEP:AUTOANSWER:CAPTURE
+
+CMD:PLAY DW1-Standup
+DUMP
+
+ECHO: ---- try again ----
+
+CMD:ATTACK Deleter Vic2
+STEP:AUTOANSWER:CAPTURE
+
+DUMP
+
+
+EXIT
