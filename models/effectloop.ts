@@ -2353,7 +2353,7 @@ export class XX {
                     if (s.exp_description) {
                         logger.info("we have an expiration");
                         // effect with built-in timeout
-                        let fx = GameEvent[weirdo.status_condition[0].s.game_event];
+                         let fx = GameEvent[weirdo.status_condition[0].s.game_event];
                         if (weirdo.status_condition[0].s.game_event === GameEvent.DP_CHANGE) {
                             fx += ` (${get_mult(weirdo.status_condition[0].s)}?)`;
                         }

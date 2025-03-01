@@ -1240,13 +1240,17 @@ export class Instance {
         if (dp < 0) dp = 0;
         return dp;
     }
-
+    
     // in the long-term, we should move to an "update" loop that recalcs everything
 
     is_token(): boolean { return this.top().is_token(); }
     _monster_cached: boolean = true;
     is_monster_cached(): boolean { return this._monster_cached; }
     is_monster(simple: boolean = false): boolean {
+        if (!this.top()) {
+            console.trace();
+            return false;
+        }
         let b: boolean = this.top().is_monster() || this.top().is_egg();
         // all_statuses() can lead to a loop
         {

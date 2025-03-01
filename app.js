@@ -38,16 +38,6 @@ app.use(function (req, res, next) {
   next();
 });
 
-// Serve static files from the React app
-app.use('/build', express.static(path.join(__dirname, 'build')));
-
-// Serve static files from the public directory
-app.use('/public', express.static(path.join(__dirname, 'public')))
-
-
-
-
-
 
 app.use(express.json());
 
@@ -59,6 +49,14 @@ try {
 } catch (e) {
   console.log(e); // not really an error, this file is optional 
 }
+
+
+// Serve static files from the React app
+app.use('/build', express.static(path.join(__dirname, 'build')));
+
+// Serve static files from the public directory
+app.use('/public', express.static(path.join(__dirname, 'public')))
+
 
 
 // The "catchall" handler: for any request that doesn't
@@ -87,7 +85,7 @@ if (true) {
     let index = Math.floor(Math.random() * words.length);
     let word = words[index]
     const url = req.protocol + '://' + req.get('host') + req.originalUrl;
-    const title = 'Rule Simulator v0.9.11.5.2'
+    const title = 'Rule Simulator v0.9.11.5.4'
     console.log("version is " + title);
     res.render('index', { title: title, word: word, text: url, test: env_test });
   });

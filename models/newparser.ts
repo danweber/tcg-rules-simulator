@@ -2227,7 +2227,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             atomic.per_unit = true;
             // for each of Y VERBd by this effect, where Y matters. 
         } else if (m = foreach.match(/(?:of )?(.*) (trashed|returned|placed|suspended) (?:by|with) this effect/i)) {
-            console.error(2182, m);
             // This is *both* test for things on board *and* see if they were successfully paid
             // Do we 1. Test in GameTest, and somehow figure out what this effect did?
             // or 2. Use a variation of atomic.per_untit
