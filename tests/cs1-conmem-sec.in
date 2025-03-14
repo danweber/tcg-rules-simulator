@@ -1,0 +1,20 @@
+VERSION:2
+# Gain 9 memory. Then, draw 1 card.
+SECURITY1:CS1-Confusing
+FIELD2:Attack1,DW1-Van Attack2,DW1-Van
+GAME:P2 T3 MAIN 3
+HAND1:CS1-Confusing CS1-Confusing
+DECK1:CS1-02 CS1-02
+DUMP:HAND,SECURITY
+
+ECHO: -- P2 attacks, loses turn from memory bomb. (P1 still has 1 card to not deck out.)
+CMD:ATTACK Attack1 Player
+DUMP:HAND,SECURITY
+
+EXIT
+ECHO: -- Try to use again. Can't, not enough memory.
+CMD:PLAY CS1-Confusing
+DUMP:HAND
+
+
+

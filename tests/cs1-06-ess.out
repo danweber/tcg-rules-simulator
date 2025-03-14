@@ -1,0 +1,9 @@
+FIELD1:Sneaky,DW1-Vanillamon,CS1-06
+FIELD2:White,DW1-Vanillamon Blue,CS2-02 Victim,CS2-03,REST
+GAME:P1 T2 MAIN 7
+ECHO: -- Attack
+CAPTURE:Target Sharp Blade 3
+CAPTURE:Target Long Sword 4
+FIELD1:Sneaky,DW1-Vanillamon,CS1-06,REST
+FIELD2:White,DW1-Vanillamon Blue,CS2-02,REST
+GAME:P1 T2 MAIN 7

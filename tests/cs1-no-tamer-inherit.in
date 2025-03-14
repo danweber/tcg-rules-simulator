@@ -1,0 +1,15 @@
+VERSION:2
+
+
+FIELD1:Mon,CS1-02,CS1-02 Tamer,CS1-Gideon,CS1-02
+
+GAME:P1 T2 HATCHING 5
+
+TITLE: Sources under non-monster don't work
+TEXT: A non-monster's has no inherited effects.
+DUMP
+
+CMD:MAIN
+STEP:AUTOANSWER:CAPTURE
+DUMP
+

@@ -1,0 +1,13 @@
+VERSION:2
+#   "evolveEffect": "\uff1cSecurity Attack +1\uff1e",
+FIELD2:Attacker,CS2-Anime
+SECURITY1:CS1-02 CS1-02 
+GAME:P2 T1 MAIN 7
+DUMP:SECURITY,TRASH
+
+ECHO: -- attack into defender and pierce through
+CMD:ATTACK Attacker Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:SECURITY,TRASH
+
+EXIT
