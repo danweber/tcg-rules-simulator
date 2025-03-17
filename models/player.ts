@@ -132,7 +132,7 @@ export class Player {
 
         logger.info("creating player");
         if (cardstring != "") {
-            cardstring = cardstring.replaceAll(/"/ig, "");
+            cardstring = cardstring.replaceAll(/[["\]]/ig, "");
             let cards = cardstring.split(/[,\s]+/);
             for (let id of cards) {
                 if (id.length < 2) continue;

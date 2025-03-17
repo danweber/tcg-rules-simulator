@@ -364,7 +364,6 @@ export class Card {
     }
 
     constructor(blob: any, text: string = "") {
-
         this.card_instance_id = -1;
         this.location = Location.UNKNOWN;
         this.mon_instance = -1;
@@ -390,15 +389,13 @@ export class Card {
 
         let regexp = new RegExp(/^\*\*\*\*\* (.*)\((.*)\) \*\*\*\*\*$/);
         this.fandom_input = "";
-        if (text != "") {
+        if (text !== "" && text !== "no") {
 
             this.evo_text = "";
-
             this.fandom_input = text;
             let lines: string[] = text.split("\n");
             let m;
             let i = 0;
-            //logger.info(text);
             while (lines.length > 0 && lines[0].length < 3) lines.splice(0, 1);
 
             let style = "fd";
@@ -641,6 +638,7 @@ export class Card {
         }
         this.dp = parseInt(blob.dp);
 
+
         let maineffects, sourceeffects, securityeffects, linkeffects;
         if (app_format) {
             for (let cond of blob.evolveCondition) {
@@ -842,10 +840,12 @@ export class Card {
             }
         }
 
+        if (this.input && text !== "no") {
+
         new_parse_effects(maineffects, this, "main");
         new_parse_effects(sourceeffects, this, "inherited");
         new_parse_effects(linkeffects, this, "link");
-
+        
         if (Object.keys(this.card_keywords).length > 0) logger.debug(`5543 have ${this.card_keywords.length} keywords + ${Object.values(this.card_keywords).join(",")}`);
 
         // if any effects are [security] refile them now
@@ -854,7 +854,7 @@ export class Card {
         logger.debug("newsecurityeffectslength is " + this.new_security_effects.length + " " + this.name);
         new_parse_effects(securityeffects, this, "security");
         logger.debug("newsecurityeffectslength is " + this.new_security_effects.length + " " + this.name);
-
+        }
         logger.debug("MAINING REMAINING " + maineffects.length + " " + securityeffects.length);
         //        this.main_text ||= 'err2';    
         //         this.inherited_text ||= 'err2';
@@ -969,7 +969,7 @@ export class Card {
         if (l != this.location ||
             (i && i != this.mon_instance)) {
             if (carddebug) logger.debug(`checking ${i}`);
-            console.error(`${this.name} ${i} at ${Location[this.location]} is supposed to be in ${Location[l]}`);
+            console.error(`${this.name} ${this.card_id} ${this.card_instance_id}, ${i} at ${Location[this.location]} is supposed to be in ${Location[l]}`);
             let a: any = null; a.locator_fail();
         }
     }
@@ -1093,6 +1093,9 @@ export class Card {
         // should a card in the hand even *have* an ID? It has to be 
         // very private if I store it. Card hands can't be distinguished.
 
+        // this also resets once-per-turn... does it check that we're moving 
+        // into a new instance?
+
         // we will get ERROR! if we'll be the first card in the instance
         let s_new_inst = instance ? `${instance.id} ${instance.get_name()}` : "nul";
         logger.warn(`CARD: Want to move ${this.id} ${this.name} ${this.card_instance_id} ` +
@@ -1101,6 +1104,10 @@ export class Card {
 
         if (l == this.location && instance?.id == this.mon_instance) {
             logger.error("moving in place??");
+        } else {
+            for (const effect_list of [this.new_effects, this.new_security_effects, this.new_inherited_effects, this.new_link_effects]) {
+                effect_list.forEach ( e => e.n_last_used_turn = 0 );
+            }
         }
 
         if (this.is_token()) {
@@ -1425,7 +1432,7 @@ export class CardLocation {
     index: number;
     n_me_player: number = -42;
     name: string;
-    card: Card;
+    card: Card; 
     id: string;
     instance?: number;
     card_id: string;

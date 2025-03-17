@@ -26,7 +26,6 @@ export enum Conjunction {
     SOURCE, // is source of effect; only used for retribution
     PLAYER, NOT,
     LAST_THING, // move away from this?
-    REFERENCE,
     ANOTHER, // context-dependent
 };
 
@@ -334,27 +333,29 @@ export class MultiTargetDesc {
         logger.info(`MULTITARGET CTOR:<${text}>`);
         let from = "";
         text = text.trim();
-        let grammared = parseStringEvoCond(text.trim(), "MultiTarget");
+        if (!text.includes("1 your")) {// skip this for stack summons for now
+            let grammared = parseStringEvoCond(text.trim(), "MultiTarget");
 
-        if (grammared) {
-            //   if (grammared.type === "MultiTarget" <-- always true 
-            const all = grammared.targets;
-            let match = false;
-            if (all) {
-                match = true;
-                for (let item of all) {
-                    console.log("item", item.adj_text, item.entity);
-                    if (!item.adj_text || !item.entity) {
-                        match = false;
+            //  console.log("xxx"); console.dir(grammared, {depth: null} );
+            if (grammared) {
+                //   if (grammared.type === "MultiTarget" <-- always true 
+                const all = grammared.targets;
+                let match = false;
+                if (all) {
+                    match = true;
+                    for (let item of all) {
+                        if (!item.adj_text || !item.entity) {
+                            match = false;
+                        }
                     }
                 }
-            }
-            if (match) {
-                this.parse_matches = all;
-                this.choose = all.length; console.error("hard code bad");
-                return;
-            }
+                if (match) {
+                    this.parse_matches = all;
+                    this.choose = all.length; 
+                    return;
+                }
 
+            }
         }
 
 
@@ -425,11 +426,12 @@ export class MultiTargetDesc {
         // matches if any target matches; when "pick 1 X and 1 Y"  we can show
         // all things that match either. (Later the user picks a pair.)
 
-        console.error("MTD MATCH? ", !!this.parse_matches);
+        logger.info("MTD MATCH? " + !!this.parse_matches);
         if (this.parse_matches) {
-            console.error("length " + this.parse_matches.length);
-            return this.parse_matches.some(
-                pm => verify_special_evo(t, pm));
+            let ret = this.parse_matches.some(
+                pm => verify_special_evo(t, pm, s));
+            logger.info("ret for " + t.get_name() + " is " + ret);
+            return ret;
         }
 
 
@@ -531,9 +533,6 @@ export class TargetDesc {
         if (this.conjunction == Conjunction.LAST_THING) {
             return `it`;
         }
-        if (this.conjunction == Conjunction.REFERENCE) {
-            return `that`;
-        }
 
         if (this.conjunction != Conjunction.ALL) {
             logger.error("OH NO 3 " + this.conjunction);
@@ -574,9 +573,6 @@ export class TargetDesc {
         }
         if (this.conjunction == Conjunction.LAST_THING) {
             return `IT`;
-        }
-        if (this.conjunction == Conjunction.REFERENCE) {
-            return `THAT`;
         }
 
         if (this.conjunction != Conjunction.ALL) {
@@ -650,8 +646,11 @@ export class TargetDesc {
                 }
             }
 
+            // sometimes we get called with a "card' here, like if
+            // something has interrupted play of self.
+            // no match if that happens; investigate why it's happening in the first place
+            if (s.is_instance() && ("extract" in t) && t.kind === "CardLocation") {
 
-            if (s.is_instance() && ("extract" in t)) {
                 logger.info(`instance looking for self card ${t.location} == ${s.location()}, ` +
                     `${t.card_id} = ${s.card_id()}, ${t.card.id} === ${s.get_instance().top().id} ` +
                     ` SAME IS ${t.card == s.get_instance().top()}`);
@@ -711,6 +710,8 @@ export class TargetDesc {
             //              this.targets[1].matches(t, s);
         }
         if (this.conjunction == Conjunction.LAST_THING) {
+            console.error("using last thing");
+            // move away from this, last_thing should never be global
             let last = g.get_last_thing();
             if (!last || last.length == 0) {
                 logger.error("no last thing");
@@ -721,25 +722,7 @@ export class TargetDesc {
 
             // maky not work for CardLocation
             return (t.id == last_thing.id);
-
         }
-
-        if (this.conjunction == Conjunction.REFERENCE) {
-            let last = g.get_last_thing();
-            if (!last || last.length == 0) {
-                logger.error("no last thing");
-                return false;
-            }
-            let last_thing = last[0];
-            logger.info(`tid is ${t.id} and last_thing is ${last_thing.id}`);
-
-            // maky not work for CardLocation
-            return (t.id == last_thing.id);
-
-        }
-
-
-
 
         if (this.conjunction != Conjunction.ALL) {
             // how could we possibly not match on player? 

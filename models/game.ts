@@ -101,9 +101,10 @@ export class Game {
         this.last_thing = x;
     }
     get_last_thing(): Instance[] | CardLocation[] { return this.last_thing!; }
+    // last_thing shouldn't be global, it shoudl be per-effect
 
     constructor(master: Mastergame, gid: string, bots: number[], p1string = "", p2string = "", bot1 = "", bot2 = "", seed = "") {
-        logger.info(`ctor: ${gid} ${bot1},${bot2},${bots} ${p1string} ${p2string} seed:${seed}`);
+        logger.info(`ctor: ${gid} ${bot1},${bot2},${bots} [${p1string}] [${p2string}] seed:${seed}`);
 
         if (seed === "") seed = gid;
         this.bots = [];

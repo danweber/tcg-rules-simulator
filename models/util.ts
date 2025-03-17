@@ -6,7 +6,7 @@ import { SolidEffectLoop } from './effectloop';
 import { GameEvent } from './event';
 import { Game } from './game';
 import { Instance } from './instance';
-import { Location } from './location';
+import { Location, string_to_location } from './location';
 
 interface Comparable {
     equals(other: Comparable): boolean;
@@ -75,7 +75,11 @@ export function for_each_count_target(w: SubEffect, game: Game, ts: TargetSource
 
 // does multitarget match?
 
-function appendArrays(array1: any[], array2: any[], array3?: any[]): any [] {
+function appendArrays(array1: any[],
+    array2: any[],
+    array3?: any[],
+    array4?: any[],
+): any[] {
     let result: any[] = [];
     if (array1) {
         result = result.concat(array1);
@@ -86,25 +90,34 @@ function appendArrays(array1: any[], array2: any[], array3?: any[]): any [] {
     if (array3) {
         result = result.concat(array3);
     }
+    if (array4) {
+        result = result.concat(array4);
+    }
     return result;
 }
-export function verify_special_evo(base: Instance | CardLocation, evo_cond: any): boolean {
-//    console.error("looking for match for " + base.get_name() + " " + JSON.stringify(evo_cond));
-  //  console.error(evo_cond);
+export function verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: TargetSource): boolean {
+    //console.error("looking for match for " + base.get_name() + " " + JSON.stringify(evo_cond));
+    //console.error(evo_cond);
+
+    if (Array.isArray(evo_cond)) {
+        evo_cond = evo_cond[0]; // we shouldn't need this
+    }
     if (!evo_cond.raw_text) return false;
     let array: any[];
 
-    array = appendArrays(evo_cond.and, evo_cond.entity_match, evo_cond.with);
+    array = appendArrays(evo_cond.and, evo_cond.entity_match, evo_cond.with, evo_cond.from);
+
+    //console.dir(array, { depth: 44 });
 
     // empty AND is false, this is incorrect from a boolean logic sense
     if (array.length > 0) {
-        if (evo_cond.with) array = array.concat(evo_cond.with);
+        //  if (evo_cond.with) array = array.concat(evo_cond.with);
         if (Array.isArray(array)) {
-            let ret = array.every((x: any) => verify_special_evo(base, x));
-        //    console.error("return of all is " + ret);
+            let ret = array.every((x: any) => verify_special_evo(base, x, s));
+            //console.error("return of all is " + ret);
             return ret;
         }
-        return verify_special_evo(base, array);
+        return verify_special_evo(base, array, s);
     }
     /*
     what if OR + WITH?
@@ -118,7 +131,7 @@ export function verify_special_evo(base: Instance | CardLocation, evo_cond: any)
     }*/
 
     if (array = evo_cond.or) {
-        let ret = array.some((x: any) => verify_special_evo(base, x));
+        let ret = array.some((x: any) => verify_special_evo(base, x, s));
         return ret;
     }
 
@@ -134,7 +147,6 @@ export function verify_special_evo(base: Instance | CardLocation, evo_cond: any)
 
     if (evo_cond.entity_type) {
         ret = base.is_type(evo_cond.entity_type);
-
         if (!ret) return def;
     }
 
@@ -148,6 +160,20 @@ export function verify_special_evo(base: Instance | CardLocation, evo_cond: any)
         if (!ret) return def;
         //      }   
     }
+    if (evo_cond.location) {
+        // only handles 1 location
+        const loc: Location = string_to_location(evo_cond.location);
+        let ret = base.location & loc;
+        if (!ret) return def;
+    }
+    if (evo_cond.player) {
+        // doesn't handle NOT
+        let me = evo_cond.player === "self";
+        let player_num = base.n_me_player;
+        let target_num = s?.get_n_player();
+        if (me) return player_num === target_num;
+        return player_num !== target_num;
+    }
     if (evo_cond.number) {
         switch (evo_cond.type) {
             case "Level":
@@ -156,6 +182,10 @@ export function verify_special_evo(base: Instance | CardLocation, evo_cond: any)
                 break;
             case "ColorCount":
                 ret = num_compare(base.color_count(), strToCompare(evo_cond.compare), evo_cond.number);
+                if (!ret) return def;
+                break;
+            case "DP":
+                ret = num_compare(base.dp(), strToCompare(evo_cond.compare), evo_cond.number);
                 if (!ret) return def;
                 break;
             default:
@@ -170,6 +200,8 @@ export function verify_special_evo(base: Instance | CardLocation, evo_cond: any)
         !evo_cond.name_contains.some((c: string) => base.name_contains(c))) return def;
     if (evo_cond.traits &&
         !evo_cond.traits.some((c: string) => base.has_trait(c))) return def;
+    if (evo_cond.traits_contain &&
+        !evo_cond.traits_contain.some((c: string) => base.trait_contains(c))) return def;
     return true;
 
 }

@@ -440,6 +440,8 @@ export class Instance {
         for (let se of solids) {
             // i'm duping this code in a shitload of places
             // A SolidEffect should probably have trigger() and activate() methods
+            
+            
             se.trigger_location = this.location;
             se.trigger_instance_id = this.id;
             se.trigger_top_card_location_id = this.top().card_instance_id;
@@ -450,9 +452,13 @@ export class Instance {
                     atomic.events.forEach(
                         function (sub: SubEffect) {
                             sub.negated = false;
+                           // sub.chosen_target = undefined;
+                         //   sub.chosen_target2 = undefined;
+                           // sub.chosen_target3 = undefined;
+                            
                         } )
                 } )
-        }
+            }
         return solids;
 
     }

@@ -54,8 +54,8 @@ export function parseStringEvoCond(input: string, search: string, all: boolean =
             if (all) return res;
             return res[0];
         } else {
-            console.error(orig_res);
-            throw new Error("No parse tree found, for " + input);
+          //  console.error(orig_res);
+           // throw new Error("No parse tree found, for " + input);
         }
     } catch (e: any) {
         console.error(e.message);

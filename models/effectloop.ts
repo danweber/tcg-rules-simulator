@@ -138,7 +138,7 @@ enum RLStep {
 
 // a dry-run for terminus_loop would be awesome
 function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: SolidEffectLoop): boolean {
-    if (3 < 2) return true;
+    if (3 < 2) return true; // when debugging, make this always true
     logger.info("can pay cost for " + eff.raw_text);
     logger.info("can we pay this cost?");
     // just see if we can do the first weirdo
@@ -159,7 +159,7 @@ function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: Solid
         let ge = w.game_event;
         //logger.info("w.ge is " + GameEvent[ge]);
         //logger.info("target is " + w.td.raw_text);
-        let needed_targets = Number(w.choose);
+        let needed_targets = Number(w.choose);        
         if (w.n_mod?.includes("upto")) needed_targets = 1;
 
 
@@ -205,7 +205,7 @@ function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: Solid
                     pile = player.nullzone;
                     logger.error("MOVE_CARD missing source: " + w.td2?.raw_text);
                 }
-                //logger.info(`pile.length ${pile.length} w.n ${w.n}`);
+                logger.info(`pile.length ${pile.length} w.n ${w.n}`);
                 if (pile.length < w.n!) return false;
             }
 
@@ -580,14 +580,6 @@ export class SolidEffectLoop {
         if (!this.effect) console.trace();
         // i use "se" for both "solideffect" and "Subeffect"
 
-        // I want to clear all chosen_targets from any previous runs of this effect,
-        // but sometimes the effects come in with targets pre-determined, I guess,
-        // because tests break if the first clause is exempted
-        this.effect.effects.forEach(atomic => atomic.events.forEach(
-            w => { // w.chosen_target = undefined; 
-                w.chosen_target2 = undefined;
-                w.chosen_target3 = undefined;
-            }));
     }
     effect_tree(): string[] {
         let ret: string[] = [];
@@ -635,6 +627,7 @@ export class SolidEffectLoop {
             }
 
 
+
             if (this.effect.rules) {
                 // rules processing, just skip all this and get the deletion events
                 logger.info("RULES EFFECT!");
@@ -644,6 +637,22 @@ export class SolidEffectLoop {
                 this.s = FakeStep.DO_EFFECT_LOOP;
                 return false; // do I need to return false? Can't I just fall through?
 
+            }
+
+            // clear out things from prior runs
+            // where to do this is hard, because something we get
+            // Atomics that are pre-populated for in-game effects,
+        // so we only do it when we're selecting targets
+            if (!this.effect.effects[0].events[0].td.empty() &&
+                this.effect.effects[0].events[0].td.conjunction !== Conjunction.SOURCE
+
+            ) {
+                this.effect.effects.forEach(atomic => atomic.events.forEach(
+                    w => {
+                        w.chosen_target = undefined;
+                        w.chosen_target2 = undefined;
+                        w.chosen_target3 = undefined;
+                    }));
             }
             if (source.is_instance()) {
                 let instance: Instance = source.get_instance();
@@ -763,6 +772,7 @@ export class SolidEffectLoop {
             if (this.effect.once_per_turn) {
                 logger.debug(this.rand + "checking for once-per-turn");
                 if (this.effect.n_last_used_turn == this.game.n_turn) {
+                    // why is this deliberately crashing?
                     let a: any = null; a.once_oer_turn();
                     logger.debug(this.rand + "checking for once-per-turn");
                     this.s = FakeStep.DONE;
@@ -806,14 +816,14 @@ export class SolidEffectLoop {
             // if we USE, then we insert an ACTIVATE as the next Atomic.
             // And ACTIVATE, if it finds no STA, will grab pending effects and run them
             // (This also requires the "if you did" logic to peek backwards one more iteration.)
-            let current_atomic = this.effect.effects[this.n_effect+1];
+            let current_atomic = this.effect.effects[this.n_effect + 1];
             if (current_atomic && current_atomic.events.find(e => e.game_event === GameEvent.USE)) {
                 logger.info(`inserting ${this.n_effect} of ${this.effect.effects.length}`);
-                let next_atomic = this.effect.effects[this.n_effect+1];
+                let next_atomic = this.effect.effects[this.n_effect + 1];
                 if (next_atomic && next_atomic.events[0].game_event === GameEvent.ACTIVATE) {
                     logger.info("already have an ACTVATE, no need to insert");
                 } else {
-                    let inserted:AtomicEffect = new AtomicEffect("", "", this.game);
+                    let inserted: AtomicEffect = new AtomicEffect("", "", this.game);
                     inserted.events.push({
                         cause: EventCause.GAME_FLOW, //?
                         game_event: GameEvent.ACTIVATE,
@@ -2241,14 +2251,14 @@ export class SolidEffectLoop {
             // code to flush reveal to trash used to be here
             // is this pushing things to trash too soon?
             if (false)
-            if (p.reveal.length > 0) {
-                if (atomic && atomic.search_final) {
-                    this.game.log(`${p.reveal.length} cards still left in reveal for player ${p.player_num}`);
-                    logger.info(this.rand + `n_effet is ${this.n_effect} of ${this.effect.effects.length} and atomic is ${atomic}`);
-              //      logger.info(this.rand + "cleaning up reveal to " + Location[atomic.search_final]);
-                //    p.put_reveal(atomic.search_final);
+                if (p.reveal.length > 0) {
+                    if (atomic && atomic.search_final) {
+                        this.game.log(`${p.reveal.length} cards still left in reveal for player ${p.player_num}`);
+                        logger.info(this.rand + `n_effet is ${this.n_effect} of ${this.effect.effects.length} and atomic is ${atomic}`);
+                        //      logger.info(this.rand + "cleaning up reveal to " + Location[atomic.search_final]);
+                        //    p.put_reveal(atomic.search_final);
+                    }
                 }
-            }
 
             logger.info(this.rand + "solideffectloop returning " + this.collected_events.length + " events " + this.collected_events.map(e => GameEvent[e.game_event]).join("/"));
             logger.info("1996, set last thing in collected_events");
@@ -2272,7 +2282,7 @@ export class XX {
     // the "target" here is redundant, it's pulled out of weirdo
     // TODO: verify this 
     static do_terminus_effect(depth: number, weirdo: SubEffect, target: any, game: Game,
-        solid_starter?: SolidEffect): boolean { 
+        solid_starter?: SolidEffect): boolean {
         // let target = weirdo.chosen_target;
 
         let name = target ? target.get_name() : "";
@@ -2353,7 +2363,7 @@ export class XX {
                     if (s.exp_description) {
                         logger.info("we have an expiration");
                         // effect with built-in timeout
-                         let fx = GameEvent[weirdo.status_condition[0].s.game_event];
+                        let fx = GameEvent[weirdo.status_condition[0].s.game_event];
                         if (weirdo.status_condition[0].s.game_event === GameEvent.DP_CHANGE) {
                             fx += ` (${get_mult(weirdo.status_condition[0].s)}?)`;
                         }
@@ -2506,7 +2516,7 @@ export class XX {
                 let bottom;
                 for (let item of [instance, instance2]) {
                     if ("me_player" in item) { // instance
-                        while (bottom = item.pile[item.pile.length-1])
+                        while (bottom = item.pile[item.pile.length - 1])
                             bottom.extract().move_to(Location.FIELD, fusioned, "BOTTOM");
                         game._remove_instance(item.id);
                         item.do_removal("nul", "fusioned");
@@ -3145,8 +3155,8 @@ export class InterrupterLoop {
                     logger.info('interrupting sta ' + this.sta.count);
                     // does this need to be a copy?
                     interrupters = [...this.sta?.solids]; // copy references, so when we delete then, they stay in sta.solids
-                    interrupters.forEach( i => { 
-                        i.source = new SpecialCard(first_effect.spec_source as CardLocation ); 
+                    interrupters.forEach(i => {
+                        i.source = new SpecialCard(first_effect.spec_source as CardLocation);
                         i.interrupt_count = 0;
                     });
                 } else {
@@ -3155,13 +3165,13 @@ export class InterrupterLoop {
                     if (a.length + b.length > 0) {
                         logger.info("ASAP effects " + a.length + " " + b.length);
                         interrupters = [...a, ...b];
-                        interrupters.forEach( i => { 
-                            i.source = new SpecialCard(first_effect.spec_source as CardLocation ); 
+                        interrupters.forEach(i => {
+                            i.source = new SpecialCard(first_effect.spec_source as CardLocation);
                         });
-    
-                    } 
+
+                    }
                 }
-                
+
 
             }
 

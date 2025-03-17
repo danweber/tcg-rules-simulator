@@ -142,7 +142,7 @@ class Mastergame {
             }
         }
 
-        function read_json(thus: Mastergame, filename: string) {
+        function read_json(thus: Mastergame, filename: string, populate: boolean = true) {
             // if (mode != "normal") return;
             let thingy: string = "[]";
             try {
@@ -163,14 +163,15 @@ class Mastergame {
             }
             for (let i = 0; i < obj.length; i++) {
                 if (process.env.INPUT_CARD == "test") console.log(obj[i]);
-                let card = new Card(obj[i]);
+                let card = new Card(obj[i], populate ? undefined : "no");
                 thus.put_card_in_index(card);
             }
-
         }
-        read_json(this, "starters.json");
-        read_json(this, "cards.json");
-        read_json(this, "tokens.json");
+        // set this env variable to parse all effects at start-up
+        let parse_all = !! process.env.PARSE_ALL;
+        read_json(this, "starters.json", parse_all);
+        read_json(this, "cards.json", parse_all);
+        read_json(this, "tokens.json", parse_all);
         read_text(this, "customs.txt");
 
         this.prefix_keys = Object.keys(this.prefixes).sort();

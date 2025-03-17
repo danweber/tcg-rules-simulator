@@ -1541,6 +1541,7 @@ function single_parse_if(line: string): SingleGameTest {
         return new SingleGameTest(GameTestType.TARGET_EXISTS, td);
     }
 
+
     if (m = line.match(/this monster (is|has) (suspended)/i)) {
         // if we target "this suspended monster" we
         // break it into "this" which is self and "suspended"
@@ -1560,7 +1561,7 @@ function single_parse_if(line: string): SingleGameTest {
 // This could be *either* a trigger *or* setting up a delayed reaction
 function parse_at(line: string): any | false {
     let phrase = parseStringEvoCond("At " + line, "At");
-//    phrase = find_in_tree(phrase, "At");
+    //    phrase = find_in_tree(phrase, "At");
     let trigger: any = {};
     if (!phrase) {
         console.error("failed to parase at");
@@ -1573,7 +1574,7 @@ function parse_at(line: string): any | false {
     }
     if (phrase.phase === "turn") {
         trigger["END_OF_TURN"] = phrase.which;
-        trigger.phase = PhaseTrigger.END_OF_ALL_TURNS; 
+        trigger.phase = PhaseTrigger.END_OF_ALL_TURNS;
         return trigger;
     }
     console.error("how?");
@@ -2055,7 +2056,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     // bullshit I shouldn't need, I think it's just for eating keywords
     for (let i = 0; i < 5; i++) line = line.replace(/^\s*\[[^\]]*\]\s*/g, '');
 
-//    console.error("pa", line);
+    //    console.error("pa", line);
 
 
     if (parserdebug) logger.debug("DEBUG: ATOMIC2 IS " + line);
@@ -2094,6 +2095,30 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         line = m[1];
     }
     line = line.trim();
+
+    // use new-style parser for play (except for stack summon)
+    if (line.toLowerCase().includes("play") && !line.toLowerCase().includes("1 your")) {
+        let grammared = parseStringEvoCond(line, "EffSentence");
+        if (grammared) {
+            //    console.log("GRAM");   console.dir(grammared, { depth: 99 });
+            const eff = grammared.effect;
+            if (eff.action === 'play') {
+
+                const action_args = eff.action_args;
+                const target = action_args.target;
+                thing.game_event = GameEvent.PLAY;
+                atomic.optional = true;
+                
+                // we already grammared the multitarget, we don't need to re-parse...
+                //  thing.td = new MultiTargetDesc("");
+                let x = new MultiTargetDesc(target.raw_text);
+                thing.td = x;
+                thing.choose = x.choose;
+                if (action_args.no_cost) thing.n_mod = "for free";
+                line = "";
+            }
+        }
+    }
 
     if (m = line.match(/\s*Activate (\d+|all) of the (?:.*?effects.*?):(.*)/)) {
         let sta: SolidsToActivate = new SolidsToActivate();
@@ -2616,7 +2641,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     let evo_ignore = false;
     let evo_from = "";
     let evo_free = false;
-    //    console.error(line);
 
     let stat_cond: StatusCondition | null = null;
     let stat_cond2: StatusCondition | null = null;
@@ -3707,7 +3731,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         if (parserdebug) logger.debug("play match");
         thing.game_event = strToEvent(m[1]);
         thing.choose = 1;
-        thing.td = new TargetDesc(m[2]);
+        thing.td = new MultiTargetDesc(m[2]);
         line = "";
         thing.n_mod = "free";
     }
@@ -3960,7 +3984,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             // easy keywords
             // 
             let regexp = new RegExp("(.*) " + key + "e?s?\.?$", "i");
-            //      console.error(3425, regexp);
             // default imperative: DELETE a THING
             if (m = line.match(regexp)) {
                 logger.info("generic descriptive: " + key);
