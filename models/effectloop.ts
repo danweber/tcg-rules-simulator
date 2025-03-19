@@ -919,6 +919,7 @@ export class SolidEffectLoop {
                     this.s = FakeStep.FINISH_REPEAT_LOOP;
                     return false;
                 }
+                this.game.log("Condition passes.");
                 logger.warn("no longer setting last this in test condition");
                 //this.game.set_last_thing(t);
                 // target for test might not be a single mon!

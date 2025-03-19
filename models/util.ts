@@ -105,6 +105,70 @@ export function verify_special_evo(base: Instance | CardLocation, evo_cond: any,
     if (!evo_cond.raw_text) return false;
     let array: any[];
 
+    let def = false; // default
+    if (evo_cond.not) def = true;
+    let ret;
+
+    // what cards am I under?
+    if (evo_cond.under) {
+        ret = base.is_evo_card(); // redundant?
+        if (!ret) return def;
+        let i = base.get_instance();
+        if (!i) return def;
+        ret = verify_special_evo(i, evo_cond.under, s);
+        if (!ret) return def;
+    }
+
+    // what cards do I have in my sources?
+    if (evo_cond.in_evocards) {
+        let t = evo_cond.in_evocards;
+       // console.log("COND");
+       // console.dir(evo_cond, { depth: 9 });
+        // assume EACH... maybe change the text to have that word, too
+        // test for a single 1, or overlappimg 1, is easy
+
+        let actual_sources = base.get_sources();
+
+        if (!t.targets) {
+
+            // if any source matches, say we succeed. will fail on A & B
+            ret = actual_sources.some(c => verify_special_evo(c, t, s));
+            if (!ret) return def;
+
+            return true;
+            return !def;
+        } else {
+            let match_conds = t.targets;
+
+            let all_matching_cards: Set<CardLocation> = new Set(); // is uniqueness forced on CardLocations?
+            for (let t of match_conds) {
+                // finding if I *can* hit both is an easy case
+                // 1. find things that match A. find things that match B. 
+                // 2. make sure each has at least 1
+                // 3. make sure we have at least 2 total
+                let count = 0;
+                actual_sources.forEach(function (c) {
+                    let m = verify_special_evo(c, t, s);
+                    if (m) {
+                        count += 1;
+                        all_matching_cards.add(c);
+                    }
+                })
+                if (count === 0) return def;
+                // TODO: short-circuit for common case of just find 1
+            }
+            let totalsize = all_matching_cards.size;
+            if (totalsize >= match_conds.length) {
+                return !def;
+            }
+        }
+        return def;
+        // this isn't as clean as I want
+
+    }
+
+
+
     array = appendArrays(evo_cond.and, evo_cond.entity_match, evo_cond.with, evo_cond.from);
 
     //console.dir(array, { depth: 44 });
@@ -131,19 +195,37 @@ export function verify_special_evo(base: Instance | CardLocation, evo_cond: any,
     }*/
 
     if (array = evo_cond.or) {
+        console.error(148, array);
         let ret = array.some((x: any) => verify_special_evo(base, x, s));
         return ret;
+        //         if (!ret) return def;
+
     }
 
-    let def = false; // default
-    if (evo_cond.not) def = true;
-    let ret;
+
+    //    let ret;
+    if (evo_cond.keyword) {
+        // could this be a multiple?
+        let ret = base.has_keyword(evo_cond.keyword);
+        if (!ret) return def;
+
+    }
 
     if (evo_cond.entity) {
         if (evo_cond.entity === "card") ret = (base.constructor.name == "CardLocation");
         if (evo_cond.entity === "entity") ret = (base.constructor.name == "Instance");
         if (!ret) return def;
     }
+
+    if ("suspended" in evo_cond) {
+        ret = evo_cond.suspended === (!base.is_ready());
+        if (!ret) return def;
+    }
+    if ("with_inherited" in evo_cond) {
+        ret = evo_cond.with_inherited === (base.new_inherited_effects().length > 0);
+        if (!ret) return def;
+    }
+
 
     if (evo_cond.entity_type) {
         ret = base.is_type(evo_cond.entity_type);
@@ -174,28 +256,27 @@ export function verify_special_evo(base: Instance | CardLocation, evo_cond: any,
         if (me) return player_num === target_num;
         return player_num !== target_num;
     }
-    if (evo_cond.number) {
+    // TODO: use "compare"
+    if ("compare" in evo_cond) {
+        let mine = -1;
         switch (evo_cond.type) {
-            case "Level":
-                ret = num_compare(base.get_level(), strToCompare(evo_cond.compare), evo_cond.number);
-                if (!ret) return def;
-                break;
-            case "ColorCount":
-                ret = num_compare(base.color_count(), strToCompare(evo_cond.compare), evo_cond.number);
-                if (!ret) return def;
-                break;
-            case "DP":
-                ret = num_compare(base.dp(), strToCompare(evo_cond.compare), evo_cond.number);
-                if (!ret) return def;
-                break;
+            case "Level": mine = base.get_level(); break;
+            case "ColorCount": mine = base.color_count(); break;
+            case "DP": mine = base.dp(); break;
+            case "PlayCost": mine = base.get_playcost()!; break;
+            case "UseCost": mine = base.get_usecost()!; break;
+            case "EvoSources": mine = base.get_source_count(); break;
             default:
                 console.error("unknown number type " + evo_cond.type);
-
         }
+        ret = num_compare(mine, strToCompare(evo_cond.compare), evo_cond.number, s, evo_cond.relative);
+        if (!ret) return def;
     }
     //        if (evo_cond.name_is && !base.name_is(evo_cond.name_is)) return false;
     if (evo_cond.name_is &&
         !evo_cond.name_is.some((c: string) => base.name_is(c))) return def;
+    if (evo_cond.text_contains &&
+        !evo_cond.text_contains.some((c: string) => base.text_contains(c))) return def;
     if (evo_cond.name_contains &&
         !evo_cond.name_contains.some((c: string) => base.name_contains(c))) return def;
     if (evo_cond.traits &&
@@ -207,10 +288,22 @@ export function verify_special_evo(base: Instance | CardLocation, evo_cond: any,
 }
 
 export function num_compare(a: number, b: number, c: number, s?: TargetSource, relative: string = "") {
-    if (relative == "targetsource-dp" && s) {
-        let i = s.get_instance();
-        c = i.dp();
-        logger.info("relative set c to " + c);
+    if (s && relative) {
+        logger.info("checking relative " + relative);
+        // we can only check the value of the targetsource for now
+        const [source, value] = relative.split("-");
+        if (source == "targetsource") {
+            let i = s.get_instance();
+            // TODO: this should be a common library
+            switch (value) {
+                case "dp": c = i.dp(); break;
+                case "evosources": c = i.get_source_count(); break;
+                case "level": c = i.get_level(); break;
+                case "colorcount": c = i.color_count(); break;
+                default: c = 0; console.error("NO VALUE " + value);
+            }
+            logger.info("relative set c to " + c);
+        }
     }
     logger.debug(`a ${a} b ${COMPARE[b]} c ${c}`);
 

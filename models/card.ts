@@ -1190,6 +1190,7 @@ export class Card {
         if (this.name_rule) {
             //logger.info("NAME RULE: " + this.name_rule);
             let m;
+
             if (m = this.name_rule.match(/treated as \[(.*)\]/i)) {
                 //     logger.info("NAME COULD BE: " + m[1]);
                 if (Card.normalize(m[1]) === str) return true;
@@ -1556,6 +1557,7 @@ export class CardLocation {
     has_stack_add(): boolean { return !!this.card.has_stack_add(); }
     color_count(): number { return this.card.colors.length; }
     is_token(): boolean { return this.card.is_token(); }
+    is_ready(): boolean { return false; } // cards are never suspended
     is_type(t: string): boolean { return this.card.is_type(t); }
     is_monster() { return this.card.is_monster(); }
     is_tamer() { return this.card.is_tamer(); }
@@ -1565,11 +1567,17 @@ export class CardLocation {
     get_usecost() { return this.card.get_usecost(); }
     has_color(c: Color) { return this.card.has_color(c); }
     source_match(td: TargetDesc | undefined, s: TargetSource) { return false; } // card location never has sources
+    get_sources(): CardLocation[] { return []; } // this shouldn't be checked
     get_source_count(): number { return 0; } // this shouldn't be checked
     new_inherited_effects(): SolidEffect[] { return this.card.new_inherited_effects; }
     face_up(): boolean { return this.card.face_up; }
     dp() { return this.card.dp; }
     has_keyword(word: string): boolean { return !!this.card.has_keyword(word, "main"); }
+    get_instance(): Instance | undefined { 
+        if (!this.instance) return undefined;
+        let i = this.game.get_instance(this.instance!);
+        return i;
+    }
     is_evo_card(): boolean {
         if (!this.instance) return false;
         let i = this.game.get_instance(this.instance!);

@@ -1496,7 +1496,7 @@ export class Game {
                         let eff = atomic.events[0];
                         // is instance is a function but just its existence is checked
                         if (eff.chosen_target && eff.chosen_target.kind === "Instance"
-                            //                            && eff.chosen_target.on_field() // if the instance isn't there any more, no match: should this end the search, or do we keep searching for something else?
+                            && eff.chosen_target.in_play() // if the instance isn't there any more, no match: should this end the search, or do we keep searching for something else?
                             && eff.chosen_target.top()) {
                             logger.info("PROIPR LOCATION IS " + eff.chosen_target.location_to_string);
                             logger.info("PRIOR TARGET FOUND! prior thing was " + eff.chosen_target.get_name() + " or " + eff.chosen_target.id + " and " + eff.chosen_target.kind);

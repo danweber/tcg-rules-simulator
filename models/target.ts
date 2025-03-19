@@ -351,7 +351,7 @@ export class MultiTargetDesc {
                 }
                 if (match) {
                     this.parse_matches = all;
-                    this.choose = all.length; 
+                    this.choose = all.length;
                     return;
                 }
 
@@ -428,6 +428,7 @@ export class MultiTargetDesc {
 
         logger.info("MTD MATCH? " + !!this.parse_matches);
         if (this.parse_matches) {
+            logger.info("MTD " + JSON.stringify(this.parse_matches));
             let ret = this.parse_matches.some(
                 pm => verify_special_evo(t, pm, s));
             logger.info("ret for " + t.get_name() + " is " + ret);
@@ -492,6 +493,7 @@ export class TargetDesc {
     most_kind?: StatusTestWord;
     remnant: string = "";
     text?: string; // crude way of categorizing things like "all of their security monster" for now
+    with?: any;
 
     //	target2?: (SubTargetDesc | TargetDesc);
     mod_max(by: number): number {
@@ -732,6 +734,15 @@ export class TargetDesc {
         for (let tgt of this.targets) {
             //            console.error("tgt " + tgt.toPlainText());
         }
+
+        if (this.with) {
+            logger.info("have a with " + JSON.stringify(this.with));
+            let ret = verify_special_evo(t, this.with, s);
+            logger.info("ret with is " + ret);
+            if (!ret) return false;
+        }
+
+
         let answers = this.targets.map(x => x.matches(t, s, g, previous));
 
         logger.info("AND case " + (t && t.get_name(true)) + " returned " + answers.join(",") +
@@ -745,7 +756,6 @@ export class TargetDesc {
     // "type" is card or instance
     //	constructor(arg1: number);
     constructor(_text: number | string, type: string = "instance") {
-
         // clean garbage at front
         this.raw_text = "" + _text;
 
@@ -957,17 +967,12 @@ export class TargetDesc {
             return;
         }
 
-
-
         if (true)
             if (m = text.match(/(.*?) with (.*)/i)) {
                 let proposed_text = m[1];
-                // console.error(920, m);
                 let w = m[2].trim();
-                if (m = w.match(/(.*)[.,]/)) w = m[1];
-                // console.error(921, w);
+                //                if (m = w.match(/(.*)[.,]/)) w = m[1];
                 const parseTree = parseString(w);
-                // console.error(922, parseTree);
                 logger.info(`PARSING ${!!parseTree} FOR CLAUSE ${w}`);
                 // console.log(926, w);
                 //   console.dir(parseTree, { depth: 99 });
@@ -981,7 +986,13 @@ export class TargetDesc {
                 if (w_clause) {
                     //   if (w_clause.clause1 && w_clause.clause1[0])
                     //       console.log(928, newRecoverText(w_clause.clause1[0].origdata));
-                    if (w_clause.type === "WithSentence") {
+
+
+                    // move more and more into this
+                    this.with = w_clause;
+                    text = m[1];
+
+                    if (w_clause.type === "XXXXWithSentence") {
                         //    console.log("FOUND WITH: " + w_clause.raw_text);
                         if (w_clause.or) {
                             // keyword is object, clause is array
@@ -2294,7 +2305,9 @@ export class SubTargetDesc {
             case StatusTestWord.SOURCE_COUNT: return this.do_compare(t.get_source_count(), s);
             case StatusTestWord.HAS_SOURCE: return t.source_match(this.nested_td, s);
             case StatusTestWord.LOCATION: return (t.location & this.n) > 0;
-            case StatusTestWord.STATUS: if (!("suspended" in t)) { return false; }
+            case StatusTestWord.STATUS:
+                // we have is_ready
+                if (!("suspended" in t)) { return false; }
                 if (this.str == "suspended") return t.suspended;
                 if (this.str == "unsuspended") return !t.suspended;
             case StatusTestWord.OWNER:

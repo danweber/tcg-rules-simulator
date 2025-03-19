@@ -1544,7 +1544,7 @@ function single_parse_if(line: string): SingleGameTest {
 
     if (m = line.match(/this monster (is|has) (suspended)/i)) {
         // if we target "this suspended monster" we
-        // break it into "this" which is self and "suspended"
+        // break it into "this" which is self and 
         // so it can only apply its effect while it has a hit
         let td = new TargetDesc("this suspended monster");
         return new SingleGameTest(GameTestType.TARGET_EXISTS, td);
@@ -1615,10 +1615,34 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
     // you would play this card
     // this card would be played
 
+    let grammared = parseStringEvoCond(line, "WhenSentence");
+    if (grammared) {
+//        console.error("WHEN", grammared);
+  //      console.dir(grammared, { depth: 99 });
+
+        let w = grammared.When;
+        if (w.event === "EVOLVE") {
+            // can i recognize what it *was* properly, on a non-interruptive?`
+            let int_evo: InterruptCondition = {
+                ge: GameEvent.EVOLVE,
+                // again, 
+                td2: new MultiTargetDesc(w.before.raw_text),
+                td: new MultiTargetDesc(w.after.raw_text),
+                cause: EventCause.ALL
+            }
+            return int_evo;
+        }
+
+
+    }
+
+
     // INTERRUPTIVE .  should I capture both "would" and "would be"?
     if (m = line.match(/(.*) would ()(.*)/)) {
         line = m[1].trim() + " " + m[3].trim();
     }
+
+
 
     //                  1          2   3                                 4                 5                         6
     if (m = line.match(/(any of )?(.*) (leave the battle area|be deleted)( other than .*)?( by an opponent.s effect)?( .. battle)?/i)) {
@@ -1892,7 +1916,7 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
     }
 
     // handles present and past tense
-    if (m = line.match(/(.*) (is|becomes)?\s*(un)?suspend(ed|s)?(.*)/i)) {
+    if (m = line.match(/(.*?) (is|becomes)?\s*(un)?suspend(ed|s)?$/i)) {
         let my_td = new TargetDesc(m[1]);
         // what am i doing with m[4]? I should anchor to end
         return {
@@ -2097,26 +2121,65 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     line = line.trim();
 
     // use new-style parser for play (except for stack summon)
-    if (line.toLowerCase().includes("play") && !line.toLowerCase().includes("1 your")) {
+    if (
+        (
+            line.toLowerCase().includes("play") ||
+            line.toLowerCase().includes("bottom of the deck") ||
+            line.toLowerCase().includes("evolution cards")
+        )
+        && !line.toLowerCase().includes("1 your")) {
         let grammared = parseStringEvoCond(line, "EffSentence");
+        let action_args, target, x;
         if (grammared) {
-            //    console.log("GRAM");   console.dir(grammared, { depth: 99 });
+
+           if (grammared.if) {
+                atomic.test_condition = parse_if(grammared.if);
+
+
+           }
+          //  console.log("GRAM");   console.dir(grammared, { depth: 99 });
             const eff = grammared.effect;
             if (eff.action === 'play') {
 
-                const action_args = eff.action_args;
-                const target = action_args.target;
+                action_args = eff.action_args;
+                target = action_args.target;
                 thing.game_event = GameEvent.PLAY;
                 atomic.optional = true;
-                
+
                 // we already grammared the multitarget, we don't need to re-parse...
                 //  thing.td = new MultiTargetDesc("");
-                let x = new MultiTargetDesc(target.raw_text);
+                x = new MultiTargetDesc(target.raw_text);
                 thing.td = x;
                 thing.choose = x.choose;
                 if (action_args.no_cost) thing.n_mod = "for free";
                 line = "";
             }
+            if (eff.action === 'bottomdeck') {
+
+                //        if (m = line.match(/^Return(ing)? (.*) to the (top|bottom|hand)(?: of .{1,14} deck)?/i)) {
+                //      let dest = m[3];
+                let mod_dest = "bottom deck";
+                action_args = eff.action_args;
+                target = action_args.target;
+                thing.game_event = GameEvent.TO_BOTTOM_DECK; // targets an instance!
+                thing.n_mod = mod_dest;
+
+                x = new MultiTargetDesc(target.raw_text);
+                thing.td = x;
+                thing.choose = x.choose;
+                line = "";
+            }
+            if (eff.action === 'SourceStrip') {
+                action_args = eff.action_args;
+                target = action_args.target;
+                thing.choose = parseInt(action_args.choose);
+                thing.game_event = GameEvent.EVOSOURCE_REMOVE;
+                x = new MultiTargetDesc(target.raw_text);
+                //x.parse_matches = target;
+                thing.td = x;
+                line = "";     
+            }
+
         }
     }
 
@@ -2819,9 +2882,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     */
 
 
-    if (m = line.match(/reduce the (use|memory|evolution|play)\s*cost(?: of the evolution)? by (\d)\.?/)) {
+    if (m = line.match(/reduce (?:the )?(?:its )?(use|memory|evolution|play)\s*cost(?: of the evolution)? by (\d)\.?/)) {
         // we need to update the solid effect to say it modifies play cost
         if (!solid) {
+            console.error("no solid for modify cost");
             // it's a passive effect!
             //            let b: any = null; b.no_solid();
         }

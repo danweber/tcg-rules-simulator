@@ -65,7 +65,7 @@ export class Instance {
     //// Convenience methods for describing the stack 
     public card_names(): string {
         let ret = this.pile.map(x => x.name).join(",");
-       // if (this.plugged.length > 0)
+        // if (this.plugged.length > 0)
         //    ret += "PLUG," + this.plugged.map(x => x.name).join(",");
         return ret;
     }
@@ -94,12 +94,12 @@ export class Instance {
     // an inherit or a plug, we can request its text, its effect, its keywords
     source_effects(): SolidEffect[] {
         let ret: SolidEffect[] = [];
-//        for (let i = this.pile.length - 2; i >= 0; i--) {
-      for (let i = 0; i < this.pile.length - 1; i++)  {
+        //        for (let i = this.pile.length - 2; i >= 0; i--) {
+        for (let i = 0; i < this.pile.length - 1; i++) {
             ret.push(... this.pile[i].new_inherited_effects);
         }
         for (let plug of this.plugged) {
-            ret.push(... plug.new_link_effects);
+            ret.push(...plug.new_link_effects);
         }
         return ret;
     }
@@ -145,11 +145,11 @@ export class Instance {
         )
         // special case for linkDP, while we figure out what it does
         for (let plug of this.plugged) {
-  //          if (plug.link_dp) {
-    //            dp += plug.link_dp;
-//            ret += "• +" dp +  + s + "<br/>";
-      //  }
-    }
+            //          if (plug.link_dp) {
+            //            dp += plug.link_dp;
+            //            ret += "• +" dp +  + s + "<br/>";
+            //  }
+        }
 
 
         //    effects.array.forEach(element => {
@@ -295,26 +295,26 @@ export class Instance {
             ret.push(...this.source_effects());
         }
         let with_sources = ret.length;
-   
-   /*     for (let i = 0; i < this.expiring_status_effects.length; i++) {
-            if (this.expiring_status_effects[i].solid) {
-                ret.push(... this.expiring_status_effects[i].solid!);
-            }
-        }*/
+
+        /*     for (let i = 0; i < this.expiring_status_effects.length; i++) {
+                 if (this.expiring_status_effects[i].solid) {
+                     ret.push(... this.expiring_status_effects[i].solid!);
+                 }
+             }*/
         let with_temp = ret.length;
 
         // what effects were here before??
-    /*    for (let i = 0; i < this.me_player.expiring_status_effects.length; i++) {
-            if (this.me_player.expiring_status_effects[i].solid) {
-                ret.push(... this.me_player.expiring_status_effects[i].solid!);
+        /*    for (let i = 0; i < this.me_player.expiring_status_effects.length; i++) {
+                if (this.me_player.expiring_status_effects[i].solid) {
+                    ret.push(... this.me_player.expiring_status_effects[i].solid!);
+                }
             }
-        }
-*/
+    */
         let status_conditions = this.all_statuses();
         for (let i = 0; i < status_conditions.length; i++) {
             if (status_conditions[i].solid) {
-              //.  console.error(278, status_conditions[i]);
-                ret.push(... status_conditions[i].solid!);
+                //.  console.error(278, status_conditions[i]);
+                ret.push(...status_conditions[i].solid!);
             }
         }
 
@@ -338,7 +338,7 @@ export class Instance {
         let without_test_fails = ret.length;
 
         ret = ret.filter(x => !(x.once_per_turn && x.n_last_used_turn == this.game.n_turn));
-       
+
         // assume that instances only exist on field
         ret = ret.filter(x => !x.active_zone);
         logger.debug(`Instance ${this.id} Effect counts are ${normal} then ${with_sources} then temp ${with_temp} then player ${with_player} and test_fails is down to ${without_test_fails}`);
@@ -440,25 +440,25 @@ export class Instance {
         for (let se of solids) {
             // i'm duping this code in a shitload of places
             // A SolidEffect should probably have trigger() and activate() methods
-            
-            
+
+
             se.trigger_location = this.location;
             se.trigger_instance_id = this.id;
             se.trigger_top_card_location_id = this.top().card_instance_id;
             // we were keeping track of the prior negation.
             // what else was being tracked?
-            se.effects.forEach (
-                function (atomic: AtomicEffect)  {
+            se.effects.forEach(
+                function (atomic: AtomicEffect) {
                     atomic.events.forEach(
                         function (sub: SubEffect) {
                             sub.negated = false;
-                           // sub.chosen_target = undefined;
-                         //   sub.chosen_target2 = undefined;
-                           // sub.chosen_target3 = undefined;
-                            
-                        } )
-                } )
-            }
+                            // sub.chosen_target = undefined;
+                            //   sub.chosen_target2 = undefined;
+                            // sub.chosen_target3 = undefined;
+
+                        })
+                })
+        }
         return solids;
 
     }
@@ -535,10 +535,10 @@ export class Instance {
                 if (my_matching_rx = my_reactors.find(x => Instance.match_certain_effect(g_fx, x, this.n_me_player))) {
                     //                if (g_fx.game_event == my_rx.ge) {
                     // I am hoping that, if I have multiple triggers, only 1 is matchibg.
-                    logger.debug("events line up: " + GameEvent[ge]);
+                    logger.info("events line up: " + GameEvent[ge]);
                     if (ge == GameEvent.NIL) continue;
-                    logger.debug("EFFECT game fx chosen target");
-                    logger.debug("EFFECT my target desc " + my_matching_rx.td);
+                    logger.info("EFFECT game fx chosen target");
+                    logger.info("EFFECT my target desc " + my_matching_rx.td);
 
                     if (ge == GameEvent.MOVE_CARD) {
                         match = Instance.match_move(g_fx, my_matching_rx);
@@ -573,12 +573,10 @@ export class Instance {
                         } else {
                             match = my_matching_rx.td.matches(g_fx.chosen_target, me, this.game);
                         }
-                        if (my_matching_rx.td2) {
-                            // if a second target, make sure it matches, too.
-                            // sometimes this can lead us to checking an instance that has no cards...
-                            if (!my_matching_rx.td2.matches(g_fx.chosen_target2, me, this.game))
-                                match = false;
-                        }
+
+                        if (!Instance.check_td2(my_matching_rx, g_fx, ge, me, this.game)) {
+                            match = false;
+                        }// common code
 
                     } else if (ge == GameEvent.ATTACK_DECLARE) {
                         // removed debug code a03547b881e70c410a41e6dc4f650ba0f1a3a64b
@@ -705,7 +703,8 @@ export class Instance {
                             " player owner of target is " + g_fx.chosen_target.n_me_player +
                             " chosen tgt " + g_fx.chosen_target.get_name() +
                             " tgt_id " + g_fx.chosen_target.id + " me: " + me.get_instance()?.get_name());
-                        if (my_interrupter.td.matches(g_fx.chosen_target, me, game)) {
+                        if (my_interrupter.td.matches(g_fx.chosen_target, me, game) &&
+                            Instance.check_td2(my_interrupter, g_fx, my_interrupter.ge, new SpecialInstance(thus as Instance), game)) {
                             logger.debug("evolve matches");
                             my_fx.source = me;
                             what_triggers_me.push(g_fx);
@@ -736,7 +735,7 @@ export class Instance {
         let my_effects = this.all_effects();
 
         for (let my_fx of this.all_effects()) {
-               if (Instance.one_effect_matchup("preflight", my_fx, sfx, new SpecialInstance(this), this.n_me_player, this.game, this))
+            if (Instance.one_effect_matchup("preflight", my_fx, sfx, new SpecialInstance(this), this.n_me_player, this.game, this))
                 ret.push(my_fx);
         }
         logger.info(`preflight returning ${ret.length} effects`);
@@ -757,7 +756,7 @@ export class Instance {
             (actual == cand) ||
             (actual == GameEvent.TARGETED_CARD_MOVE && cand == GameEvent.MOVE_CARD) ||
             (cand == GameEvent.ALL_REMOVAL &&
-                [GameEvent.ALL_REMOVAL, GameEvent.DELETE, GameEvent.STACK_ADD, GameEvent.FIELD_TO_HAND, GameEvent.TUCK, GameEvent.PLUG].includes(actual)) ||
+                [GameEvent.ALL_REMOVAL, GameEvent.DELETE, GameEvent.STACK_ADD, GameEvent.FIELD_TO_HAND, GameEvent.TUCK, GameEvent.PLUG, GameEvent.TO_BOTTOM_DECK].includes(actual)) ||
             (cand == GameEvent.ALL_REMOVAL && actual == GameEvent.TARGETED_CARD_MOVE && actual_event.chosen_target.location == Location.FIELD) ||
             // add_card_to_hand can be BOUNCE or DRAW
             (cand == GameEvent.ADD_CARD_TO_HAND &&
@@ -775,6 +774,27 @@ export class Instance {
             return cause;
         }
         return false;
+    }
+
+    // see if tf2 matches up, including special cases
+    static check_td2(myTrigger: InterruptCondition, actualEvent: SubEffect, ge: GameEvent, me: SpecialInstance, game: Game): boolean {
+        if (myTrigger.td2) {
+            if (ge === GameEvent.EVOLVE) {
+                // we've lost the original mons if we are post_effect'ing a fusion. we need
+                // to be able to track their references as they were for "when a X evolves"
+                // but aren't right now
+                if (!actualEvent.chosen_target2?.top()) return false;
+                if (myTrigger.td2.matches(actualEvent.chosen_target2, me, game)) return true;
+                if (!actualEvent.chosen_target3?.top()) return false;
+                if (myTrigger.td2.matches(actualEvent.chosen_target3, me, game)) return true;
+                return false; // no match
+            }
+            // if a second target, make sure it matches, too.
+            // sometimes this can lead us to checking an instance that has no cards...
+            if (!myTrigger.td2.matches(actualEvent.chosen_target2, me, game))
+                return false;
+        }
+        return true;
     }
 
     static compare_cause(actual_event: SubEffect, candidate: InterruptCondition, n_me_player: number): boolean {
@@ -868,6 +888,7 @@ export class Instance {
         if (testmode == 1) return rested.concat(body).concat(plugs).join(",");
         return "Err";
     }
+
 
     in_play(): boolean {
         return this.location == Location.FIELD;
@@ -1011,7 +1032,7 @@ export class Instance {
         return false;
     }
     get_link_requirements(): LinkCondition[] { return this.top().link_requirements };
-    
+
     get_color_count(): number { if (this.top().is_two_color()) return 2; return 1; }
     // move away from this function
     // why would an *instance* ever need to check 2-color?
@@ -1027,6 +1048,13 @@ export class Instance {
     has_dp(): boolean {
         let d = this.dp();
         return !isNaN(d);
+    }
+    get_sources(): CardLocation[] {
+        let ret: CardLocation[] = [];
+        for (let i = 0; i < this.pile.length - 1; i++)
+            ret.push(new CardLocation(this.game, this.n_me_player,
+                this.location, i, this.id));
+        return ret;
     }
     get_source_count(): number { return this.pile.length - 1; }
     get_plug_count(): number { return this.plugged.length; }
@@ -1147,7 +1175,7 @@ export class Instance {
                     w.n_player = n_me_player;
                     XX.do_terminus_effect(1, w, target, game);
                 }
-    
+     
     */
 
 
@@ -1244,7 +1272,7 @@ export class Instance {
         if (dp < 0) dp = 0;
         return dp;
     }
-    
+
     // in the long-term, we should move to an "update" loop that recalcs everything
 
     is_token(): boolean { return this.top().is_token(); }
@@ -1270,7 +1298,7 @@ export class Instance {
         this._monster_cached = b;
         return b;
     }
-    is_type(type: string): boolean { 
+    is_type(type: string): boolean {
         switch (type.toLowerCase()) {
             case "monster": return this.is_monster();
             case "option": return this.is_option();
@@ -1283,6 +1311,7 @@ export class Instance {
     is_option(): boolean { return this.top().is_option(); }
     is_egg(): boolean { return this.top().is_egg(); }
     is_evo_card(): boolean { return false; } // never for instance
+    get_instance(): Instance { return this; } // ever used?
 
     // I can probably just recalc this each time we edit the stack...
     top(): Card { return this.pile[this.pile.length - 1]; }
@@ -1385,7 +1414,7 @@ export class Instance {
                 let t = this.plugged[i];
                 let k = t.all_keywords("linked");
                 ret.push(...Object.keys(k));
-            }            
+            }
         }
         // duped from card::has_keyword
         // TODO: use the all_effects() routines in here; this may not match 
@@ -1734,7 +1763,7 @@ export class Instance {
             let card = this.pile[i];
             logger.debug("MOVING CARD " + card.name + " TO TRASH");
             if (i < this.pile.length - 1) {
-                this.push_to_trash(card); 
+                this.push_to_trash(card);
             } else {
                 this.push_to_location(location, card, position);
             }
@@ -1742,7 +1771,7 @@ export class Instance {
         let plug;
         for (let i = 0; i < this.plugged.length; i++) {
             let plug = this.plugged[i];
-            this.push_to_trash(plug); 
+            this.push_to_trash(plug);
         }
 
 
@@ -1825,8 +1854,8 @@ export class Instance {
     }
 
     has_must_block(): boolean {
-            if (this.all_effects().find(e => e.raw_text.match(/must block/i)))
-                return true;
+        if (this.all_effects().find(e => e.raw_text.match(/must block/i)))
+            return true;
         return false;
     }
 
