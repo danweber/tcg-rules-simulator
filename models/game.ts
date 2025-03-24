@@ -1347,7 +1347,7 @@ export class Game {
             //        let cl = new CardLocation(c);
             e.push({
                 // is "game flow" right? Effects could show up here... and blast_digi *is* an effect
-                cause: EventCause.GAME_FLOW,
+                cause: onto2 ? EventCause.DNA | EventCause.GAME_FLOW : EventCause.GAME_FLOW,
                 game_event: GameEvent.EVOLVE,
                 // chosen_target: card,
                 chosen_target: cl, // Should be this 

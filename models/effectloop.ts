@@ -17,7 +17,7 @@ import _ from 'lodash';
 const more_labelling = false;
 
 function random_id() {
-    return 'abc';
+    //return 'abc';
     let result = '';
     const characters = 'abcdefghijklmnopqrstuvwxyz';
     const charactersLength = characters.length;
@@ -159,7 +159,7 @@ function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: Solid
         let ge = w.game_event;
         //logger.info("w.ge is " + GameEvent[ge]);
         //logger.info("target is " + w.td.raw_text);
-        let needed_targets = Number(w.choose);        
+        let needed_targets = Number(w.choose);
         if (w.n_mod?.includes("upto")) needed_targets = 1;
 
 
@@ -616,7 +616,7 @@ export class SolidEffectLoop {
     }
     step(): (false | SubEffect[]) {
 
-        logger.info("in SEL, step is " + FakeStep[this.s]);
+        logger.info("in SEL, step is " + FakeStep[this.s] + " cancels is " + this.effect.cancels);
         if (this.s == FakeStep.PRE_LOOP) {
 
             // IS this source is an instance, make sure it's either still 
@@ -642,7 +642,7 @@ export class SolidEffectLoop {
             // clear out things from prior runs
             // where to do this is hard, because something we get
             // Atomics that are pre-populated for in-game effects,
-        // so we only do it when we're selecting targets
+            // so we only do it when we're selecting targets
             if (!this.effect.effects[0].events[0].td.empty() &&
                 this.effect.effects[0].events[0].td.conjunction !== Conjunction.SOURCE
 
@@ -841,7 +841,7 @@ export class SolidEffectLoop {
 
 
             this.n_effect += 1;
-
+            logger.info("this.effect n_effect  is " + this.n_effect);
             this.weirdo_count = 0;
 
 
@@ -860,7 +860,6 @@ export class SolidEffectLoop {
                 return false;
             }
             let eff = this.effect.effects[this.n_effect];
-
 
 
 
@@ -916,6 +915,11 @@ export class SolidEffectLoop {
                 //                    this.effect.n_player ); 
                 if (t.length == 0) {
                     this.game.log("Condition fails, see if there's another atomic effect.");
+                    if (eff.is_cost) { 
+                        this.s = FakeStep.DONE;
+                        return false;
+                    }
+                    // we should still notice that we didn't pay the cost!
                     this.s = FakeStep.FINISH_REPEAT_LOOP;
                     return false;
                 }
@@ -1088,11 +1092,20 @@ export class SolidEffectLoop {
             let incidents = this.effect.trigger_incidents || [];
             if (incidents.length > 0) {
                 let tgts: CardLocation[] | Instance[] = incidents.map(e => e.chosen_target);
-                logger.info("952, set last thing in incidents");
+                logger.info("set last thing in incidents");
                 this.game.set_last_thing(tgts);
             }
 
-            if (!this.effect.interrupt) {
+            // Lock in now what we interrupted.
+            // If we are an activated effect, 
+
+            logger.error("9999");
+            logger.error("this.effect is " + this.n_effect + " "
+                + GameEvent[this.effect.effects[this.n_effect].events[0].game_event]
+                + " and my sold_starter is " + !!this.effect.solid_starter);
+
+            logger.info("my sold starter interrupt is " + !!this.effect.solid_starter?.interrupt);
+            if (!this.effect.interrupt && !(this.effect.solid_starter?.interrupt)) {
                 this.s = FakeStep.ASK_UPTO;
                 return false;
             }
@@ -1134,16 +1147,28 @@ export class SolidEffectLoop {
                 (trigger.td.matches(x.chosen_target, this.effect.source, this.game)));
             */
             logger.info(this.rand + "LENGTH OF CANCELABLE IS " + this.cancellable.length);
+            logger.info(this.rand + "CANCELABLE IS " + this.cancellable.map(x => GameEvent[x.game_event]).join(";"));
             logger.info(this.rand + "LENGTH OF INCIDENTS IS " + this.effect.trigger_incidents?.length);
+            logger.info("this.effect.cancels1 " + !!this.effect.cancels);
+            let nnn = this.n_effect;
+            logger.info("this.effect " + nnn + " " +
+                this.effect.effects[nnn].events.map(x => GameEvent[x.game_event]).join(";"));
 
             let cc = this.cancellable;
             cc = incidents;
+
             if (cc.length == 0) {
-                console.error("This is broken!");
+                logger.info("no interrupt target although we expect one");
+                // if we have a parent, use their reacted-to effect
+                this.cancel_target = this.effect.solid_starter?.chosen_cancel_target;
+                if (!this.cancel_target) {
+                    console.error("This is broken!");
+                }
                 this.s = FakeStep.ASK_UPTO;
                 return false;
             } else if (cc.length == 1) {
                 this.cancel_target = cc[0];
+                this.effect.chosen_cancel_target = this.cancel_target;
                 if (this.effect.cancels) {
                     this.game.la("Only one event to interrupt:" + GameEvent[cc[0].game_event] +
                         " " + cc[0].chosen_target.id);
@@ -1185,6 +1210,7 @@ export class SolidEffectLoop {
             // dupe code        
             let answer = parseInt(this.game.get_answer()) - 1;
             this.cancel_target = this.cancellable![answer];
+            this.effect.chosen_cancel_target = this.cancel_target;
             this.game.la("Effect chosen: " + this.cancel_target.label);
             this.s = FakeStep.ASK_UPTO;
             // fall through        
@@ -1296,7 +1322,7 @@ export class SolidEffectLoop {
             if (w.td3) logger.info(this.rand + "TARGETDESC3 FOR EFFECT IS " + (w.td3 ? w.td3.toString() : 'nul'));
             if (true) {
                 if (this.reacted_to.length > 0) {
-                    // there are two tests now.
+                    // there are two tests now. What does this code block do?
                     logger.info(this.rand + "Targets must also match against reacted_to, length " + this.reacted_to.length);
 
                     for (let subby of this.reacted_to) {
@@ -1383,7 +1409,12 @@ export class SolidEffectLoop {
 
             let friendly_text = GameEvent[w.game_event].toLowerCase().replaceAll("_", " ");
             // special case for retaliation because we otherwise lose track... right?
-            if (w.td && w.td.conjunction == Conjunction.SOURCE) {
+
+            if (w.game_event == GameEvent.CANCEL) {
+                logger.info("cancel, no target needed");
+                w.choose = 0;
+                this.cancel_target
+            } else if (w.td && w.td.conjunction == Conjunction.SOURCE) {
                 logger.info(this.rand + "RETALIATION SPECIAL CASE");
                 logger.info(w.toString());
                 this.potential_targets = [w.chosen_target];
@@ -1631,9 +1662,11 @@ export class SolidEffectLoop {
                 this.s = FakeStep.FINISH_REPEAT_LOOP; // yeah, didn't we check this already?
                 return false;
             }
+
             logger.debug(`tgts ${this.potential_targets.length} ${w.choose} ${w.n_mod}`);
             if (this.potential_targets.length > 1 && !w.choose) {
-                console.error(1596, this.potential_targets.length, w.choose);
+                console.error(this.potential_targets.length, w.choose);
+                console.error("ge: " + GameEvent[w.game_event]);
                 // I'd like to assert that every thing with a single target
                 // set w.choose but there are too many exceptions
                 let a: any = null; a.choose_undefined();
@@ -2178,8 +2211,10 @@ export class SolidEffectLoop {
             logger.info(this.rand + "between pay clauses, paid is " + successfully_paid);
 
             if (!successfully_paid && this.effect.cancels) {
-                this.game.log("Cost wasn't successfully paid by interrupter, " +
-                    this.cancel_target!.label + " will continue.");
+
+                // this comment below is a lie. We're in this branch when we do cancel
+                //   this.game.log("Cost wasn't successfully paid by interrupter, " +
+                //     this.cancel_target!.label + " will continue.");
                 this.s = FakeStep.FINISH_REPEAT_LOOP;
                 return false;
             }
@@ -2208,68 +2243,95 @@ export class SolidEffectLoop {
 
             // fall through
         }
+
+
+        // Cancels are handled in the effect loop, after running a cost
+        // and seeing if we can cancel something.
+        // It really should move into its own Terminus event.
+        // An issue there is that the target of what we cancel is selected
+        // immediately at interrupt timing. So maybe it does belong like this.
+
         if (this.s == FakeStep.GET_CANCEL) {
-            logger.info(this.rand + "Negating " + this.cancel_target!.label);
-            this.game.log("Will be negated: " + this.cancel_target!.label);
-            this.cancel_target!.negated = true;
-            this.s = FakeStep.FINISH_REPEAT_LOOP;
-            // fall through
-        }
-        if (this.s == FakeStep.FINISH_REPEAT_LOOP) {
-            logger.info("repeat check " + this.n_repeat);
-            if (this.n_repeat > 1) {
-                this.n_repeat--;
-                logger.info("repeating, " + this.n_repeat);
 
-                this.s = FakeStep.DO_EFFECT_GO;
-                return false;
-            }
-            this.s = FakeStep.CHECK_IF_CAN;
-            // if our prior action revealed 
-            if (this.n_effect > 0) {
-                let prior_atomic: AtomicEffect = this.effect.effects[this.n_effect - 1];
-                if (prior_atomic?.see_security) {
-                    this.game.Player1.search = undefined;
-                    this.game.Player2.search = undefined;
+            logger.info(this.rand + "LENGTH OF CANCELABLE IS " + this.cancellable?.length);
+            logger.info(this.rand + "CANCELABLE IS " + this.cancellable?.map(x => GameEvent[x.game_event]).join(";"));
+            logger.info(this.rand + "LENGTH OF INCIDENTS IS " + this.effect.trigger_incidents?.length);
+            logger.info("this.effect.cancels2 " + !!this.effect.cancels);
+            let nnn = this.n_effect;
+            logger.info("this.effect " + nnn + " " +
+                this.effect.effects[nnn].events.map(x => GameEvent[x.game_event]).join(";"));
+
+            if (this.cancel_target) {
+
+                logger.info(this.rand + "a1 " + nnn + " " + this.effect.effects[nnn].events.map(x => GameEvent[x.game_event]).join(","));
+                logger.info(this.rand + "a1 " + (nnn+1) + " " + this.effect.effects[nnn+1]?.events?.map(x => GameEvent[x.game_event]).join(","));
+                
+                //&& this.effect.effects[this.n_effect].events[1]?.game_event === GameEvent.CANCEL) {
+                    logger.info(this.rand + "Negating " + this.cancel_target.label);
+                    this.game.log("Will be negated: " + this.cancel_target.label);
+                    this.cancel_target.negated = true;
+                } else {
+                    logger.error("Expected a cancel target.");
                 }
+                this.s = FakeStep.FINISH_REPEAT_LOOP;
+
+                // fall through
             }
-            return false;
-        }
+            if (this.s == FakeStep.FINISH_REPEAT_LOOP) {
+                logger.info("repeat check " + this.n_repeat);
+                if (this.n_repeat > 1) {
+                    this.n_repeat--;
+                    logger.info("repeating, " + this.n_repeat);
 
-        // we just here way from CHECK_IF_CAN;
-        if (this.s == FakeStep.DONE) {
-
-            let atomic = this.effect.effects[0]; // cleaning up searcher, it's always the first atomic 
-
-            // is it really turn player??? I don't think so
-            let p = this.game.get_turn_player();
-
-            logger.info(this.rand + " DONE DONE DONE length is " + p.reveal.length);
-            logger.info(this.rand + ` n_effect is ${this.n_effect} and length is ${this.effect.effects.length}`);
-            // delete this next line
-            logger.info(this.rand + " reveal length is " + p.reveal.length);
-
-            // code to flush reveal to trash used to be here
-            // is this pushing things to trash too soon?
-            if (false)
-                if (p.reveal.length > 0) {
-                    if (atomic && atomic.search_final) {
-                        this.game.log(`${p.reveal.length} cards still left in reveal for player ${p.player_num}`);
-                        logger.info(this.rand + `n_effet is ${this.n_effect} of ${this.effect.effects.length} and atomic is ${atomic}`);
-                        //      logger.info(this.rand + "cleaning up reveal to " + Location[atomic.search_final]);
-                        //    p.put_reveal(atomic.search_final);
+                    this.s = FakeStep.DO_EFFECT_GO;
+                    return false;
+                }
+                this.s = FakeStep.CHECK_IF_CAN;
+                // if our prior action revealed 
+                if (this.n_effect > 0) {
+                    let prior_atomic: AtomicEffect = this.effect.effects[this.n_effect - 1];
+                    if (prior_atomic?.see_security) {
+                        this.game.Player1.search = undefined;
+                        this.game.Player2.search = undefined;
                     }
                 }
+                return false;
+            }
 
-            logger.info(this.rand + "solideffectloop returning " + this.collected_events.length + " events " + this.collected_events.map(e => GameEvent[e.game_event]).join("/"));
-            logger.info("1996, set last thing in collected_events");
-            this.game.set_last_thing(this.collected_events.map(e => e.chosen_target));
-            return this.collected_events;
+            // we just here way from CHECK_IF_CAN;
+            if (this.s == FakeStep.DONE) {
+
+                let atomic = this.effect.effects[0]; // cleaning up searcher, it's always the first atomic 
+
+                // is it really turn player??? I don't think so
+                let p = this.game.get_turn_player();
+
+                logger.info(this.rand + " DONE DONE DONE length is " + p.reveal.length);
+                logger.info(this.rand + ` n_effect is ${this.n_effect} and length is ${this.effect.effects.length}`);
+                // delete this next line
+                logger.info(this.rand + " reveal length is " + p.reveal.length);
+
+                // code to flush reveal to trash used to be here
+                // is this pushing things to trash too soon?
+                if (false)
+                    if (p.reveal.length > 0) {
+                        if (atomic && atomic.search_final) {
+                            this.game.log(`${p.reveal.length} cards still left in reveal for player ${p.player_num}`);
+                            logger.info(this.rand + `n_effet is ${this.n_effect} of ${this.effect.effects.length} and atomic is ${atomic}`);
+                            //      logger.info(this.rand + "cleaning up reveal to " + Location[atomic.search_final]);
+                            //    p.put_reveal(atomic.search_final);
+                        }
+                    }
+
+                logger.info(this.rand + "solideffectloop returning " + this.collected_events.length + " events " + this.collected_events.map(e => GameEvent[e.game_event]).join("/"));
+                logger.info("1996, set last thing in collected_events");
+                this.game.set_last_thing(this.collected_events.map(e => e.chosen_target));
+                return this.collected_events;
+            }
+            console.error("SHOULD NOT BE HERE FO)R SOLID EFFECT");
+            return false; // loop
         }
-        console.error("SHOULD NOT BE HERE FO)R SOLID EFFECT");
-        return false; // loop
     }
-}
 
 // the only reason to export this is because instance.run_constant_effects() needs to apply
 
@@ -2295,7 +2357,7 @@ export class XX {
         }
         let s_target1 = (weirdo.chosen_target ? weirdo.chosen_target.get_name() : "nul");
         let s_target2 = (weirdo.chosen_target2 ? weirdo.chosen_target2.get_name() : "nul");
-        logger.info("Terminus effect");
+        logger.info("Terminus effect " + GameEvent[weirdo.game_event]);
         //console.dir(weirdo, { depth: 0 });
         logger.info("Target td is " + (weirdo.td ? weirdo.td.toString() : "nul") + " for '" + weirdo.td.raw_text + "'");
         logger.info("chosen target   is " + s_target1);
@@ -2439,6 +2501,9 @@ export class XX {
         } else if (weirdo.game_event == GameEvent.DEVOLVE) {
             game.log("Devolving " + name + " by " + weirdo.n);
             target.deevolve(weirdo.n!);
+        } else if (weirdo.game_event == GameEvent.TRASH_FROM_FIELD) { // just 
+            game.log("Trashing " + name);
+            target.do_trash("...");
         } else if (weirdo.game_event == GameEvent.SUSPEND) {
             game.log("Suspending " + name);
             let ret = !target.suspended;
@@ -3040,6 +3105,7 @@ export class InterrupterLoop {
         this.solid_starter = solid_starter;
         logger.error("IL DEPTH IS " + depth);
 
+
         //TODO: check for immunity
 
         // here, see if any targets are immune
@@ -3143,7 +3209,7 @@ export class InterrupterLoop {
             let targets = this.effects_to_process.map(e => e.chosen_target).filter(e => !!e);
             // simultaneous effects always have the same source
 
-            logger.info("2744, setting last thing maybe with targets?");
+            logger.info("setting last thing maybe with targets?");
             if (!this.is_cost && targets.length > 0) this.game.set_last_thing(targets);
 
             logger.debug(this.rand + "EEEEEE there are " + this.effects_to_process.length + " effects to find interrupters for");
@@ -3155,10 +3221,12 @@ export class InterrupterLoop {
                 if (this.sta) {
                     logger.info('interrupting sta ' + this.sta.count);
                     // does this need to be a copy?
+                    logger.info("this.sta.[0].cancels is " + this.sta.solids[0].cancels);
                     interrupters = [...this.sta?.solids]; // copy references, so when we delete then, they stay in sta.solids
                     interrupters.forEach(i => {
                         i.source = new SpecialCard(first_effect.spec_source as CardLocation);
                         i.interrupt_count = 0;
+                        i.solid_starter = this.solid_starter;
                     });
                 } else {
                     let a = this.game.Player1.get_pending_effect(Phase.ASAP, this.game.n_turn);

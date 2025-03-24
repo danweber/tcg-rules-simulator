@@ -149,7 +149,7 @@ export class EffectChooser {
             return true;
         }
         if (this.count == 0) {
-            g.log("Remaining effects don't activate.");
+            g.log("Remaining " + this.length() + " effects don't activate.");
             return true;
         }
 

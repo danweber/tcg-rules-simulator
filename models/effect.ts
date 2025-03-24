@@ -21,6 +21,8 @@ export class SolidEffect {
 	interrupt_count: number = 0; // turns on the first time it interrupts in a loop
 
 	solid_starter?: SolidEffect; 
+	chosen_cancel_target?: SubEffect;
+	
 	respond_to: InterruptCondition[] = []; // interruptcondition is bad name
 	phase_trigger?: PhaseTrigger;
 	main?: boolean;

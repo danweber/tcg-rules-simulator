@@ -130,7 +130,7 @@ const SolidKeywords: string[] = [
     "<Armor Purge>", // legacy for old format
     "＜Alliance＞",
     // this should be removed from SolidKeywords
-    "＜Delay＞", // description of timing
+    "＜Delay＞", // description of timing????
     //  "＜Ice Clad＞", // description of timing
 
 
@@ -504,7 +504,6 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     line = line.trim();
 
     let m;
-
     ///////////////// CARD RULES
 
     // there is a lot of dupe code here between this and the atomickeywords
@@ -972,11 +971,16 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
         line = "";
     }*/
 
+//    let grammared = parseStringEvoCond(line, "SolidEffect");
+  //  if (grammared) {
+
+
+
+
     const sentences: string[] =
         //line.startsWith("Reveal") ? [line] : 
         splitParagraph(line);
     // for now, skip searchers
-
 
     // see if the next sentence should be merged
     for (let n = 0; n < sentences.length - 1; n++) {
@@ -1026,7 +1030,26 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
             logger.info("new split: " + sentence);
             // break up two atomics in a sentence. (not accounting for IF)
 
+            if (m = firstsentence.match("(＜Delay＞).(・.*)")) {
+                logger.info("new split: Delay＞ do X.");
 
+                const clause1 = (m[1]).trim();
+                const clause2 = m[2].trim();
+                let [a1, l1] = parse_atomic(clause1, label, solid, card);
+                let [a2, l2] = parse_atomic("Activate the effect below:" + clause2, label, solid, card);
+                a1.is_cost = true;
+                a1.optional = true;
+                atomics.push(a1, a2);
+                solid.effects.push(a1, a2);
+
+                logger.info("Da1 " + a1.events.map( x => GameEvent[x.game_event] ).join(","));
+                logger.info("Da2 " + a2.events.map( x => GameEvent[x.game_event] ).join(","));
+
+                continue;
+
+            }
+
+        
             // (if/while...) by Y, Z. 
             // use first sentence so we don't eat a by in the second
             if (m = firstsentence.match(/(.*)(by .*?), (.*)/i)) {
@@ -1042,6 +1065,8 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
                         atomics.push(a1, a2);
                         solid.effects.push(a1, a2);
+                        logger.info("a1 " + a1.events.map( x => GameEvent[x.game_event] ).join(","));
+                        logger.info("a2 " + a2.events.map( x => GameEvent[x.game_event] ).join(","));
                         if (a2.events[0].game_event == GameEvent.CANCEL) {
                             logger.info("is a canceller");
                             solid.cancels = true;
@@ -1617,24 +1642,51 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
 
     let grammared = parseStringEvoCond(line, "WhenSentence");
     if (grammared) {
-//        console.error("WHEN", grammared);
-  //      console.dir(grammared, { depth: 99 });
+        //        console.error("WHEN", grammared);
+        //      console.dir(grammared, { depth: 99 });
 
         let w = grammared.When;
         if (w.event === "EVOLVE") {
             // can i recognize what it *was* properly, on a non-interruptive?`
             let int_evo: InterruptCondition = {
                 ge: GameEvent.EVOLVE,
-                // again, 
+                // again, we're re-grammaring
                 td2: new MultiTargetDesc(w.before.raw_text),
                 td: new MultiTargetDesc(w.after.raw_text),
                 cause: EventCause.ALL
             }
+            //console.log("grammared and consumed: " + line);
             return int_evo;
         }
 
+        if (["UNSUSPEND", "SUSPEND"].includes(w.event)) {
+            let int_evo: InterruptCondition = {
+                ge: strToEvent(w.event),
+                // again, we're re-grammaring
+                td: new TargetDesc(w.target.raw_text),
+                cause: EventCause.ALL
+            }
+            //console.log("grammared and consumed: " + line);
+            return int_evo;
+        }
 
+        if (false)
+            if (["DELETE"].includes(w.event)) {
+                let int_evo: InterruptCondition = {
+                    ge: strToEvent(w.event),
+                    // again, we're re-grammaring
+                    td: new TargetDesc(w.target.raw_text),
+                    cause: EventCause.ALL // incorrect!
+                }
+                console.log("grammared and consumed: " + line);
+                return int_evo;
+            }
+
+
+        //console.log("grammared but unhandled: " + line);
+        //console.dir(grammared, { depth: 6 });
     }
+    //console.log("ungrammared: " + line);
 
 
     // INTERRUPTIVE .  should I capture both "would" and "would be"?
@@ -2071,6 +2123,22 @@ function parse_give_status(s: string, card: Card): StatusCondition | false {
 
 }
 
+function nested_solids(input: string, label: string, card?: Card): SolidsToActivate {
+    let sta: SolidsToActivate = new SolidsToActivate();
+    let effects_text = input
+    let effects = effects_text.split("・");
+    for (let effect of effects) {
+        if (effect.length < 2) continue;
+        let text = "[Effect] " + effect;
+        let [, nested_solid_effect,] = new_parse_line(text, card, label, "main");
+        logger.info(1768, nested_solid_effect.respond_to.length);
+        sta.solids.push(nested_solid_effect);
+        logger.info("nested solid cancel is " + nested_solid_effect.cancels);
+    }
+    return sta;
+}
+
+
 //export
 function parse_atomic(line: string, label: string, solid: SolidEffect2,
     card: Card | undefined, flags?: any
@@ -2121,23 +2189,53 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     line = line.trim();
 
     // use new-style parser for play (except for stack summon)
+
+    if (line == "＜Delay＞") {
+        atomic.test_condition = new GameTest(GameTestType.NOT_THIS_TURN);
+        thing.game_event = GameEvent.TRASH_FROM_FIELD;
+        thing.td = new TargetDesc("this card");
+        thing.choose = 1;
+        line = "";
+    }
+
+    if (line.startsWith("＜xxxDelay＞.・")) {
+        // is this branch even used?
+        let nested = line.after("＜Delay＞.・")                
+        if (atomic.test_condition) console.error("warning over-writing test contidion");
+        atomic.test_condition = new GameTest(GameTestType.NOT_THIS_TURN);
+
+        let proper_thing: any = { ...thing };
+        proper_thing.game_event = GameEvent.TRASH_FROM_FIELD;
+        proper_thing.td = new TargetDesc("this card");
+        proper_thing.choose = 1;
+        line = "";
+        atomic.subs.push(proper_thing);
+
+        thing.game_event = GameEvent.ACTIVATE;
+        atomic.sta = nested_solids(nested, label, card);
+        atomic.sta.count = 1;
+        line = "";
+
+
+    }
     if (
         (
             line.toLowerCase().includes("play") ||
             line.toLowerCase().includes("bottom of the deck") ||
-            line.toLowerCase().includes("evolution cards")
+            line.toLowerCase().includes("evolution cards") ||
+            line.toLowerCase().includes("delay")
         )
         && !line.toLowerCase().includes("1 your")) {
         let grammared = parseStringEvoCond(line, "EffSentence");
         let action_args, target, x;
         if (grammared) {
 
-           if (grammared.if) {
+            if (grammared.if) {
                 atomic.test_condition = parse_if(grammared.if);
 
 
-           }
-          //  console.log("GRAM");   console.dir(grammared, { depth: 99 });
+            }
+            //  console.log("GRAM");   console.dir(grammared, { depth: 99 });
             const eff = grammared.effect;
             if (eff.action === 'play') {
 
@@ -2149,7 +2247,9 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 // we already grammared the multitarget, we don't need to re-parse...
                 //  thing.td = new MultiTargetDesc("");
                 x = new MultiTargetDesc(target.raw_text);
-                thing.td = x;
+                thing.td = x;      
+
+
                 thing.choose = x.choose;
                 if (action_args.no_cost) thing.n_mod = "for free";
                 line = "";
@@ -2177,26 +2277,32 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 x = new MultiTargetDesc(target.raw_text);
                 //x.parse_matches = target;
                 thing.td = x;
-                line = "";     
+                line = "";
             }
+            // awakening of sun can't find this yet
+            if (eff.action === 'Delay') {
+                console.error("XXXXXX XX");
+                let nested = eff.nested_solid.raw_text;                
+                if (atomic.test_condition) console.error("warning over-writing test contidion");
+                atomic.test_condition = new GameTest(GameTestType.NOT_THIS_TURN);
+                
+
+
+                thing.game_event = GameEvent.ACTIVATE;
+                console.error(2250, nested);
+                atomic.sta = nested_solids(nested, label, card);
+                atomic.sta.count = 1; 
+                line = "";
+            }
+            
 
         }
     }
 
     if (m = line.match(/\s*Activate (\d+|all) of the (?:.*?effects.*?):(.*)/)) {
-        let sta: SolidsToActivate = new SolidsToActivate();
-        sta.count = parse_number(m[1]);
-        let effects_text = m[2];
-        let effects = effects_text.split("・");
-        for (let effect of effects) {
-            if (effect.length < 2) continue;
-            let text = "[Effect] " + effect;
-            let [, nested_solid_effect,] = new_parse_line(text, card, label, "main");
-            logger.info(1768, nested_solid_effect.respond_to.length);
-            sta.solids.push(nested_solid_effect);
-        }
         thing.game_event = GameEvent.ACTIVATE;
-        atomic.sta = sta;
+        atomic.sta = nested_solids(m[2], label, card);
+        atomic.sta.count = parse_number(m[1]);
         line = "";
     }
 
@@ -2206,13 +2312,20 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         if (m[1]) {
             thing.n_repeat = new GameTest(GameTestType.COUNT, undefined, undefined, m[1]);
         }
-        let effects_text = m[3];
+        let effects_text = "[Effect] " +  m[3];
         let [, nested_solid_effect,] = new_parse_line(effects_text, card, label, "main");
         logger.info(1799, nested_solid_effect.respond_to.length);
         sta.solids.push(nested_solid_effect);
+
         thing.game_event = GameEvent.ACTIVATE;
-        atomic.sta = sta;
+     /*   atomic.sta = nested_solids(m[3], label, card);
+        atomic.sta.count = 1;
+        if (m[1]) {
+            thing.n_repeat = new GameTest(GameTestType.COUNT, undefined, undefined, m[1]);
+        }
+        atomic.sta.count = parse_number(m[1]);*/
         line = "";
+        atomic.sta = sta;
     }
 
     // If we're in here, we already have our trigger
@@ -2323,14 +2436,14 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (line.match(/prevent (1 of those Monster's|that) deletion/i) ||
         line.match(/prevent .*/) ||
         line.match(/(?:it|they) do.?.?n.t leave/)) {
-
+        
         let canceller: SubEffect = {
             game_event: GameEvent.CANCEL,
             label: "cancel deletion",
             td: new TargetDesc("self"),
             cause: EventCause.EFFECT
         };
-
+        solid.cancels = true; 
         atomic.events = [canceller];
         atomic.weirdo = canceller;
         line = "";
@@ -2612,6 +2725,9 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         }
     }
 
+
+
+
     //    "effect": "[When evolving] Trash any 1 evo card under 1 of your opponent's monsters.",
     //  // You may trash any 1 Option card from 1 monster's evolution cards
     // By trashing 2 of this Monster's evolution cards, activate the effect below
@@ -2622,9 +2738,14 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         line = "";
     }
 
+    if (m = line.match(/trash(?:ing)? this card/i)) {
+        thing.game_event = GameEvent.TRASH_FROM_FIELD;
+        thing.td = new TargetDesc(m[2]);
+        thing.choose = 1;
+        line = "";
+    }
 
     if (m = line.match(/shuffle your/i)) {
-        logger.error("searching is revealing to all");
         thing.game_event = GameEvent.SHUFFLE;
         line = "";
     }
@@ -2772,13 +2893,12 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         evo_cost = parseInt(m[3])
         line = m[1];
     }
-
     //   '1 of your Monster without [X YYY] in its evolution cards may evolve into a Monster card with the [X Antibody] trait in your hand with the evolution cost reduced by 1. If it did, place this card as its bottom evolution card.',
-
     // how to distinguish "[when attacking] this may evolve into Bob" from a passive "this may evolve into bob"?? 
+
     if (Solid_is_triggered(solid)) {
         //                  1    2             3                4    56                      7                                           8           9                                   10      
-        if (m = line.match(/(.*?)( may )?evolve(.*) into ?a?n? ?(.*) ((in|from) (?:your|the) (hand|trash|face.up security cards?)|among them)\s*,?\s?(with the evolution cost reduced by (\d)+|without paying the cost)?/i)) {
+        if (m = line.match(/(.*?)( may )?evolv(?:e|ing)(.*) into ?a?n? ?(.*) ((in|from) (?:your|the) (hand|trash|face.up security cards?)|among them)\s*,?\s?(with the evolution cost reduced by (\d)+|without paying the cost)?/i)) {
             if (m[8]) {
                 if (m[9]) {
                     evo_reduced = parseInt(m[9]);
@@ -2841,6 +2961,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             //        thing.n_mod = "reduced";
             //      line = "";
         }
+    } else {
+        logger.error("NOT TRIGGERED!");
     }
 
     // this should be more generic than "in your hand"

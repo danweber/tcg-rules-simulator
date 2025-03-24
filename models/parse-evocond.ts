@@ -58,7 +58,8 @@ export function parseStringEvoCond(input: string, search: string, all: boolean =
            // throw new Error("No parse tree found, for " + input);
         }
     } catch (e: any) {
-        console.error(e.message);
+        
+        if (3>4) console.error(e.message);
 
         /*
         const stack = e.stack.split('\n');

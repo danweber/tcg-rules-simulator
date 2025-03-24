@@ -163,7 +163,7 @@ export enum GameEvent {
 	REVEAL_TO_HAND,
 	TRASH_FROM_HAND,
 	TRASH_TO_HAND,
-	TRASH_UNUSED, // from field? right now used for eggs that end up where they shouldn't be
+	TRASH_FROM_FIELD, // from field? right now used for eggs that end up where they shouldn't be
 	trash_From_someplace_else_idunno,
 	MOVE_CARD, // generic, from location a to location b. trash card?
 	// leave out PLACE_IN_FIELD and DRAW

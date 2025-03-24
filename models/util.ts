@@ -195,7 +195,6 @@ export function verify_special_evo(base: Instance | CardLocation, evo_cond: any,
     }*/
 
     if (array = evo_cond.or) {
-        console.error(148, array);
         let ret = array.some((x: any) => verify_special_evo(base, x, s));
         return ret;
         //         if (!ret) return def;

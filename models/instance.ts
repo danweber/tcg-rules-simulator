@@ -484,6 +484,12 @@ export class Instance {
         // I still trigger just once, but need to keep track of how
         // many things hit me. That isn't implemented yet. 
         for (let my_fx of this.all_effects()) {
+
+            //    if (Instance.one_effect_matchup("preflight", my_fx, sfx, new SpecialInstance(this), this.n_me_player, this.game, this))
+            //      ret.push(my_fx);
+
+
+
             if (!my_fx.respond_to) continue;
             // things not on field
 
@@ -528,56 +534,26 @@ export class Instance {
 
                 let my_matching_rx;
                 let n = my_reactors.filter(x => x.ge == g_fx.game_event).length;
-                if (n > 1) logger.error(`we have ${n} matches where we expect only 1`);
+                if (n > 1) logger.error(`we have ${n} matches where we expec t only 1`);
 
 
 
                 if (my_matching_rx = my_reactors.find(x => Instance.match_certain_effect(g_fx, x, this.n_me_player))) {
                     //                if (g_fx.game_event == my_rx.ge) {
                     // I am hoping that, if I have multiple triggers, only 1 is matchibg.
-                    logger.info("events line up: " + GameEvent[ge]);
+                    logger.info("events line up: " + GameEvent[ge] + " " + GameEvent[my_matching_rx.ge]);
                     if (ge == GameEvent.NIL) continue;
                     logger.info("EFFECT game fx chosen target");
                     logger.info("EFFECT my target desc " + my_matching_rx.td);
 
                     if (ge == GameEvent.MOVE_CARD) {
+                        // easy cae
                         match = Instance.match_move(g_fx, my_matching_rx);
-
+                    } else if (ge == GameEvent.FIELD_TO_HAND && my_matching_rx.ge == GameEvent.MOVE_CARD) {
+                        match = Instance.match_move(g_fx, my_matching_rx);
                         // I think *most* things are going to be in this clause
-                    } else if (ge == GameEvent.SUSPEND || ge == GameEvent.DELETE || ge == GameEvent.PLAY || ge == GameEvent.EVOLVE || ge == GameEvent.PLUG) {
-                        logger.debug(" conjunction of game fx is " + Conjunction[g_fx.td.conjunction]);
-                        logger.debug(" conjunction of my fn is  " + Conjunction[my_matching_rx.td.conjunction]);
-
-                        if (!Instance.compare_cause(g_fx, my_matching_rx, this.n_me_player)) {
-                            //                      if (my_matching_rx.cause && (my_matching_rx.cause & g_fx.cause!) == 0) {
-                            logger.debug(`event causes don't line up mine ${my_matching_rx.cause} game ${g_fx.cause}`);
-                            continue;
-                        }
-
-                        if (g_fx.chosen_target == this &&
-                            my_matching_rx.td.matches(this, me, this.game)) {
-                            match = true;
-                            // cheat for retaliate      
-                            my_fx.effects[0].weirdo.chosen_target = g_fx.spec_source;
-                            // retaliate is only for deletions in battle, not
-                            // deletions by effect or security battles.
-                            logger.debug(`my_cause ${my_matching_rx.cause} and ${g_fx.cause}`);
-                            // Not matching on cause, skip
-                            if (my_matching_rx.cause && (my_matching_rx.cause & g_fx.cause!) == 0)
-                                match = false
-                        } else if (my_matching_rx.td.conjunction == Conjunction.SOURCE) {
-                            if (g_fx.spec_source == this) {
-                                logger.debug("I caused the event, match up!");
-                                match = true;
-                            }
-                        } else {
-                            match = my_matching_rx.td.matches(g_fx.chosen_target, me, this.game);
-                        }
-
-                        if (!Instance.check_td2(my_matching_rx, g_fx, ge, me, this.game)) {
-                            match = false;
-                        }// common code
-
+                    } else if (my_matching_rx.ge == GameEvent.ADD_CARD_TO_HAND) {
+                        match = true;
                     } else if (ge == GameEvent.ATTACK_DECLARE) {
                         // removed debug code a03547b881e70c410a41e6dc4f650ba0f1a3a64b
                         let fail = false;
@@ -610,9 +586,47 @@ export class Instance {
                             // this used to be a special case but maybe it doesn't need to be any more
                             match = (this.n_me_player == g_fx.chosen_target.n_me_player);
                         }
+                    } else if (true) { // if (ge == GameEvent.SUSPEND || ge == GameEvent.DELETE || ge == GameEvent.PLAY || ge == GameEvent.EVOLVE || ge == GameEvent.PLUG) {
+                        logger.info(" trying default for GE " + GameEvent[ge]);
+                        logger.info(" conjunction of game fx is " + Conjunction[g_fx.td.conjunction]);
+                        logger.info(" conjunction of my fn is  " + Conjunction[my_matching_rx.td.conjunction]);
+
+                        if (!Instance.compare_cause(g_fx, my_matching_rx, this.n_me_player)) {
+                            //                      if (my_matching_rx.cause && (my_matching_rx.cause & g_fx.cause!) == 0) {
+                            logger.info(`event causes don't line up mine ${my_matching_rx.cause} game ${g_fx.cause}`);
+                            continue;
+                        }
+
+                        if (g_fx.chosen_target == this &&
+                            my_matching_rx.td.matches(this, me, this.game)) {
+                            match = true;
+                            // cheat for retaliate      
+                            my_fx.effects[0].weirdo.chosen_target = g_fx.spec_source;
+                            // retaliate is only for deletions in battle, not
+                            // deletions by effect or security battles.
+                            logger.info(`my_cause ${my_matching_rx.cause} and ${g_fx.cause}`);
+                            // Not matching on cause, skip
+                            if (my_matching_rx.cause && (my_matching_rx.cause & g_fx.cause!) == 0)
+                                match = false
+                        } else if (my_matching_rx.td.conjunction == Conjunction.SOURCE) {
+                            if (g_fx.spec_source == this) {
+                                logger.info("I caused the event, match up!");
+                                match = true;
+                            }
+                        } else {
+                            match = my_matching_rx.td.matches(g_fx.chosen_target, me, this.game);
+                        }
+
+                        if (!Instance.check_td2(my_matching_rx, g_fx, ge, me, this.game)) {
+                            logger.info("td2 check failed");
+                            match = false;
+                        }// common code
+
+
                     } else {
-                        logger.warn("Just matching because event matches by default " + GameEvent[ge] + ".");
+                        logger.warn("Trying default??? " + GameEvent[ge] + ".");
                         match = true;
+
                     }
                     if (match) {
                         my_fx.source = new SpecialInstance(this);
@@ -675,12 +689,13 @@ export class Instance {
                     }
                     logger.info("still testing");
                     // more things should be made generic like this
-                    if (g_fx.game_event == GameEvent.MOVE_CARD) {
+                    if (g_fx.game_event == GameEvent.MOVE_CARD) { //  || g_fx.game_event == GameEvent.FIELD_TO_HAND) {
                         logger.info("move card test?");
                         if (Instance.match_move(g_fx, my_interrupter)) {
                             my_fx.source = me;
                             what_triggers_me.push(g_fx);
                         }
+
                     } else if (g_fx.chosen_target == this && my_interrupter.td.matches(thus, me, game)) {
                         logger.info("SPECIAL INST MADE TO BE " + thus.id);
                         my_fx.source = me;
@@ -747,13 +762,14 @@ export class Instance {
     static match_certain_effect(actual_event: SubEffect, candidate: InterruptCondition, n_me_player: number): boolean {
         let actual = actual_event.game_event;
         let cand = candidate.ge;
-        logger.warn("DO EVENT LINE UP: " + GameEvent[actual] + " and " + GameEvent[cand]);
+        logger.warn("DO EVENT LINE UP: actual " + GameEvent[actual] + " and " + GameEvent[cand] + " " + candidate.td.raw_text + "/" + candidate.td2?.raw_text);
         if (actual == GameEvent.TARGETED_CARD_MOVE) {
             let t: CardLocation | Instance = actual_event.chosen_target;
             logger.warn(`moving from ${!!t} and ${t && t.location}}}`);
         }
         if (
             (actual == cand) ||
+            (actual == GameEvent.FIELD_TO_HAND && cand == GameEvent.MOVE_CARD) ||
             (actual == GameEvent.TARGETED_CARD_MOVE && cand == GameEvent.MOVE_CARD) ||
             (cand == GameEvent.ALL_REMOVAL &&
                 [GameEvent.ALL_REMOVAL, GameEvent.DELETE, GameEvent.STACK_ADD, GameEvent.FIELD_TO_HAND, GameEvent.TUCK, GameEvent.PLUG, GameEvent.TO_BOTTOM_DECK].includes(actual)) ||
@@ -780,14 +796,30 @@ export class Instance {
     static check_td2(myTrigger: InterruptCondition, actualEvent: SubEffect, ge: GameEvent, me: SpecialInstance, game: Game): boolean {
         if (myTrigger.td2) {
             if (ge === GameEvent.EVOLVE) {
-                // we've lost the original mons if we are post_effect'ing a fusion. we need
-                // to be able to track their references as they were for "when a X evolves"
-                // but aren't right now
-                if (!actualEvent.chosen_target2?.top()) return false;
+                logger.info(`TD2 check, ct2 ${!!actualEvent.chosen_target2} ct3 ${!!actualEvent.chosen_target3} `);
+                logger.info(`TD2 check, ct2t ${!!actualEvent.chosen_target2?.top()} ct3t ${!!actualEvent.chosen_target3?.top()} `);
+
+                if (actualEvent.cause & EventCause.DNA) {
+                    logger.info("fusion evo");
+                    // * for a fusion evo, we have both candidates *before* we run
+                    // * for a fusion evo, we may have *neither* candidate *after* we run.
+                    //   we default to that being true for now.
+                    logger.info(`TD2 check, ct2 ${!!actualEvent.chosen_target2} ct3 ${!!actualEvent.chosen_target3} `);
+                    // we've lost the original mons if we are post_effect'ing a fusion. we need
+                    // to be able to track their references as they were for "when a X evolves"
+                    // but aren't right now
+                    logger.info(`TD2 check, ct2t ${!!actualEvent.chosen_target2?.top()} ct3t ${!!actualEvent.chosen_target3?.top()} `);
+                    if (!actualEvent.chosen_target2?.top()) return true; // no actual target, better say we succeed
+                    if (myTrigger.td2.matches(actualEvent.chosen_target2, me, game)) return true;
+                    if (!actualEvent.chosen_target3?.top()) return true;
+                    if (myTrigger.td2.matches(actualEvent.chosen_target3, me, game)) return true;
+                    return false; // no match
+                }
+                logger.info("non-fusion evo");
+                // non-fusion evo
+                if (!actualEvent.chosen_target2?.top()) return true; // no actual target, better say we succeed
                 if (myTrigger.td2.matches(actualEvent.chosen_target2, me, game)) return true;
-                if (!actualEvent.chosen_target3?.top()) return false;
-                if (myTrigger.td2.matches(actualEvent.chosen_target3, me, game)) return true;
-                return false; // no match
+                return false;
             }
             // if a second target, make sure it matches, too.
             // sometimes this can lead us to checking an instance that has no cards...
@@ -854,6 +886,9 @@ export class Instance {
 
     // for MOVE_CARD events; but could be more generic
     static match_move(se: SubEffect, ic: InterruptCondition): boolean {
+
+
+
         // ic should be contained within se:
         //   interrupt on "Security" matches on "your security",
         //   but interrupt on "your security" not on "their security"
@@ -863,9 +898,23 @@ export class Instance {
 
         let ge_from = se.td2?.raw_text.toLowerCase() || "";
         let ge_to = se.td?.raw_text.toLowerCase() || "";
+
+
+        logger.info(`ic from ${ic_from} to ${ic_to}`);
+        logger.info(`ge from ${ge_from} to ${ge_to}`);
+
+
+
         if (ge_from.includes(ic_from) &&
             (ge_to.includes(ic_to))) {
             ret = true;
+        }
+        if (se.game_event === GameEvent.FIELD_TO_HAND) {
+            if (!ic_from.includes("security") && !ic_from.includes("deck") && !ic_from.includes("hand")) {
+
+                logger.info("FORCING TRUE because field_to_hand");
+                ret = true;
+            }
         }
         logger.info(`MOVE_CARD: seeing if actual move from '${ge_from}' to '${ge_to}' matches putative '${ic_from}' to '${ic_to}' ${ret.toString().toUpperCase()}`);
         return ret;
@@ -1402,8 +1451,6 @@ export class Instance {
         let t: Card = this.top();
         let k = t.all_keywords();
         ret.push(...Object.keys(k));
-        //  console.error(1276, "keys", Object.keys(k));
-        //  console.error(1277, "values", Object.values(k));
         if (this.is_monster()) {
             for (let i = 0; i < this.pile.length - 1; i++) {
                 let t = this.pile[i];
@@ -1630,7 +1677,6 @@ export class Instance {
     // Can this card evolve on top of us?
     // "available_memory" used to be checked, it isn't now.
     can_evolve(card: Card, available_memory: number, fusion_evo_pos: number, type: 'evo' | 'fusion' | 'burst'): number[] | false {
-        //console.error(1339, fusion_evo_pos, type);
         let top = this.top();
         if (!top) {
             logger.error("NO TOP!");

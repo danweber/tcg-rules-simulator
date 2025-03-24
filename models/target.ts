@@ -102,7 +102,8 @@ export enum GameTestType {
     CARDS_IN_LOCATION = 6,
     ATTACKER_IS = 7,
     COUNT = 8, // just returns a number
-    MEMORY = 9
+    MEMORY = 9,
+    NOT_THIS_TURN = 10,
 
 };
 
@@ -169,7 +170,13 @@ export class SingleGameTest {
     // should the source just be built in?
     //    test(g: Game, source: TargetSource): Instance[] | CardLocation[] {
     test(g: Game, source: TargetSource, subs?: SubEffect[]): string[] {
+        if (this.type === GameTestType.NOT_THIS_TURN) {
+            let instance = source.get_instance();
+            if (instance.play_turn === g.n_turn) return [];
+            return ["turn"];
+        }
         if (this.type === GameTestType.CARDS_IN_LOCATION) {
+
             logger.info(`testing for ${this.raw_text} / ${this.count} ${this.less_than && "LESS"}`);
             let n = 0;
             for (let p of [source.get_player(), source.get_player().other_player]) {

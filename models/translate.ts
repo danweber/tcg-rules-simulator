@@ -130,13 +130,10 @@ export class TranslatorSingleton {
                 }
             }
             if (unseenword) {
-                //   console.error(120, word);
                 logger.info("naked keyword " + word);
                 //logger.debug(m);
                 // probably nothing left after the 
                 let reminder = Translator.get_reminder(m[1]);
-                //     console.error(125, m[1]);
-                //   console.error(126, reminder);
                 logger.info("keyword reminder is " + reminder)
                 if (reminder) {
                     line = reminder;

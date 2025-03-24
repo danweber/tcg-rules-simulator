@@ -70,7 +70,8 @@ class PendingEffect {
     solid: SolidEffect;
     phase: Phase;
     source: TargetSource;
-   // solid_starter: SolidEffect; // what started us UNUSED???
+   // solid_starter: SolidEffect; // what started us; necessary for ACTIVATE effects like Options (what about for "activate the effect below" effects?)
+   
     constructor(solid: SolidEffect,
         turn: number, phase: Phase,
         source: TargetSource, solid_starter?: SolidEffect) {
