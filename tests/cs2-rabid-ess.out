@@ -1,0 +1,15 @@
+FIELD1:Victim,CS1-02,500DP
+FIELD2:Stander,DW1-Vanillamon,CS2-05,CS2-04,5000DP
+SECURITY1:CS1-03 CS1-02
+SECURITY2:
+GAME:P2 T1 MAIN 3
+ECHO: -- attack, deleting both opponent and standing up
+CAPTURE:Great Sword [When Attacking] Delete 1 of your opponent's Monster with 2000 DP or less.
+CAPTURE:Rabid Dog [Your Turn] [Once Per Turn] When this Monster attacks your opponent, you may unsuspend thi…
+CAPTURE:Activate Rabid Dog unsuspending
+CAPTURE:Don't pay/activate
+FIELD1:
+FIELD2:Stander,DW1-Vanillamon,CS2-05,CS2-04,5000DP
+SECURITY1:CS1-03
+SECURITY2:
+GAME:P2 T1 MAIN 3

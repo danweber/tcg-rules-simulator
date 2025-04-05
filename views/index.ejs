@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>
+        <%= title %>
+    </title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+</head>
+
+<body>
+    <h1>
+        <%= title %>
+    </h1>
+
+    <p>Blah blah blah I just want to jump in: <a href="build/landing.html?word=<%= word %>">here if UI installed</a></p>
+
+    <p>Sample deployments:</p>
+    <ul>
+        <li><a href="http://tcg-sim.ddns.net:3001/">raw deploy</a></li>
+        <li><a href="https://tcg-rules-sim.azurewebsites.net/">Azure deployment</a>, trying to be stable</li>
+        <li><a href="https://tcg-rules-sim-dev.azurewebsites.net/">Azure dev deployment</a></li>
+        <li><a href="https://tcg-rules-test.azurewebsites.net/">rapid deployment</a> (most up-to-date features, but
+            will often have fatal bugs, and games will get overwritten frequently)</li>
+    </ul>
+
+    <h1> What it does </h1>
+
+    <p>This loads in card text at parses it at startup to determine effects. Custom or brand-new cards can work as long
+        as the parsing is effective.</p>
+
+    <ul>Advantages
+        <li>Doesn't need cards individually implemented</li>
+        <li>No proprietary cards embedded in source</li>
+        <li>Browser-based so useable from mobile</li>
+        <li>Can possibly understand new cards it's never seen before, if the syntax is clear. This means both brand new
+            cards and your custom cards.</li>
+        <li>Just needs new verbs implemented. "Verbs" doesn't mean "Keywords" -- the reminder text on Keywords is often good enough by itself to understand and if so no work at all is needed. But verbs like "xros" or "put under" need written.</li>
+        <li>Open source so you can take this and run it yourself. You can deploy to azure in a few minutes. 
+        <li>Source <a href="https://github.com/danweber/tcg-rules-simulator">here</a></li>
+        </ul>
+
+    <ul>Shortcomings
+        <li>There's still lots of parsing and verbs left to implement</li>
+        <li>Some cards conflict on how they get parsed ("By X, Y. If A didn't happen, B." Do we check for "A" in X, Y, or both?)  
+    </ul>
+
+    </hr>
+
+    <h1> How functional is it? </h1>
+
+    <p>Parsing and verb implementation are sufficient to get through recent starter decks</p>
+
+    <h2>Medium-turn design goal is educational</h2>
+    <ul>
+        <li>Precise scenarios can be created on board. Wonder what a set of cards can do? In theory this lets you run
+            through them all</li>
+        <li>The ability to create situations lets one create challenges to give to others</li>
+        <li>It's very easy to switch to the other player. Great for testing but also means competitive PvP isn't there
+            yet. (This isn't a fundamental design flaw; it just needs better session management.)
+        <li>The API is easy to control, so if you want to try training an AI you have an interface for that.</li>
+        <li>There's a <a href="/game/set_up_board">creative mode</a> if you're comfortable with text
+    </ul>
+
+    <h2>Not present</h2>
+    <ul>
+        <li>Laddering, matchmaking, fancy UI</li>
+        <li><b>No mulligan yet</b>, sorry. This obviously fixed for any competitive environment. For the time being, it
+            lets us test weirder edge cases as you have to play more unusual combinations of cards.</li>
+        <li>A lot of parsing has yet to be imeplemented.</li>
+        <li>Several verbs are left to do</li>
+        <li>The game may sometimes prompt you to pay a cost that you can't. It shouldn't ask at all, and you can't pay
+            partial costs. These are being chased down.</li>
+    </ul>
+
+    <hr />
+    <h1>Technical Details Below</h1>
+    <hr />
+
+    <h1> API </h1>
+
+    <p>The game state is sent with JSON that looks mostly like you would expect, each player having a region and each
+        region having the entitites within it listed.</p>
+    <p>A player nominally doesn't see private information intended for the other player only.</p>
+    <p>At all times the game will be expecting input from exactly one person (not necessarily the turn player). That
+        player will have their choices enumerated in a JSON object.</p>
+
+    <p>There are a few ways of interacting:</p>
+    <ul>
+        <li>A synchronous POST to an endpoint with the next statement. Game logic will be executed and the next game
+            state returned. This method is less friendly but very batchable, essentiall for automated test cases.</li>
+        <li>A websocket. Messages are similar except that asynchronous updates of game state and log messages will be
+            received as they are processed.</li>
+        <li>Arbitrary game boards can be created and game actions scripted as one big POST. Essential for automated
+            testing.</li>
+    </ul>
+
+    <p>Known bugs</p>
+    <ul>
+        <li>"For each X" may not fire.
+        <li><b>Search is flaky</b>, and depends on the player being honest.
+        <li>When you "switch targets", when you have to switch you could choose to keep it the same
+        <li>Report bugs <a href="https://discord.gg/9bGUj3K4">here</a></li>
+    </ul>
+
+    <h1>How to write a test case</h1>
+
+    <p>An example test case is in tests/once-per-turn-2.in.</p>
+
+    <p>Indicate what card DB you're including. Writing custom cards for test cases is fine, and in many cases makes
+        testing easier if you can isolate weird effects.</p>
+
+    <p>Your test case and custom cards can be included.</p>
+    <hr>
+
+    <h1> Card database</h1>
+
+    <p>The game will read cards in a few different formats, with more being added.</p>
+    <ul>
+        <li>Wiki text2html output. Samples are in the db/ directory.</li>
+        <li>like the JSON format that DigimonCard.app uses. Pretty straightforward to understand.</li>
+        <li>like the JSON format that digimoncard.dev uses. This isn't as clear a format since it relies on a lot of magical constants so multi-colored cards will have issues, and getting data errors fixed is harder, but you can still get surprisingly far with it.
+            
+    </ul>
+    <h1> Contributing / Technical Details </h1>
+
+    <p>Card effects are parsed from text into a SolidEffect object. This object is then processed by the game
+        engine.
+    </p>
+    <p>Adding new effects will mostly just be getting the parsing to work, using already existing verbs. In some cases new
+        verbs
+        may be needed but the verbs are very low-level so this really won't be needed very much.</p>
+
+    <ul>Other high-value contributions are:
+        <li>user interfaces. There's one UI project already but the API is clean enough that totally different UIs
+            can
+            be dropped in</li>
+        <li>custom cards</li>
+        <li>understanding Azure, like why does it sometimes take 4 minutes to serve a static file</li>
+        <li>writing fun scenarios</li>
+        <li>writing test cases</li>
+        <li>manual testing for things automated test cases might not find</li>
+        <li>improved card parser to read text</li>
+        <li>implementing verbs </li>
+    </ul>
+
+    <h2>Other stuff</h2>
+    <ul>Design decisions you may or may not notice
+        <li>The game gives away if your opponent <i>could</i> choose to blast evolve.</li>
+        <li>There is a similar issue for any effect that might utilize a card from hand. The game log for the other
+            person should not real </li>
+        <li>If an effect has 0 or 1 targets, the game will autochoose and continue. This was a design choice and
+            it
+            might be wrong if people want to notice what's going on.</li>
+        <li>Something that chooses a target when there's only one acts the same as something that has a forced
+            target (think Matt suspending itself). This is probably confusing and should be remdeiated.</li>
+        <li>Retaliation might activate on mutual battle death. It won't do anything, you won't notice unless you
+            watch closely. But it shouldn't activate at all, per rulings</li>
+        <li>'Choose up to' for devolve will act weird when choosing 2-or-more on 2-or-more targets
+        <li>If you have 2 separate &lt;Security A +1&gt; effects, it will show as &lt;Security A +2&gt; although
+            the
+            rules dictate it's not SA+2, it's specifically two SA+1's. </li>
+        <li>If you're on phone the logs are probably not visible because they're on the right. Landscape will
+            show
+            them
+            but you'll end up scrolling a lot.</li>
+    </ul>
+    <h2>What's next?</h2>
+    <ul><b>We need feedback on what should be worked on.</b> Like, do you want..
+        <li>bugs fixed in current cards?</li>
+        <li>more cards implemented?</i>
+        <li>text showing which explicit effect is being activated (not just the mon doing it)?</li>
+        <li><s>make sure cards that can't trigger aren't even put into the trigger list?</s> Maybe everything that
+            triggers should trigger, if we need cleanup it takes place later.</li>
+        <li>fewer extraneous popup messages?</li>
+        <li><b>more</b> descriptive text during game play?</li>
+        <li>auto-skipping non-activatable effects?</li>
+        <li>make logging on mobile be better</li>
+        <li>YOLO and dump in all the cards in the game to see what happens?</li>
+        <li>better creative mode without needing to write text?</li>
+        <li>write your own cards?</li>
+    </ul>
+    <!-- <%= text %> -->
+</body>
+
+</html>

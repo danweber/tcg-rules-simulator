@@ -1,0 +1,10 @@
+FIELD1:Slippery,CS1-07,5000DP Green,DW1-Birder,3000DP
+FIELD2:Vic1,CS1-02,REST,500DP Vic2,CS1-02,REST,500DP
+GAME:P1 T2 MAIN 7
+ECHO: -- Attack first time, lose 2500 DP
+FIELD1:Slippery,CS1-07,REST,2500DP Green,DW1-Birder,3000DP
+FIELD2:Vic2,CS1-02,REST,500DP
+GAME:P1 T2 MAIN 7
+ECHO: -- Stand up, then attack again, will die before battle
+CAPTURE:Target Slippery Shield 1
+CAPTURE:Target Birder 2

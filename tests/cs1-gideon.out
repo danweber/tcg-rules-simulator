@@ -1,0 +1,17 @@
+FIELD1:Gideon,CS1-17 Blocker,CS1-10
+FIELD2:Attack1,DW1-Vanillamon
+HAND1:
+HAND2:
+DECK1:CS1-02 CS1-03 CS1-04
+DECK2:
+GAME:P2 T3 MAIN 8
+ECHO: -- P2 attacks, block happens
+CAPTURE:Activate Gideon The Guardian suspending
+CAPTURE:Don't pay/activate
+FIELD1:Gideon,CS1-17,REST Blocker,CS1-10,REST
+FIELD2:
+HAND1:CS1-03 CS1-04
+HAND2:
+DECK1:CS1-02
+DECK2:
+GAME:P2 T3 MAIN 8

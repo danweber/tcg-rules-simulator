@@ -1,0 +1,43 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** Mem Watcher (DW1-15) *****
+[DW1-15]
+Card Info
+Name                Mem Watcher
+Colour              Purple
+Card Type           Monster
+Play Cost           5
+DP                  2000 DP
+Level               4
+Form                Teen
+Attribute           LIGHT
+Type                Clock_Watcher
+Rarity              Dubious
+Evolution Requirements
+Colour         Green
+Level          3
+Evolve Cost 0
+Card Effect(s)
+[Your Turn] While you have 4 or more memory, this Monster gets +400 DP.
+[Your Turn] While you have 3 or more memory, this Monster gets +200 DP.
+[Your Turn] While you have 2 or more memory, this Monster gets +100 DP.
+[Your Turn] While you have 1 or more memory, this Monster gets +40 DP.
+[Your Turn] While you have 0 or more memory, this Monster gets +20 DP.
+[Your Turn] While your opponent has 1 or less memory, this Monster gets +10 DP.
+[Your Turn] While your opponent has 2 or less memory, this Monster gets +4 DP.
+[Your Turn] While your opponent has 3 or less memory, this Monster gets +2 DP.
+[Your Turn] While your opponent has 4 or less memory, this Monster gets +1 DP.
+[Opponent's Turn] While you have 4 or less memory, this Monster gets -400 DP.
+[Opponent's Turn] While you have 3 or less memory, this Monster gets -200 DP.
+[Opponent's Turn] While you have 2 or less memory, this Monster gets -100 DP.
+[Opponent's Turn] While you have 1 or less memory, this Monster gets -40 DP.
+[Opponent's Turn] While you have 0 or less memory, this Monster gets -20 DP.
+[Opponent's Turn] While your opponent has 1 or more memory, this Monster gets -10 DP.
+[Opponent's Turn] While your opponent has 2 or more memory, this Monster gets -4 DP.
+[Opponent's Turn] While your opponent has 3 or more memory, this Monster gets -2 DP.
+[Opponent's Turn] While your opponent has 4 or more memory, this Monster gets -1 DP.
+Security Effect
+[Security] Add this card to your hand.
+Card Restriction
+add an inherited effect?

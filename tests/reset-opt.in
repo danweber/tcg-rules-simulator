@@ -1,0 +1,29 @@
+VERSION:2
+# fusion evo resets once-per-turn on ESS effect
+FIELD1:Blue,CS2-Colossal,CS2-01 Yellow,CS1-Obsidian,CS1-01
+FIELD2:Zero,CS2-02,REST One,CS2-02,REST Two,CS2-05,REST Three,CS2-04,REST 
+HAND1:CS2-Rampager
+DECK1:DW1-01 DW1-01
+GAME:P1 T4 MAIN 7
+DUMP:HAND,DP
+
+TITLE:Once-per-turn resets after fusion evo
+TEXT:Attack with inherited effect in 1 monster, fusion evo into another, should be able to use once-per-turn again
+
+CMD:ATTACK Yellow One
+DUMP:HAND,DP
+
+ECHO: fusion evo, do when evolving
+
+# hey are we ignoring that newlabel??
+CMD:EVO CS2-Rampage Yellow 0 Blue NewLabel X1
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP
+
+
+ECHO: ------ now attack into other, get +1000 again
+CMD:ATTACK I7 Three
+EFFECT-TREE
+
+DUMP:DP
+EXIT

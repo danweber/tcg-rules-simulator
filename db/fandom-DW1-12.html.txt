@@ -1,0 +1,18 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** LifeBoost (DW1-12) *****
+[DW1-12]
+Card Info
+Name                LifeBoost
+Colour              Yellow
+Card Type           Option
+Use Cost            4
+Type                Neon
+Card Effect(s)
+[Main] Place this card face-up on the bottom of your security stack.
+[Security] All of your Yellow Monster get +310 DP.
+Security Effect
+[Security] Add this card to your hand.
+Card Restriction
+

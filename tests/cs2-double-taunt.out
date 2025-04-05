@@ -1,0 +1,12 @@
+FIELD1:
+FIELD2:Atk1,CS2-04 Atk2,CS2-04
+SECURITY1:CS1-02 CS1-03
+SECURITY2:
+GAME:P1 T1 MAIN 3
+CAPTURE:Rabid Dog [Start of Your Main Phase] Attack with this Monster.
+CAPTURE:Rabid Dog [Start of Your Main Phase] Attack with this Monster.
+FIELD1:
+FIELD2:Atk1,CS2-04,REST Atk2,CS2-04
+SECURITY1:CS1-02
+SECURITY2:
+GAME:P2 T2 MAIN 3

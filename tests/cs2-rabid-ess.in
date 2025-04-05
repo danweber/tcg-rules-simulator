@@ -1,0 +1,14 @@
+VERSION:2
+FIELD1:Victim,CS1-02
+FIELD2:Stander,DW1-Van,CS2-05,CS2-04
+SECURITY1:CS1-03 CS1-02
+GAME:P2 T1 MAIN 3
+DUMP:SECURITY,DP
+
+ECHO: -- attack, deleting both opponent and standing up
+CMD:ATTACK Stander Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:SECURITY,DP
+
+
+
