@@ -8,7 +8,7 @@ import { StarterDecks } from './starterdecks';
 import { CombatLoop } from './combat';
 import { Phase, GameStep, PhaseTrigger } from './phase';
 import { DirectedSubEffectLoop, ResolutionLoop, RootLoop, SolidEffectLoop } from './effectloop';
-import { SolidEffect, status_cond_to_string, StatusCondition, SubEffect } from './effect';
+import { InterruptCondition, SolidEffect, status_cond_to_string, StatusCondition, SubEffect } from './effect';
 import { EventCause, GameEvent, attacking_events } from './event';
 import { TargetSource, fSpecialPlayer, SpecialCard, TargetDesc, SpecialInstance } from './target';
 import { v4 as uuidv4 } from 'uuid';
@@ -69,14 +69,18 @@ class PendingEffect {
     one_time: boolean = false;
     solid: SolidEffect;
     phase: Phase;
+    interrupt: InterruptCondition[] | false;
     source: TargetSource;
-   // solid_starter: SolidEffect; // what started us; necessary for ACTIVATE effects like Options (what about for "activate the effect below" effects?)
+    // solid_starter: SolidEffect; // what started us; necessary for ACTIVATE effects like Options (what about for "activate the effect below" effects?)
 
     constructor(solid: SolidEffect,
         turn: number, phase: Phase,
-        source: TargetSource, solid_starter?: SolidEffect) {
-        this.solid = solid; 
+        source: TargetSource,
+        interrupt: InterruptCondition[] | false,
+        solid_starter?: SolidEffect) {
+        this.solid = solid;
         this.n_turn = turn;
+        this.interrupt = interrupt;
         this.solid.solid_starter = solid_starter;
         if (!solid_starter)
             this.solid.solid_starter = ("ABCDEF" as unknown) as SolidEffect;
@@ -318,30 +322,46 @@ export class Player {
         phase: Phase,
         game: Game,
         source: TargetSource,
+        interrupt: InterruptCondition[] | false,
         solid_start?: SolidEffect) {
         if (!solid || !phase) {
             let a: any = null; a.assert_missing_pending();
         }
-        let pe = new PendingEffect(solid, turn, phase, source, solid_start);
+        let pe = new PendingEffect(solid, turn, phase, source, interrupt, solid_start);
         pe.n_turn = turn; // the effect will only activate this turn
-        logger.warn("assuming all pending effects happen in current turn");
         // also assuming just one time, unless end-of-turn
         // ASAP and END_OF_ATTACK are surely one_time
         if (phase !== Phase.END_OF_TURN)
             pe.one_time = true;
         this.pending_effects.push(pe);
     }
-    // assumes all pending effects are phasetriggers. They aren't. 
-    get_pending_effect(phase: Phase, n_turn: number): SolidEffect[] {
+
+    // If looking for interrupt, sfx is non-false.
+    // Otherwise, only phasetriggers.
+    // No way right now to respond non-interruptively.
+    get_pending_effect(phase: Phase, n_turn: number, sfx: SubEffect[] | false): SolidEffect[] {
         let ret: SolidEffect[] = [];
         logger.error("CHECKING OUT OF " + this.pending_effects.length + " PENDING");
         for (let pe of this.pending_effects) {
-            logger.warn("incomplete pending events phases");
-            logger.info(`game ${n_turn} ${phase} against ${pe.n_turn} and ${pe.phase}`);
-            if (pe.n_turn == n_turn && pe.phase == phase) {
-                pe.solid.source = pe.source;
-                ret.push(pe.solid);
-                if (pe.one_time) { pe.phase = Phase.NUL; }
+            if (sfx) {
+                // look for interrupts, must be this turn
+                if (pe.n_turn === this.game.n_turn && pe.interrupt) {
+                    logger.warn("only preflight");
+                    pe.solid.interrupt = pe.interrupt;
+                    let targetsource = pe.source;
+                    let match = Instance.one_effect_matchup("preflight", pe.solid, sfx,
+                        targetsource, this.player_num, this.game, pe.source.get_card_location());
+                    if (match) ret.push(pe.solid);
+                    pe.n_turn = 0; // can't trigger a second time
+                }
+            } else {
+                logger.warn("incomplete pending events phases");
+                logger.info(`game ${n_turn} ${phase} against ${pe.n_turn} and ${pe.phase}`);
+                if (pe.n_turn == n_turn && pe.phase == phase) {
+                    pe.solid.source = pe.source;
+                    ret.push(pe.solid);
+                    if (pe.one_time) { pe.phase = Phase.NUL; }
+                }
             }
         }
         return ret;
@@ -517,7 +537,10 @@ export class Player {
         // It's not necessarily the first effect. Well, I guess it should be, but ordering got
         // messed up somewhere, so make sure we're not picking a <Delay> effect.
         let fx = card.new_effects.find(x => x.keywords.includes("[Main]") && !(x.keywords.includes("＜Delay＞")));
-        if (!fx) logger.error("missing effect");
+        if (!fx) {
+            console.error("missing", card);
+            logger.error("missing effect");
+        }
         logger.info("option effect found: " + fx?.raw_text);
 
         // why don't we need to set fx.source here?
@@ -616,7 +639,7 @@ export class Player {
         if (!this.can_raise()) return false;
         if (!this.egg_zone) return false;
         let ref: Instance = this.egg_zone;
-        ref.move(Location.FIELD);
+        ref.move(Location.BATTLE);
         this.field.push(ref);
         this.log(`Raise instance ${ref.id} named ${ref.name()} to field(now sized ${this.field.length}`);
         this.game.log(`Player ${this.player_num} raised ${ref.name()} `);
@@ -724,6 +747,8 @@ export class Player {
             let lcs = pc.get_link_requirements();
             if (lcs.length == 0) continue;
             for (let i of this.field) {
+                if (!i.is_monster()) continue; // only monsters can be linked
+                if (i.is_token()) continue; // tokens can't be linked
                 if (pc === i) continue; // can't link to self
                 let costs: number[] = Card.can_evolve_into(i, lcs);
                 for (let cost of costs) {
@@ -1080,8 +1105,8 @@ export class Player {
             let arg1 = this.get_hand_index(word1);
             let card = this.hand[arg1];
             if (!card) return "missing card";
-            let monster = this.get_instance(word2);
 
+            let monster = this.get_instance(word2);
             if (!monster) return "missing monster";
 
             arg2 = monster.id;
@@ -1121,9 +1146,24 @@ export class Player {
             // to them in step(), which will land us in 
             // process_game_flow eventually
         } else if (cmd.startsWith("LIN")) {
-            // LOCATION INDEX INSTANCE
+            // LOCATION INDEX INSTANCE COST
             this.game.no_control();
             let l: Location = string_to_location(word1);
+            let arg2;
+            if (l === Location.HAND) {
+                arg2 = this.get_hand_index(word2);
+            } else if (l === Location.BATTLE) {
+                let monster = this.get_instance(word2)
+                if (!monster) return "bad monster";
+                arg2 = monster.id;
+            } else {
+                return "bad location";
+            }
+
+            let recip = this.get_instance(word3);
+            if (!recip) return "bad recipient";
+            arg3 = recip.id;
+
             this.link(l, arg2, arg3, { cost: arg4 });
             this.game.step();
 
@@ -1137,7 +1177,7 @@ export class Player {
             msg += `[MAIN] EFFECT OF ${i.get_name().toUpperCase()}: ${fx.raw_text} `;
 
             // TODO: shouldn't even offer this
-            
+
             if (fx.keywords.includes("＜Delay＞")) {
 
                 if (i.play_turn == this.game.n_turn) {
@@ -1146,7 +1186,7 @@ export class Player {
                     return "can't activate delay yet";
                 }
                 // pay the cost, and it will show as activating in the trash I guess?
-            //    i.do_trash("delay effect");
+                //    i.do_trash("delay effect");
             }
 
 
@@ -1438,7 +1478,26 @@ export class Player {
             break;
         }
         if (!match) return "no link match";
-        this.game.link(this, _plugger!, _inst!, _cost!);
+        if (!_inst) return "no instance";
+        if (!_plugger!) return "no plugger";
+        /*
+        if (!("extract" in _plugger)) {
+            // if we've targeting an instance, just grab the card on top
+            _plugger = new CardLocation(_plugger.game, _plugger.n_me_player, 
+                Location.BATTLE, _plugger.pile.length - 1, _plugger.id);
+        }*/
+
+        let limit = 1; // _inst.get_limit();
+        let trash: CardLocation[] = [];
+        console.error(_inst.get_plug_count(), limit);
+        if (_inst.get_plug_count() + 1 > limit) {
+            // not handling multiple trashes, and assumes always trash the first
+            let cl: CardLocation = new CardLocation(this.game, this.player_num,
+                Location.BATTLE, 0, _inst.id, "plug");
+            trash.push(cl);
+        }
+
+        this.game.link(this, _plugger!, _inst!, _cost!, trash);
         return "";
     }
 
@@ -1529,7 +1588,7 @@ export class Player {
         let ret = [];
         for (let instance of this.field) {
             if (!instance) continue;
-            if (instance.location === Location.FIELD) ret.push(...instance.all_effects());
+            if (instance.location === Location.BATTLE) ret.push(...instance.all_effects());
             // TODO: [security], [hand], [trash]
         }
         return ret;
@@ -1586,7 +1645,7 @@ export class Player {
             case Location.TOKENDECK: return this.tokendeck
             case Location.TOKENTRASH: return this.tokentrash
             case Location.EGGZONE: return this.egg_zone ? this.egg_zone.pile : []
-            case Location.FIELD: return i ? this.get_instance(i).pile : []
+            case Location.BATTLE: return i ? this.get_instance(i).pile : []
             default:
                 logger.error(Location[l]);
                 let a: any = null; a.bad_locus();
@@ -1651,7 +1710,7 @@ export class Player {
             if (key[0] == "P") this._wipe_field();
             //  let instances = blob.split(" ");
 
-            let place = key.startsWith("EGGZONE") ? Location.EGGZONE : Location.FIELD;
+            let place = key.startsWith("EGGZONE") ? Location.EGGZONE : Location.BATTLE;
 
             for (let i = 0; i < instances.length; i++) {
                 let plug = false;
@@ -1705,7 +1764,7 @@ export class Player {
                 this.log(`Set up: made ${thing.id}:${thing.name()} with cards ${thing.card_names()} `);
                 logger.info(`thing.length is ${thing.pile.length} final name is ${thing.card_names()} `);
                 if (thing.pile.length > 0) {
-                    if (place == Location.FIELD) {
+                    if (place == Location.BATTLE) {
                         this.field.push(thing);
                     } else {
                         this.egg_zone = thing;
@@ -1885,7 +1944,7 @@ export class Player {
         for (card of this.hand) card.verify(Location.HAND);
         for (card of this.reveal) card.verify(Location.REVEAL);
         for (let instance of this.field)
-            for (card of instance.pile) card.verify(Location.FIELD);
+            for (card of instance.pile) card.verify(Location.BATTLE);
         if (this.egg_zone)
             for (card of this.egg_zone?.pile) card.verify(Location.EGGZONE);
     }

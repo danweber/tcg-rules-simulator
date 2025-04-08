@@ -15,7 +15,7 @@ import { SolidEffectLoop, SolidsToActivate } from './effectloop';
 export class SolidEffect {
 	rules: boolean = false; // fake solid event caused by game rules
 
-	interrupt?: InterruptCondition[]; // put interruptive clause here 
+	interrupt?: InterruptCondition[];// put interruptive clause here 
 	cancels?: boolean; // not all interruptive events cancel
 	changes_cost?: any; // need to define this
 	interrupt_count: number = 0; // turns on the first time it interrupts in a loop
@@ -241,9 +241,9 @@ export class AtomicEffect {
 	constructor(parsed_fx: any, str: string, g?: Game) {
 		this.raw_text = str;
 		this.debuffer = 4;
-		console.log("atomic ctor2");
-		console.log(parsed_fx);
-		console.log("atomic " + str);
+		//console.log("atomic ctor2");
+		//console.log(parsed_fx);
+		//console.log("atomic " + str);
 		this.game = g!;
 		this.optional = false;
 		this.events = [];
@@ -404,7 +404,8 @@ export interface SubEffect {
 	UNUSED_cannot?: boolean;
 	status_condition?: StatusCondition[];
 	delayed_effect?: SolidEffect;
-	delayed_trigger?: Phase; // this is overloaded with other data structures
+	delayed_phase_trigger?: Phase; // this is overloaded with other data structures
+	delayed_interrupt?: InterruptCondition[];
 	paid?: boolean; 
 }
 

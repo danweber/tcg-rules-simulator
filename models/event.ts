@@ -186,6 +186,7 @@ export enum GameEvent {
 	ACTIVATE,
 	SHUFFLE,
 	PLUG, 
+	TRASH_LINK,
 };
 
 

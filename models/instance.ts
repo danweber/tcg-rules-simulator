@@ -683,7 +683,16 @@ export class Instance {
 
                     }
 
-                    if (!my_interrupter.td.matches(g_fx.chosen_target, me, game)) {
+
+
+                    if (g_fx.game_event === GameEvent.PLUG && my_interrupter &&
+                        type === "posteffect"
+                    ) {
+                        if (!my_interrupter.td.matches(g_fx.chosen_target3, me, game)) {
+                            logger.info("plug target doesn't match");
+                            continue;
+                            }
+                    } else if (!my_interrupter.td.matches(g_fx.chosen_target, me, game)) {
                         logger.info("target doesn't match");
                         continue;
                     }
@@ -773,7 +782,7 @@ export class Instance {
             (actual == GameEvent.TARGETED_CARD_MOVE && cand == GameEvent.MOVE_CARD) ||
             (cand == GameEvent.ALL_REMOVAL &&
                 [GameEvent.ALL_REMOVAL, GameEvent.DELETE, GameEvent.STACK_ADD, GameEvent.FIELD_TO_HAND, GameEvent.TUCK, GameEvent.PLUG, GameEvent.TO_BOTTOM_DECK].includes(actual)) ||
-            (cand == GameEvent.ALL_REMOVAL && actual == GameEvent.TARGETED_CARD_MOVE && actual_event.chosen_target.location == Location.FIELD) ||
+            (cand == GameEvent.ALL_REMOVAL && actual == GameEvent.TARGETED_CARD_MOVE && actual_event.chosen_target.location == Location.BATTLE) ||
             // add_card_to_hand can be BOUNCE or DRAW
             (cand == GameEvent.ADD_CARD_TO_HAND &&
                 [GameEvent.DRAW, GameEvent.FIELD_TO_HAND].includes(actual))
@@ -938,9 +947,11 @@ export class Instance {
         return "Err";
     }
 
-
+    on_field(): boolean {
+        return !!(this.location & (Location.BATTLE | Location.EGGZONE));
+    }
     in_play(): boolean {
-        return this.location == Location.FIELD;
+        return this.location == Location.BATTLE;
     }
 
     in_eggzone(): boolean {
@@ -985,13 +996,13 @@ export class Instance {
 
     // Not sure if GAME_EVENT is the right thing here,
     // maybe we need to see who's doing that
-    // I should probably put <Jamming> in here
-
+    // TODO: Can we have this run terminus_effect??
     // This is being updated to capture the logic of "can I pay the cost?"
     can_do(effect: SubEffect, force_apply_status: boolean = true): boolean {
         logger.debug("can do??? " + GameEvent[effect.game_event]);
         //console.error("TEST FOR " + GameEvent[effect.game_event]);
         //  console.trace();
+        if (effect.game_event == GameEvent.UNSUSPEND && this.is_ready()) return false;
         if (effect.game_event == GameEvent.SUSPEND && !this.is_ready()) return false;
         for (let sc of this.all_statuses()) { //  expiring_status_effects) {
             logger.debug(`sc.s is ${sc.s} ${sc.s.immune} ${GameEvent[sc.s.game_event]} --> ${GameEvent[effect.game_event]}`);
@@ -1399,7 +1410,7 @@ export class Instance {
     get_key(): string {
         return `${this.location}-${this.id}`;
     }
-    get_field_name(l: Location = Location.FIELD): string {
+    get_field_name(l: Location = Location.BATTLE): string {
         let ret = /* this.get_set() + "-" + */ this.get_name();
         if (this.location != l) {
             ret += ` in ${Location[this.location]}`;
@@ -1607,6 +1618,7 @@ export class Instance {
     can_attack(td?: TargetDesc, conditions?: string): (false | number[]) {
         logger.debug("can_attack conditions " + conditions);
         // I'm manually parsing td
+        if (this.game.turn_player != this.n_me_player) return false;
         if (this.game.n_turn == this.play_turn && !this.has_keyword("Rush")) {
             if (!conditions || !conditions.match(/the turn/)) {
                 return false;
@@ -1719,7 +1731,7 @@ export class Instance {
 
     do_evolve(_card: Card) {  // doesn't check if we "can"
         // TODO: check "if this would evolve" effects
-        if (this.location != Location.FIELD &&
+        if (this.location != Location.BATTLE &&
             this.location != Location.EGGZONE) {
             logger.error('evolving in wrong place ' + this.location + " " + this.id + " " + this.get_name());
             let a: any = null; a.evo_location();
@@ -1851,11 +1863,11 @@ export class Instance {
     static place(card: Card, game: Game, me: Player, other: Player): Instance {
         let instance = new Instance(game, me, other);
 
-        card.move_to(Location.FIELD, instance);
+        card.move_to(Location.BATTLE, instance);
         instance.play_turn = game.n_turn;
         logger.debug("Placed on n_turn " + game.n_turn);
         instance.log(`Placed as ${card.name} ${card.id} `);
-        instance.location = Location.FIELD;
+        instance.location = Location.BATTLE;
         game.ui_card_move();
         return instance;
     };
@@ -1864,10 +1876,10 @@ export class Instance {
     // something else needs to move all cards and then unalive the old instances
     static fusion(card: Card, game: Game, me: Player, other: Player): Instance {
         let instance = new Instance(game, me, other);
-        card.extract().move_to(Location.FIELD, instance);
+        card.extract().move_to(Location.BATTLE, instance);
         logger.debug("fusioned on n_turn " + game.n_turn);
         instance.log(`Fusioned as ${card.name} ${card.id} for cost ${0}`);
-        instance.location = Location.FIELD;
+        instance.location = Location.BATTLE;
         game.ui_card_move();
         return instance;
     };
@@ -1881,12 +1893,12 @@ export class Instance {
         //        console.error(`sp card ${card.get_name()} in ${Location[card.get_location()]}`);
         // why only do this if it's in reveal? 
         if (card.get_location() == Location.REVEAL) { card.extract(); }
-        card.move_to(Location.FIELD, instance);
+        card.move_to(Location.BATTLE, instance);
         //        console.error(`sp card ${card.get_name()} in ${Location[card.get_location()]}`);
         instance.play_turn = game.n_turn;
         logger.debug("played on n_turn " + game.n_turn);
         instance.log(`Played as ${card.name} ${card.id} for cost ${card.p_cost}`);
-        instance.location = Location.FIELD;
+        instance.location = Location.BATTLE;
         game.ui_card_move();
         return instance;
     };

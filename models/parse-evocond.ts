@@ -36,7 +36,7 @@ export function parseStringEvoCond(input: string, search: string, all: boolean =
         */
         let orig_res = parser.results;
         if (all) console.log("found " + orig_res.length + " results for " + input);
-  //      console.error(res);
+//         console.error(orig_res);
 
          let res = orig_res;   
         if (search != "" && !all) {

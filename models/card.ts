@@ -107,6 +107,7 @@ export interface LinkCondition {
     trait?: string;
     // below here might be plemented
     color?: Color;
+    grade?: string; // not used for links
     level?: number;
     tamer?: boolean;
     text?: string; // only used for errors, but maybe can be used normally
@@ -120,6 +121,7 @@ export interface EvolveCondition {
     color?: Color;
     level?: number;
     tamer?: boolean;
+    grade?: string;
     cost: number;
     text?: string; // only used for errors, but maybe can be used normally
     two_color?: boolean; // this should be "color_count"
@@ -643,16 +645,23 @@ export class Card {
         if (app_format) {
             for (let cond of blob.evolveCondition) {
                 let evo_cond: any;
+
                 if (cond.level == "Tamer") {
                     evo_cond = {
                         cost: parseInt(cond.cost),
                         tamer: true,
                         color: word_to_color(cond.color)
                     }
-                } else {
+                } else if (parseInt(cond.level)) {
                     evo_cond = {
                         cost: parseInt(cond.cost),
                         level: parseInt(cond.level),
+                        color: word_to_color(cond.color)
+                    }
+                } else { // assume grade
+                    evo_cond = {
+                        cost: parseInt(cond.cost),
+                        grade: cond.level,
                         color: word_to_color(cond.color)
                     }
                 }
@@ -842,18 +851,18 @@ export class Card {
 
         if (this.input && text !== "no") {
 
-        new_parse_effects(maineffects, this, "main");
-        new_parse_effects(sourceeffects, this, "inherited");
-        new_parse_effects(linkeffects, this, "link");
-        
-        if (Object.keys(this.card_keywords).length > 0) logger.debug(`5543 have ${this.card_keywords.length} keywords + ${Object.values(this.card_keywords).join(",")}`);
+            new_parse_effects(maineffects, this, "main");
+            new_parse_effects(sourceeffects, this, "inherited");
+            new_parse_effects(linkeffects, this, "link");
 
-        // if any effects are [security] refile them now
-        // deleted code to move [security] effects that showed up in main, since it's handled above
-        logger.debug("securityeffectslength is " + securityeffects.length + " " + this.name);
-        logger.debug("newsecurityeffectslength is " + this.new_security_effects.length + " " + this.name);
-        new_parse_effects(securityeffects, this, "security");
-        logger.debug("newsecurityeffectslength is " + this.new_security_effects.length + " " + this.name);
+            if (Object.keys(this.card_keywords).length > 0) logger.debug(`5543 have ${this.card_keywords.length} keywords + ${Object.values(this.card_keywords).join(",")}`);
+
+            // if any effects are [security] refile them now
+            // deleted code to move [security] effects that showed up in main, since it's handled above
+            logger.debug("securityeffectslength is " + securityeffects.length + " " + this.name);
+            logger.debug("newsecurityeffectslength is " + this.new_security_effects.length + " " + this.name);
+            new_parse_effects(securityeffects, this, "security");
+            logger.debug("newsecurityeffectslength is " + this.new_security_effects.length + " " + this.name);
         }
         logger.debug("MAINING REMAINING " + maineffects.length + " " + securityeffects.length);
         //        this.main_text ||= 'err2';    
@@ -998,7 +1007,7 @@ export class Card {
     }
 
     static hidden: Location[] = [Location.NEW, Location.DECK, Location.EGGDECK, Location.HAND];
-    static visible: Location[] = [Location.FIELD, Location.EGGZONE, Location.TRASH, Location.REVEAL, Location.TOKENDECK, Location.TOKENTRASH, Location.NULLZONE, Location.OPTZONE];
+    static visible: Location[] = [Location.BATTLE, Location.EGGZONE, Location.TRASH, Location.REVEAL, Location.TOKENDECK, Location.TOKENTRASH, Location.NULLZONE, Location.OPTZONE];
     static maybe: Location[] = [Location.SECURITY];
 
     // finds the card in the place it was at, in case we need it
@@ -1106,13 +1115,13 @@ export class Card {
             logger.error("moving in place??");
         } else {
             for (const effect_list of [this.new_effects, this.new_security_effects, this.new_inherited_effects, this.new_link_effects]) {
-                effect_list.forEach ( e => e.n_last_used_turn = 0 );
+                effect_list.forEach(e => e.n_last_used_turn = 0);
             }
         }
 
         if (this.is_token()) {
             // token can only be on field... it shouldn't be moved ever.
-            if (l != Location.FIELD && l != Location.TOKENDECK) {
+            if (l != Location.BATTLE && l != Location.TOKENDECK) {
                 l = Location.TOKENTRASH;
             }
         }
@@ -1267,7 +1276,7 @@ export class Card {
     }
     can_fusion_blast(): boolean { return this.new_effects.some(s => s.raw_text.match(/Blast.DNA.evolve/i)) }
     is_token(): boolean { return this.id.startsWith("TKN"); }
-    is_type(type: string): boolean { 
+    is_type(type: string): boolean {
         switch (type.toLowerCase()) {
             case "monster": return this.is_monster();
             case "option": return this.is_option();
@@ -1346,6 +1355,7 @@ export class Card {
             if (evo_cond.tamer && !base.is_tamer()) continue;
             if (evo_cond.color && !base.has_color(evo_cond.color)) continue;
             if (evo_cond.level && evo_cond.level != base.get_level()) continue;
+            if (evo_cond.grade && !base.has_trait(evo_cond.grade)) continue;
 
 
             if (evo_cond.name_is && !base.name_is(evo_cond.name_is)) continue;
@@ -1433,7 +1443,7 @@ export class CardLocation {
     index: number;
     n_me_player: number = -42;
     name: string;
-    card: Card; 
+    card: Card;
     id: string;
     instance?: number;
     card_id: string;
@@ -1441,7 +1451,8 @@ export class CardLocation {
     location: Location;
     cardloc: Location;
     constructor(g: Game, n_player: number, location: Location,
-        i: number | string, instance_id: number = -1) {
+        i: number | string, instance_id: number = -1,
+        mode: "plug" | undefined = undefined) {
         this.game = g;
         this.n_me_player = n_player;
         if (instance_id != -1) { this.instance = instance_id; }
@@ -1451,9 +1462,12 @@ export class CardLocation {
             this.pile = g.get_n_player(n_player).trash;
         } else if (location == Location.REVEAL) {
             this.pile = g.get_n_player(n_player).reveal;
-        } else if (location == Location.FIELD) {
+        } else if (location == Location.BATTLE) {
             //      this.pile = g.get_n_player(n_player).reveal;
-            this.pile = g.get_instance(instance_id).pile;
+            if (mode === "plug")
+                this.pile = g.get_instance(instance_id).plugged;
+            else
+                this.pile = g.get_instance(instance_id).pile;
         } else if (location == Location.NULLZONE) {
             this.pile = g.get_n_player(n_player).nullzone;
         } else if (location == Location.OPTZONE) {
@@ -1468,7 +1482,6 @@ export class CardLocation {
             this.pile = g.get_n_player(n_player).reveal;
         }
         this.cardloc = location;
-
         if (typeof i === "number") {
             this.index = i;
             this.card = this.pile[i];
@@ -1529,7 +1542,7 @@ export class CardLocation {
         return `${this.location}-${this.index}`;
     }
     // return "NAME" or "NAME in HAND" if not on field
-    get_field_name(l: Location = Location.FIELD): string {
+    get_field_name(l: Location = Location.BATTLE): string {
         let ret = /* this.get_set() + "-" + */ this.get_name();
         if (this.location != l) {
             ret += ` in ${Location[this.location]}`;
@@ -1573,7 +1586,7 @@ export class CardLocation {
     face_up(): boolean { return this.card.face_up; }
     dp() { return this.card.dp; }
     has_keyword(word: string): boolean { return !!this.card.has_keyword(word, "main"); }
-    get_instance(): Instance | undefined { 
+    get_instance(): Instance | undefined {
         if (!this.instance) return undefined;
         let i = this.game.get_instance(this.instance!);
         return i;
@@ -1581,7 +1594,7 @@ export class CardLocation {
     is_evo_card(): boolean {
         if (!this.instance) return false;
         let i = this.game.get_instance(this.instance!);
-        return this.location === Location.FIELD
+        return this.location === Location.BATTLE
             && i.is_monster()
             && this.index < this.pile.length - 1; // not top card, we 
         // could have done this check in Game::get_targets()

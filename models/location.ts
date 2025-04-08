@@ -22,7 +22,8 @@ export function string_to_location(s: string): Location {
         case "trash": return Location.TRASH;
         case "hand": return Location.HAND;
         case "security": return Location.SECURITY;
-        case "field": return Location.FIELD;
+        case "battle": return Location.BATTLE;
+        case "field": return Location.BATTLE | Location.EGGZONE;
     }
     return Location.UNKNOWN;
 }
@@ -32,10 +33,11 @@ export function string_to_location(s: string): Location {
 export enum Location {
     UNKNOWN = 1,
     NEW = 2,
-    FIELD = 4,
+    BATTLE = 4,
     TRASH = 8,
     HAND = 16,
     EGGZONE = 32,
+    FIELD = BATTLE | EGGZONE,
     SECURITY = 64,
     EGGDECK = 128,
     DECK = 256,

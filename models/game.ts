@@ -1329,7 +1329,7 @@ export class Game {
                 game_event: GameEvent.CREATE_PENDING_EFFECT,
                 delayed_effect: pend,
                 choose: 1,
-                delayed_trigger: trigger,
+                delayed_phase_trigger: trigger,
                 chosen_target: onto,
                 spec_source: onto, // by the time this runs, this will be the source
                 td: new TargetDesc(onto.id, "instance"), // I wanted to check that it was a monster :( new TargetDesc(""),
@@ -1367,17 +1367,41 @@ export class Game {
         if (!this.waiting_answer()) { this.root_loop.step(); }
     }
 
-    link(p: Player, source: CardLocation | Instance, recipient: Instance, cost: number) {
+    link(p: Player, source: CardLocation | Instance,
+        recipient: Instance,
+        cost: number,
+        to_trash: CardLocation[]) {
         let e: SubEffect[] = [];
+        let limit = 1; // receipient.get_limit();
+
+        let source_card = source;
+        if (source instanceof Instance) {
+                source_card = new CardLocation(this, source.n_me_player,
+                     Location.BATTLE, source.pile.length - 1, Number(source_card.id));
+        }
+
+
+        for (let trash of to_trash) {
+            // pretty sure this is simultaneous
+            e.push({
+                cause: EventCause.GAME_FLOW,
+                game_event: GameEvent.TRASH_LINK,
+                label: "plug_replace",
+                chosen_target: trash,
+                td: new TargetDesc(""),
+                n_player: p.player_num,
+            })
+        }
         e.push({
-            // is GAME_FLOW right? Don't play by effects end up in here?
             cause: EventCause.GAME_FLOW,
             game_event: GameEvent.PLUG,
             label: "plug",
             chosen_target: source,
             chosen_target2: recipient,
+            chosen_target3: source_card,
             td: new TargetDesc(""),
             n_player: p.player_num,
+            n: cost,
         });
         let x = new DirectedSubEffectLoop(this, e, 1);
         this.root_loop.add_res_loop(x);
@@ -1446,7 +1470,7 @@ export class Game {
     find_by_key(player_num: number, location: number, index: number): CardLocation | Instance {
         logger.info(`p${player_num}  l${location}, L${Location[location]} , i${index}`);
         if (location == 0 && index == 0) return undefined!;
-        if (location == Location.FIELD) {
+        if (location == Location.BATTLE) {
             if (index == 0) {
                 console.error(location, index);
                 let a: any = null; a.bad_key();
@@ -1481,7 +1505,8 @@ export class Game {
                 console.error("NO SEL!");
                 console.trace()
             } else {
-                // check solid_starter if another solid effect started us
+                // check solid_starter if another solid effect started us, and check
+                // the targets of both of those in turn
                 let _solid = sel.effect;
 
                 for (let solid of [_solid, _solid.solid_starter]) {
@@ -1513,28 +1538,29 @@ export class Game {
                             return [eff.chosen_target];
                         }
                     }
-                }
-                // if this was a set pending effect, look back in the effect that started us
-                // does this clause belong inside the loop or not?
-                logger.info("no prior found in effect, should check trigger clause");
-                // if we couldn't find it in effects, search for triggers
-                // Right here we capture the problem that we might need to react to 2 different played monsters 
 
-                let ti = _solid.trigger_incidents;
-                if (ti && ti.length > 0) {
+                    // if this was a set pending effect, look back in the effect that started us
+                    // does this clause belong inside the loop or not?
+                    logger.info("no prior found in effect, should check trigger clause");
+                    // if we couldn't find it in effects, search for triggers
+                    // Right here we capture the problem that we might need to react to 2 different played monsters 
 
-                    // if the triggering incident was "attacking" we're going
-                    // to cheat and assume the attacker was the pronoun. We
-                    // probably determine this in posteffect / preflight and that's 
-                    // where we should get our answer
-                    let ret = (ti[0].game_event == GameEvent.ATTACK_DECLARE) ?
-                        ti.map(e => e.spec_source) :
-                        ti.map(e => e.chosen_target);
-                    logger.info("returning " + ret.length + " pronouns");
+                    let ti = solid.trigger_incidents;
+                    if (ti && ti.length > 0) {
 
-                    logger.info(ret.map(x => x.get_name()).join(":::"));
+                        // if the triggering incident was "attacking" we're going
+                        // to cheat and assume the attacker was the pronoun. We
+                        // probably determine this in posteffect / preflight and that's 
+                        // where we should get our answer
+                        let ret = (ti[0].game_event == GameEvent.ATTACK_DECLARE) ?
+                            ti.map(e => e.spec_source) :
+                            ti.map(e => e.chosen_target);
+                        logger.info("returning " + ret.length + " pronouns");
 
-                    return ret;
+                        logger.info(ret.map(x => x.get_name()).join(":::"));
+
+                        return ret;
+                    }
                 }
                 /*
                 for (let eff of sel.reacted_to) {
@@ -1594,6 +1620,7 @@ export class Game {
             GameEvent.STACK_ADD,
             GameEvent.EVOSOURCE_REMOVE,
             GameEvent.EVOSOURCE_MOVE,
+            GameEvent.PLUG, // can be both card and instance
         ].includes(ge)) {
 
             let to_search: CardLocation[] = [];
@@ -1616,19 +1643,31 @@ export class Game {
                 to_search.length = 0;
                 for (let instance of this.instances) {
                     if (!instance) continue;
-                    if (instance.location !== Location.FIELD) continue;
+                    if (instance.location !== Location.BATTLE) continue;
                     for (let index in instance.pile) {
                         // push in backwards, so top cards appear first in list
-                        to_search.unshift(new CardLocation(this, instance.n_me_player, Location.FIELD, Number(index), instance.id));
+                        to_search.unshift(new CardLocation(this, instance.n_me_player, Location.BATTLE, Number(index), instance.id));
+                    }
+                }
+            }
+            if (ge == GameEvent.PLUG) {
+                //to_search.length = 0;
+                for (let instance of this.instances) {
+                    if (!instance) continue;
+                    if (instance.location !== Location.BATTLE) continue;
+                    for (let index in instance.plugged) {
+                        // push in backwards, so top cards appear first in list
+                        to_search.unshift(new CardLocation(this, instance.n_me_player, Location.BATTLE, Number(index), instance.id, "plug"));
                     }
                 }
             }
 
-            // if we're searching something, just use that
-            if (p.search) {
-                to_search.length = 0;
-                to_search.push(...p.security.map((c, i) => new CardLocation(this, p.player_num, c.get_location(), i)));
-            }
+            // if we're searching an area, just use that.
+            // what if something interrupts this search?
+                if (p.search) {
+                        to_search.length = 0;
+                        to_search.push(...p.security.map((c, i) => new CardLocation(this, p.player_num, c.get_location(), i)));
+                    }
 
             logger.info("searching card count " + to_search.length);
             for (let s of to_search) {
@@ -1660,7 +1699,13 @@ export class Game {
         // TARGET: INSTANCES
         // I could short circuit "must attack" targets by filtering here.
         logger.info(`prior_target in bb is ${!!prior_target}`);
-        let bb = this.instances.filter(x => x.in_play() && t.matches(x, s, this, prior_target));
+
+        // call with default of UNKNOWN: just battle
+        // call with FIELD: both battle and eggzone
+        // call with EGGZONE: just eggzone
+        let locus = Location.BATTLE;
+        if (search_loc === Location.EGGZONE || search_loc === Location.FIELD) locus = search_loc;
+        let bb = this.instances.filter(x => (x.location & locus) && t.matches(x, s, this, prior_target));
 
         let ss = t.sort(bb); // for when we need "biggest level" or something
 
@@ -1706,7 +1751,7 @@ export class Game {
             }
         }
         for (let player of [this.Player1, this.Player2]) {
-            let x = player.get_pending_effect(phase, this.n_turn);
+            let x = player.get_pending_effect(phase, this.n_turn, false);
             s_ret.push(...x);
         }
         let l = `PhaseEvent: At ${Phase[phase]} we have `;
@@ -1715,10 +1760,33 @@ export class Game {
         return s_ret;
     }
 
-    all_trash_effects(kind: "posteffect" | "preflight", e: SubEffect[]): SolidEffect[] {
+
+    // "card_effects" are those associated with a CardLocation, not an Instance.
+    // being plugged is a CardLocation effect even though it doesn't look like one.
+
+    all_card_effects(kind: "posteffect" | "preflight", e: SubEffect[]): SolidEffect[] {
         let ret = [];
         for (let p of [this.Player1, this.Player2]) {
             let p_number = p.player_num;
+            // search plugged cards
+            for (let instance of p.field) {
+                if (!instance) continue;
+                if (!instance.in_play()) continue;
+                // todo: make iterator for this
+                for (let i = 0; i < instance.plugged.length; i++) {
+                    let card = instance.plugged[i];
+                    for (let se of card.new_link_effects) {
+                        let cl = new CardLocation(this, p_number, Location.BATTLE, i, instance.id, "plug");
+                        // if we chose to plug a instance, we need to compare the card it is to see we're the same
+                        // maybe plug and source_add should've worked on only Cards? well, source_add does care about instance effects
+                        
+                        if (Instance.one_effect_matchup(kind, se, e, new SpecialCard(cl), p_number, this, cl)) {
+                            logger.info("plug effects matches " + se.label);
+                            ret.push(se);
+                        }
+                    }
+                }
+            }
             for (let index = 0; index < p.trash.length; index++) {
                 let card = p.trash[index];
                 for (let se of card.new_effects) {
@@ -1758,7 +1826,7 @@ export class Game {
         // this says "preflight... but it's the same logic, right?
 
 
-        ret.push(... this.all_trash_effects("posteffect", e));
+        ret.push(... this.all_card_effects("posteffect", e));
         return ret;
 
     }
@@ -1816,7 +1884,13 @@ export class Game {
             while (trigger.length > 0) { ret.push(trigger.pop()!) }
         }
 
-        ret.push(... this.all_trash_effects("preflight", e));
+        for (let player of [this.Player1, this.Player2]) {
+            let x = player.get_pending_effect(Phase.NUL, this.n_turn, e);
+            ret.push(...x);
+        }
+
+
+        ret.push(... this.all_card_effects("preflight", e));
 
         return ret;
     }

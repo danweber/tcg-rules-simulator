@@ -138,7 +138,7 @@ enum RLStep {
 
 // a dry-run for terminus_loop would be awesome
 function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: SolidEffectLoop): boolean {
-    if (3 < 2) return true; // when debugging, make this always true
+    if (3 < 4) return true; // when debugging, make this always true
     logger.info(" can pay cost for " + eff.raw_text);
     logger.info("can we pay this cost?");
     // just see if we can do the first weirdo
@@ -915,7 +915,7 @@ export class SolidEffectLoop {
                 //                    this.effect.n_player ); 
                 if (t.length == 0) {
                     this.game.log("Condition fails, see if there's another atomic effect.");
-                    if (eff.is_cost) { 
+                    if (eff.is_cost) {
                         this.s = FakeStep.DONE;
                         return false;
                     }
@@ -2265,74 +2265,74 @@ export class SolidEffectLoop {
             if (this.cancel_target) {
 
                 logger.info(this.rand + "a1 " + nnn + " " + this.effect.effects[nnn].events.map(x => GameEvent[x.game_event]).join(","));
-                logger.info(this.rand + "a1 " + (nnn+1) + " " + this.effect.effects[nnn+1]?.events?.map(x => GameEvent[x.game_event]).join(","));
-                
+                logger.info(this.rand + "a1 " + (nnn + 1) + " " + this.effect.effects[nnn + 1]?.events?.map(x => GameEvent[x.game_event]).join(","));
+
                 //&& this.effect.effects[this.n_effect].events[1]?.game_event === GameEvent.CANCEL) {
-                    logger.info(this.rand + "Negating " + this.cancel_target.label);
-                    this.game.log("Will be negated: " + this.cancel_target.label);
-                    this.cancel_target.negated = true;
-                } else {
-                    logger.error("Expected a cancel target.");
-                }
-                this.s = FakeStep.FINISH_REPEAT_LOOP;
-
-                // fall through
+                logger.info(this.rand + "Negating " + this.cancel_target.label);
+                this.game.log("Will be negated: " + this.cancel_target.label);
+                this.cancel_target.negated = true;
+            } else {
+                logger.error("Expected a cancel target.");
             }
-            if (this.s == FakeStep.FINISH_REPEAT_LOOP) {
-                logger.info("repeat check " + this.n_repeat);
-                if (this.n_repeat > 1) {
-                    this.n_repeat--;
-                    logger.info("repeating, " + this.n_repeat);
+            this.s = FakeStep.FINISH_REPEAT_LOOP;
 
-                    this.s = FakeStep.DO_EFFECT_GO;
-                    return false;
-                }
-                this.s = FakeStep.CHECK_IF_CAN;
-                // if our prior action revealed 
-                if (this.n_effect > 0) {
-                    let prior_atomic: AtomicEffect = this.effect.effects[this.n_effect - 1];
-                    if (prior_atomic?.see_security) {
-                        this.game.Player1.search = undefined;
-                        this.game.Player2.search = undefined;
-                    }
-                }
+            // fall through
+        }
+        if (this.s == FakeStep.FINISH_REPEAT_LOOP) {
+            logger.info("repeat check " + this.n_repeat);
+            if (this.n_repeat > 1) {
+                this.n_repeat--;
+                logger.info("repeating, " + this.n_repeat);
+
+                this.s = FakeStep.DO_EFFECT_GO;
                 return false;
             }
-
-            // we just here way from CHECK_IF_CAN;
-            if (this.s == FakeStep.DONE) {
-
-                let atomic = this.effect.effects[0]; // cleaning up searcher, it's always the first atomic 
-
-                // is it really turn player??? I don't think so
-                let p = this.game.get_turn_player();
-
-                logger.info(this.rand + " DONE DONE DONE length is " + p.reveal.length);
-                logger.info(this.rand + ` n_effect is ${this.n_effect} and length is ${this.effect.effects.length}`);
-                // delete this next line
-                logger.info(this.rand + " reveal length is " + p.reveal.length);
-
-                // code to flush reveal to trash used to be here
-                // is this pushing things to trash too soon?
-                if (false)
-                    if (p.reveal.length > 0) {
-                        if (atomic && atomic.search_final) {
-                            this.game.log(`${p.reveal.length} cards still left in reveal for player ${p.player_num}`);
-                            logger.info(this.rand + `n_effet is ${this.n_effect} of ${this.effect.effects.length} and atomic is ${atomic}`);
-                            //      logger.info(this.rand + "cleaning up reveal to " + Location[atomic.search_final]);
-                            //    p.put_reveal(atomic.search_final);
-                        }
-                    }
-
-                logger.info(this.rand + "solideffectloop returning " + this.collected_events.length + " events " + this.collected_events.map(e => GameEvent[e.game_event]).join("/"));
-                logger.info("1996, set last thing in collected_events");
-                this.game.set_last_thing(this.collected_events.map(e => e.chosen_target));
-                return this.collected_events;
+            this.s = FakeStep.CHECK_IF_CAN;
+            // if our prior action revealed 
+            if (this.n_effect > 0) {
+                let prior_atomic: AtomicEffect = this.effect.effects[this.n_effect - 1];
+                if (prior_atomic?.see_security) {
+                    this.game.Player1.search = undefined;
+                    this.game.Player2.search = undefined;
+                }
             }
-            console.error("SHOULD NOT BE HERE FO)R SOLID EFFECT");
-            return false; // loop
+            return false;
         }
+
+        // we just here way from CHECK_IF_CAN;
+        if (this.s == FakeStep.DONE) {
+
+            let atomic = this.effect.effects[0]; // cleaning up searcher, it's always the first atomic 
+
+            // is it really turn player??? I don't think so
+            let p = this.game.get_turn_player();
+
+            logger.info(this.rand + " DONE DONE DONE length is " + p.reveal.length);
+            logger.info(this.rand + ` n_effect is ${this.n_effect} and length is ${this.effect.effects.length}`);
+            // delete this next line
+            logger.info(this.rand + " reveal length is " + p.reveal.length);
+
+            // code to flush reveal to trash used to be here
+            // is this pushing things to trash too soon?
+            if (false)
+                if (p.reveal.length > 0) {
+                    if (atomic && atomic.search_final) {
+                        this.game.log(`${p.reveal.length} cards still left in reveal for player ${p.player_num}`);
+                        logger.info(this.rand + `n_effet is ${this.n_effect} of ${this.effect.effects.length} and atomic is ${atomic}`);
+                        //      logger.info(this.rand + "cleaning up reveal to " + Location[atomic.search_final]);
+                        //    p.put_reveal(atomic.search_final);
+                    }
+                }
+
+            logger.info(this.rand + "solideffectloop returning " + this.collected_events.length + " events " + this.collected_events.map(e => GameEvent[e.game_event]).join("/"));
+            logger.info("1996, set last thing in collected_events");
+            this.game.set_last_thing(this.collected_events.map(e => e.chosen_target));
+            return this.collected_events;
+        }
+        console.error("SHOULD NOT BE HERE FO)R SOLID EFFECT");
+        return false; // loop
     }
+}
 
 // the only reason to export this is because instance.run_constant_effects() needs to apply
 
@@ -2413,9 +2413,18 @@ export class XX {
             } else {
                 ts = new SpecialCard(weirdo.spec_source as CardLocation);
             }
-            const [n, ph] = game.get_expiration(weirdo.delayed_trigger, player.player_num);
-            // we need solid_source so we can look backwards for pronouns
-            player.set_pending_effect(weirdo.delayed_effect!, n, ph, game, ts, solid_starter);
+            if (weirdo.delayed_phase_trigger) {
+                const [n, ph] = game.get_expiration(weirdo.delayed_phase_trigger, player.player_num);
+                // we need solid_source so we can look backwards for pronouns
+                player.set_pending_effect(weirdo.delayed_effect!, n, ph, game, ts, false, solid_starter);
+            } else {
+                if (weirdo.delayed_interrupt) {
+                    player.set_pending_effect(weirdo.delayed_effect!, game.n_turn, Phase.NUL,
+                        game, ts, weirdo.delayed_interrupt, solid_starter);
+                } else {
+                    console.error("missing delayed interrupt");
+                }
+            }
             // we need to activate this as fast as possible; this is one 
             // case in which our tree structure falls short
             return true;
@@ -2584,11 +2593,11 @@ export class XX {
                 for (let item of [instance, instance2]) {
                     if ("me_player" in item) { // instance
                         while (bottom = item.pile[item.pile.length - 1])
-                            bottom.extract().move_to(Location.FIELD, fusioned, "BOTTOM");
+                            bottom.extract().move_to(Location.BATTLE, fusioned, "BOTTOM");
                         game._remove_instance(item.id);
                         item.do_removal("nul", "fusioned");
                     } else { // cardlocation
-                        item.extract().move_to(Location.FIELD, fusioned, "BOTTOM");
+                        item.extract().move_to(Location.BATTLE, fusioned, "BOTTOM");
                     }
                 }
 
@@ -2655,7 +2664,7 @@ export class XX {
             let reveal = player.reveal;
             let top;
             while (top = reveal[0]) {
-                top.extract().move_to(Location.FIELD, played, "BOTTOM");
+                top.extract().move_to(Location.BATTLE, played, "BOTTOM");
                 if (weirdo.n_mod != "free") {
                     weirdo.n_mod = "reduced";
                     weirdo.n ||= 0;
@@ -2714,7 +2723,7 @@ export class XX {
                 return false;
             } else {
                 game.la(`Use ${card.name} ${cost_msg}`);
-                player.set_pending_effect(fx, game.n_turn, Phase.ASAP, game, fx.source, solid_starter);
+                player.set_pending_effect(fx, game.n_turn, Phase.ASAP, game, fx.source, false, solid_starter);
                 game.pay_memory(cost);
                 return true;
             }
@@ -2748,7 +2757,7 @@ export class XX {
                 let i: Instance = target;
                 let c = i.top();
                 if (!c) return false;
-                c.extract().move_to(Location.FIELD, recipient, "PLUG-BOTTOM");
+                c.extract().move_to(Location.BATTLE, recipient, "PLUG-BOTTOM");
 
                 let top;
                 while (top = i.pile[0])
@@ -2759,8 +2768,12 @@ export class XX {
 
             } else {
                 let c: CardLocation = target;
-                c.extract().move_to(Location.FIELD, recipient, "PLUG-BOTTOM");
+                c.extract().move_to(Location.BATTLE, recipient, "PLUG-BOTTOM");
             }
+            let origcost: number = 0 + weirdo.n!;
+            let [cost, msg] = get_modified_cost(origcost, weirdo);
+            game.pay_memory(cost);
+            game.log(`Link ${target.get_name()} to ${recipient.get_name()} ${msg}`); // no need to announce, we did that at start
             return true;
         } else if (weirdo.game_event == GameEvent.TUCK) {
             // move an instance under something, counts for removal
@@ -2771,7 +2784,7 @@ export class XX {
             let c = i.top();
 
             if (!c) return false;
-            c.extract().move_to(Location.FIELD, recipient, "bottom");
+            c.extract().move_to(Location.BATTLE, recipient, "bottom");
 
             let top;
             while (top = i.pile[0])
@@ -2794,14 +2807,14 @@ export class XX {
                 let c: Card = cl.extract();
                 let inst = target;
                 game.la(`Moving ${c.get_name()} underneath ${inst.get_name()}`);
-                c.move_to(Location.FIELD, inst, "BOTTOM");
+                c.move_to(Location.BATTLE, inst, "BOTTOM");
                 return true;
             } else if ("pile" in weirdo.spec_source!) {
                 // we are placing a card; assume this can't work with an instance on the field
                 let c: Card = (weirdo.spec_source! as Instance).top().extract();
                 // I thought I needed a cardlocation to do an extract()
                 let inst = target;
-                c.move_to(Location.FIELD, inst, "BOTTOM");
+                c.move_to(Location.BATTLE, inst, "BOTTOM");
             } else {
                 console.error("FAILED TO PLACE");
                 return false;
@@ -2855,6 +2868,15 @@ export class XX {
             if (weirdo.td2?.raw_text?.includes("security")) to = Location.SECURITY;
             c.move_to(to);
             return true;
+        } else if (weirdo.game_event == GameEvent.TRASH_LINK) {
+            let cl: CardLocation = target;
+            let c: Card = cl.extract();
+            let to: Location = Location.TRASH;
+            if (weirdo.td2?.raw_text?.includes("hand")) to = Location.HAND;
+            if (weirdo.td2?.raw_text?.includes("security")) to = Location.SECURITY;
+
+            c.move_to(to);
+            return true;
             // nothing, we did this inside the interrupter loop 
         } else if (weirdo.game_event == GameEvent.EVOSOURCE_MOVE) {
             // move from one instnace to another
@@ -2863,7 +2885,7 @@ export class XX {
             let to: Instance = weirdo.chosen_target2;
             console.error(2612, s_target1);
             console.error(2613, s_target2);
-            c.move_to(Location.FIELD, to, "bottom");
+            c.move_to(Location.BATTLE, to, "bottom");
             return true;
             // nothing, we did this inside the interrupter loop 
         } else if (weirdo.game_event == GameEvent.HATCH) {
@@ -2885,7 +2907,7 @@ export class XX {
             let location = Location.SECURITY;
             logger.debug("adding?");
             if (target2 && target2.kind == "Instance") {
-                location = Location.FIELD;
+                location = Location.BATTLE;
                 target_instance = target2;
             }
             if (weirdo.td.raw_text == "deck unused unsused unused") {
@@ -3230,8 +3252,8 @@ export class InterrupterLoop {
                         i.solid_starter = this.solid_starter;
                     });
                 } else {
-                    let a = this.game.Player1.get_pending_effect(Phase.ASAP, this.game.n_turn);
-                    let b = this.game.Player2.get_pending_effect(Phase.ASAP, this.game.n_turn);
+                    let a = this.game.Player1.get_pending_effect(Phase.ASAP, this.game.n_turn, false);
+                    let b = this.game.Player2.get_pending_effect(Phase.ASAP, this.game.n_turn, false);
                     if (a.length + b.length > 0) {
                         logger.info("ASAP effects " + a.length + " " + b.length);
                         interrupters = [...a, ...b];
@@ -3346,7 +3368,7 @@ export class InterrupterLoop {
                 // right now they all are.
 
                 if (target && target.on_field && !target.on_field()) {
-                    console.dir(se);
+                    //console.dir(se);
                     // should this even be reported?
                     // Is this needed, don't we handle this in another place more generally now?
                     logger.info(this.rand + " not on field, well sometimes these things happen");
@@ -3541,8 +3563,8 @@ export function get_responder_loop(g: Game, happened: SubEffect[], depth: number
 
     let _pea = g.posteffect_actions(happened);
 
-    let pending1 = g.Player1.get_pending_effect(Phase.ASAP, g.n_turn);
-    let pending2 = g.Player2.get_pending_effect(Phase.ASAP, g.n_turn);
+    let pending1 = g.Player1.get_pending_effect(Phase.ASAP, g.n_turn, false);
+    let pending2 = g.Player2.get_pending_effect(Phase.ASAP, g.n_turn, false);
 
     logger.info(`There are ${_pea.length} responders and ${pending1.length},${pending2.length} to ${happened.length} effects`);
 
@@ -3593,7 +3615,7 @@ function get_modified_cost(origcost: number, weirdo: SubEffect): [number, string
         if (delta) msg += ` [modified from ${origcost} by ${delta}]`;
     } else {
         msg = `for no cost`;
-        if (delta != 0) msg += ` [modification of ${delta} ignored]`; 
+        if (delta != 0) msg += ` [modification of ${delta} ignored]`;
     }
     logger.info(`newcost is ${newcost} delta ${delta}`);
     return [newcost, msg];

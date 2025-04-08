@@ -106,6 +106,7 @@ const SolidKeywords: string[] = [
     "[On Deletion]",
     "[When Attacking]",
     "[When Evolving]",
+    "[When Linking]",
 
     "[End of Attack]",
     "[End of Opponent's Turn]",
@@ -689,7 +690,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     //If you have a Monster with the [Hybrid] trait in play, you may use this Option card without meeting its color requirements.
 
     // 
-    if (m = line.match(/^(If|While) (.*), you may (.*ignore.*)/i)) {
+    if (m = line.match(/^(If|While) (.*), you (can|may) (.*ignore.*)/i)) {
         if (card) card.allow = parse_if(m[2]);
         line = "";
     }
@@ -752,6 +753,10 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
             switch (sword) {
                 case "[Effect]": on_self.ge = GameEvent.ACTIVATE; break; // should never hit
                 case "[When Evolving]": on_self.ge = GameEvent.EVOLVE; break;
+                case "[When Linking]": on_self.ge = GameEvent.PLUG; 
+                    on_self.td = new TargetDesc("this card"); // odd, this is card or instance
+                    break;    
+                break;
                 case "[On Play]": on_self.ge = GameEvent.PLAY; break;
                 case "[On Deletion]": on_self.ge = GameEvent.DELETE; break;
                 // TODO: no hard-coding keywords
@@ -813,6 +818,12 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
                     on_self.td = new TargetDesc("any");
                     on_self.source = self;
                     break;
+                    case "[When Attacking]":
+                        on_self.ge = GameEvent.ATTACK_DECLARE;
+                        on_self.td = new TargetDesc("any");
+                        on_self.source = self;
+                        break;
+    
                 case "＜Alliance＞":
                     on_self.ge = GameEvent.ATTACK_DECLARE;
                     on_self.td = new TargetDesc("any");
@@ -860,9 +871,10 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
     // we don't have a trigger yet, so "at" can be our trigger
     if (!Solid_is_triggered(solid) && !solid.keywords.includes("[Security]")) {
-        if (m = line.match(/^At (.*?),(.*)/)) {
+        if (m = line.match(/^(At .*?),(.*)/)) {
             let at = parse_at(m[1]);
             if (at) solid.phase_trigger = at.phase;
+            
             line = m[2];
         }
     }
@@ -975,6 +987,12 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     //  if (grammared) {
 
 
+    if (line.includes("would next")) {
+        let grammared = parseStringEvoCond(line, "EffSentence");
+        if (grammared) {
+            line = grammared.rendered;
+        }
+    }
 
     if (line.includes("Delay")) {
         let grammared = parseStringEvoCond(line, "EffSentence");
@@ -1076,6 +1094,19 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
             }
 
+            // making clauses like this sucks ⚪s
+            if (true)
+            if (m = firstsentence.match(/^(At|The next time) (.*)/i)) {
+                // for some fun, get the grammar to realize this is a nested effect 
+                logger.info("new split: At The Next time");
+                const clause1 = (m[0]).trim();
+                let [a1, l1] = parse_atomic(clause1, label, solid, card);
+                atomics.push(a1);
+                solid.effects.push(a1);
+                continue;
+
+
+            }
 
             // (if/while...) by Y, Z. 
             // use first sentence so we don't eat a by in the second
@@ -1513,11 +1544,14 @@ function single_parse_if(line: string): SingleGameTest {
 
     if (m = line.match(/your tamers have (\d)( or (more|fewer))? total colors/i)) {
         //   let count = m[1] ? "0" : m[3];
-
+        console.error("missing test");
         // return new SingleGameTest(GameTestType.TARGET_EXISTS, new TargetDesc("your " + m[4]), undefined, count);
     }
 
 
+//    if (m = line.match(/you have (.*)/)) {
+  //      let multi = parseStringEvoCond(m[1], "MultiTarget");
+    // }
 
     // in play is ending up in first match
     if (m = line.match(/you (don.t )?have (an? )?(\d or (?:more|fewer))?(.*?)( in play)?$/i)) {
@@ -1527,8 +1561,9 @@ function single_parse_if(line: string): SingleGameTest {
     }
 
     // same in play issue as above. non-greedy doesn't fix this
-    if (m = line.match(/your opponent has (\d or more)?(.*?)( in play)?$/i)) {
-        return new SingleGameTest(GameTestType.TARGET_EXISTS, new TargetDesc("their " + m[2]), undefined, m[1]);
+    if (m = line.match(/your opponent has (no)?(\d or more)?(.*?)( in play)?$/i)) {
+        let count = m[1] ? "0" : m[2];
+        return new SingleGameTest(GameTestType.TARGET_EXISTS, new TargetDesc("their " + m[3]), undefined, count);
     }
 
     if (m = line.match(/(.*) is in this Monster's evolution cards$/i)) {
@@ -1610,12 +1645,16 @@ function single_parse_if(line: string): SingleGameTest {
 
 // This could be *either* a trigger *or* setting up a delayed reaction
 function parse_at(line: string): any | false {
-    let phrase = parseStringEvoCond("At " + line, "At");
+    let phrase = parseStringEvoCond(line, "At");
     //    phrase = find_in_tree(phrase, "At");
     let trigger: any = {};
     if (!phrase) {
-        console.error("failed to parase at");
+        console.error("failed to parse at " + line);
         return false;
+    }
+    if (phrase.trigger) {
+        trigger.interrupt = parse_when(phrase.trigger);
+        return trigger;
     }
     if (phrase.phase === "battle") {
         trigger["END_OF_BATTLE"] = true;
@@ -1669,8 +1708,8 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
     let grammared = parseStringEvoCond(line, "WhenSentence");
     // console.error(line);
     if (grammared) {
-        console.error("WHEN", grammared);
-        console.dir(grammared, { depth: 99 });
+//        console.error("WHEN", grammared);
+  //      console.dir(grammared, { depth: 99 });
 
 
 
@@ -1691,14 +1730,21 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
         }
 
         if (w.event.includes("PLAY")) {
-            // can i recognize what it *was* properly, on a non-interruptive?`
             let int_evo: InterruptCondition = {
                 ge: GameEvent.PLAY,
-                // again, we're re-grammaring
                 td: new MultiTargetDesc(w.target.raw_text),
                 cause: w.effect ? EventCause.EFFECT : EventCause.ALL
             }
-            //console.log("grammared and consumed: " + line);
+            ret.push(int_evo);
+        }
+
+        if (w.event.includes("LINK")) {
+            let int_evo: InterruptCondition = {
+                ge: GameEvent.PLUG,
+                td: new TargetDesc(""),
+                td2: new MultiTargetDesc(w.target.raw_text),
+                cause: w.effect ? EventCause.EFFECT : EventCause.ALL
+            }
             ret.push(int_evo);
         }
 
@@ -1735,7 +1781,7 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
 
 
     // INTERRUPTIVE .  should I capture both "would" and "would be"?
-    if (m = line.match(/(.*) would ()(.*)/)) {
+    if (m = line.match(/(.*) would (next )?(.*)/)) {
         line = m[1].trim() + " " + m[3].trim();
     }
 
@@ -1843,7 +1889,7 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
     }
 
     // gets linked... note that td2 is what gets linked. we could further say "linked by a XXX" in theory
-    if (m = line.match(/(.*) gets linked/i)) {
+    if (m = line.match(/(.*) gets linked OBSOLETE/i)) {
         let plug_evo: InterruptCondition = {
             ge: GameEvent.PLUG,
             td: new TargetDesc(""),
@@ -2210,7 +2256,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         cause: EventCause,
         cost_change?: any,
         delayed_effect?: SolidEffect2,
-        delayed_trigger?: Phase,
+        delayed_phase_trigger?: Phase,
+        delayed_interrupt?: InterruptCondition[], 
         n_test?: GameTest;
     } = {
         game_event: GameEvent.NIL,
@@ -2259,6 +2306,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (
         (
             line.toLowerCase().includes("play") ||
+            line.toLowerCase().includes("link") ||
+            line.toLowerCase().includes("suspend") ||
             line.toLowerCase().includes("bottom of the deck") ||
             line.toLowerCase().includes("top of the deck") ||
             line.toLowerCase().includes("evolution cards") ||
@@ -2276,12 +2325,32 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             }
             console.log("GRAM"); console.dir(grammared, { depth: 99 });
             const eff = grammared.effect;
+            const optional = eff.optional;
+            if (optional) atomic.optional = true;
+            action_args = eff.action_args;
+
+            if (eff.action === 'link') {
+                
+                target = action_args.target;
+                let target2 = action_args.target2;
+                thing.game_event = GameEvent.PLUG;
+
+                x = new MultiTargetDesc(target.raw_text);
+                thing.td = x;
+                thing.choose = x.choose;
+                let y = new MultiTargetDesc(target2.raw_text);
+                thing.td2 = y;
+                 if (action_args.no_cost) thing.n_mod += "for free; ";
+                console.error(2343, thing);
+                 line = "";
+            }
+
+
+
             if (eff.action === 'play') {
 
-                action_args = eff.action_args;
                 target = action_args.target;
                 thing.game_event = GameEvent.PLAY;
-                atomic.optional = true;
 
                 // we already grammared the multitarget, we don't need to re-parse...
                 //  thing.td = new MultiTargetDesc("");
@@ -2299,7 +2368,16 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 }
                 if (action_args.no_cost) thing.n_mod += "for free; ";
                 line = "";
-                console.error(2283, x);
+            }
+
+            if (eff.action === 'suspend') {
+                target = action_args.target;
+                thing.game_event = GameEvent.SUSPEND; // targets an instance!
+                x = new MultiTargetDesc(target.raw_text);
+                thing.td = x;
+                thing.choose = x.choose;
+                if (x.upto) thing.n_mod += "upto; ";
+                line = "";
             }
 
             if (eff.action === 'topdeck') {
@@ -2307,7 +2385,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 //        if (m = line.match(/^Return(ing)? (.*) to the (top|bottom|hand)(?: of .{1,14} deck)?/i)) {
                 //      let dest = m[3];
                 let mod_dest = "top deck";
-                action_args = eff.action_args;
                 target = action_args.target;
                 thing.game_event = GameEvent.TARGETED_CARD_MOVE; // targets an instance!
                 thing.n_mod = mod_dest;
@@ -2323,7 +2400,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 //        if (m = line.match(/^Return(ing)? (.*) to the (top|bottom|hand)(?: of .{1,14} deck)?/i)) {
                 //      let dest = m[3];
                 let mod_dest = "bottom deck";
-                action_args = eff.action_args;
                 target = action_args.target;
                 thing.game_event = GameEvent.TO_BOTTOM_DECK; // targets an instance!
                 thing.n_mod = mod_dest;
@@ -2334,7 +2410,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 line = "";
             }
             if (eff.action === 'SourceStrip') {
-                action_args = eff.action_args;
                 target = action_args.target;
                 thing.choose = parseInt(action_args.choose);
                 thing.game_event = GameEvent.EVOSOURCE_REMOVE;
@@ -2395,18 +2470,20 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
     // If we're in here, we already have our trigger
     // A pending SolidEffect gets made.
-    if (m = line.match(/^At (.*?),(.*)/)) {
-
+    if (m = line.match(/^((?:At|The next time) .*?),(.*)/)) {
         let at = parse_at(m[1]);
         if (at) {
             let [_a, delayed, _b, _c] = new_parse_line(m[2], card, label, "main");
             thing.game_event = GameEvent.CREATE_PENDING_EFFECT;
             thing.choose = 0;
             thing.delayed_effect = delayed;
-            thing.delayed_trigger = at;
+            if (at.interrupt) {
+                thing.delayed_interrupt = at.interrupt;
+            } else {
+                thing.delayed_phase_trigger = at;
+            }
             line = "";
         }
-
     }
 
 
@@ -3349,6 +3426,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     } else if (m = line.match(/^(.*)until the end of( their| your opponent's| your)?(?: next)? turn,?(.*)$/i)) {
         //			if (parserdebug) logger.debug("UNTIL WHEN, EFFECT");
         expiration = { END_OF_TURN: m[2] == " your" ? "YOUR" : "OPPONENT" };
+        line = m[1] + " " + m[3];
+    } else if (m = line.match(/^(.*)until (their) turn ends,?(.*)$/i)) {
+        //			if (parserdebug) logger.debug("UNTIL WHEN, EFFECT");
+        expiration = { END_OF_TURN: m[2] == "your" ? "YOUR" : "OPPONENT" };
         line = m[1] + " " + m[3];
         //	if (parserdebug) logger.debug("UNTIL 2:" + effect);
         //    if (parserdebug) logger.debug("EXPIRATION");

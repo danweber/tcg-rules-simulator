@@ -4,8 +4,8 @@ HAND1:
 HAND2:
 GAME:P1 T3 MAIN 8
 ECHO: ---- attack in, mon gets played out
-CAPTURE:Target FairyFeatherlink FIELD-CS3-02
-CAPTURE:Target FairyFeatherlink FIELD-CS3-02
+CAPTURE:Target FairyFeatherlink BATTLE-CS3-02
+CAPTURE:Target FairyFeatherlink BATTLE-CS3-02
 FIELD1:I3,CS3-Fairyfeatherlink,1000DP
 FIELD2:Shield,CS1-04,REST,4500DP
 HAND1:

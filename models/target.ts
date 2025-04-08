@@ -202,7 +202,7 @@ export class SingleGameTest {
             } else {
                 console.error("BAD CARD TEST: " + this.raw_text);
                 logger.error("BAD CARD TEST: " + this.raw_text);
-            }
+            } 
             // if we wanted "for each N" or "at least N" return (count / N)
             // if we wanted "at most N" return this.count 
             if (this.less_than) {
@@ -221,6 +221,10 @@ export class SingleGameTest {
             if (this.td.raw_text.includes("security")) {
                 l = Location.SECURITY; // search security
             }
+            if (this.td.raw_text.includes("field")) {
+                l = Location.EGGZONE; // search security
+            }
+
             if (this.td.raw_text.includes("card")) {
                 e = GameEvent.STACK_ADD; // search security
             }
@@ -319,6 +323,7 @@ export class MultiTargetDesc {
     raw_text: string;
     targets: TargetDesc[] = [];
     choose: number = 0;
+    upto: boolean = false;
 
     count(): number { return this.choose ? this.choose : this.targets.length; }
 
@@ -370,7 +375,9 @@ export class MultiTargetDesc {
                 if (match) {
                     all.forEach( (t:any) =>  t.from = grammared.from  );
                     this.parse_matches = all;
-                    this.choose = all.length;
+                    this.choose = grammared.count;
+                    
+                    this.upto = grammared.upto;
                     return;
                 }
 
@@ -666,8 +673,8 @@ export class TargetDesc {
                     `${t.card_id} = ${s.card_id()}, ${t.card.id} === ${s.get_instance().top().id} ` +
                     ` SAME IS ${t.card == s.get_instance().top()}`);
 
-                if (t.location == Location.FIELD) {
-                    // we're on field, say yes for any card in this stack
+                if (t.location == Location.BATTLE) {
+                    // we're on , say yes for any card in this stack
                     return (t.location == s.location() && s.id() == t.instance);
                 }
 
@@ -945,12 +952,16 @@ export class TargetDesc {
             logger.info("trash, rest of line is " + text + ".");
         } else if (m = text.match(/(.*)(in|from) your hand\s*(or trash)?\s*(or battle area)?/i)) {
             let t = m[3] ? "hand-or-trash" : "hand";
-            if (m[4]) t += "-or-field";
+            if (m[4]) t += "-or-battle";
             let x = new SubTargetDesc(t);
             this.targets.push(x)
             text = m[1];
         } else if (m = text.match(/(.*)(in|from) your battle area or trash?/i)) {
-            let x = new SubTargetDesc("field-or-trash");
+            let x = new SubTargetDesc("battle-or-trash");
+            this.targets.push(x)
+            text = m[1];
+        } else if (m = text.match(/(.*)(on) the field/i)) {
+            let x = new SubTargetDesc("field");
             this.targets.push(x)
             text = m[1];
         } else if (m = text.match(/(.*)(in|from) your hand\s*(or trash)?/i)) {
@@ -960,7 +971,7 @@ export class TargetDesc {
             text = m[1];
 
         } else if (m = text.match(/(.*)(in play)/i)) {
-            let x = new SubTargetDesc("field");
+            let x = new SubTargetDesc("battle");
             this.targets.push(x);
             text = m[1];
         } else if (m = text.match(/(.*)(in (?:the )?hand)/i)) {
@@ -997,7 +1008,7 @@ export class TargetDesc {
                 let proposed_text = m[1];
                 let w = m[2].trim();
                 //                if (m = w.match(/(.*)[.,]/)) w = m[1];
-                const parseTree = parseString(w);
+                const parseTree = parseStringEvoCond(w, "WithSentence");
                 logger.info(`PARSING ${!!parseTree} FOR CLAUSE ${w}`);
                 // console.log(926, w);
                 //   console.dir(parseTree, { depth: 99 });
@@ -2156,23 +2167,27 @@ export class SubTargetDesc {
             this.testword = StatusTestWord.KEYWORD;
             this.str = arg2!;
         }
-        if (arg == "field") {
-            // this one shouldn't be needed, in theory, but trash/field fusion effects 
+        if (arg == "battle") {
+            // this one shouldn't be needed, in theory, but trash/battle fusion effects 
             // might mean it is
             this.testword = StatusTestWord.LOCATION;
-            this.n = Location.FIELD;
+            this.n = Location.BATTLE;
+        }
+        if (arg == "field") {
+            this.testword = StatusTestWord.LOCATION;
+            this.n = Location.BATTLE | Location.EGGZONE;
         }
         if (arg == "hand-or-trash") {
             this.testword = StatusTestWord.LOCATION;
             this.n = Location.HAND | Location.TRASH;
         }
-        if (arg == "field-or-trash") {
+        if (arg == "battle-or-trash") {
             this.testword = StatusTestWord.LOCATION;
-            this.n = Location.FIELD | Location.TRASH;
+            this.n = Location.BATTLE | Location.TRASH;
         }
-        if (arg == "hand-or-field") {
+        if (arg == "hand-or-battle") {
             this.testword = StatusTestWord.LOCATION;
-            this.n = Location.HAND | Location.FIELD;
+            this.n = Location.HAND | Location.BATTLE;
         }
 
         if (arg == "attack") {

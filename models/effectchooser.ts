@@ -162,7 +162,8 @@ export class EffectChooser {
         if (cql == 1) {
             // only announce opponent's actions?
             let depth_msg = (this.depth > 1) ? "Depth " + this.depth + ": " : "";
-            this.game.log(depth_msg + "Processing effect " + this.current_queue[0].label);
+            this.game.log(depth_msg + "Processing effect " + this.current_queue[0].label + " (" + this.current_queue[0].raw_text + ")");
+            this.current = this.current_queue[0];
             logger.info(this.rand + "return sql");
             this.count -= 1;
             return this.current_queue.pop()!;
