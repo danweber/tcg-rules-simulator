@@ -1,0 +1,13 @@
+FIELD1:Van,DW1-Vanillamon Sneaky,CS1-06
+FIELD2:
+GAME:P1 T2 MAIN 7
+ECHO: -- Play the monster, and activate the effect
+CAPTURE:Activate Sneaky Cat suspending
+CAPTURE:Don't pay/activate
+FIELD1:Van,DW1-Vanillamon Sneaky,CS1-06,REST New,CS1-03
+FIELD2:
+GAME:P1 T2 MAIN 5
+ECHO: -- Play again. Can't pay cost this time. (Shouldn't even be prompted to activate, technically)
+FIELD1:Van,DW1-Vanillamon Sneaky,CS1-06,REST New,CS1-03 New,CS1-03
+FIELD2:
+GAME:P1 T2 MAIN 1

@@ -1,0 +1,23 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** Attackamonster (DW1-06) *****
+[DW1-06]
+Card Info
+Name                Attackamonster
+Colour              Blue
+Card Type           Monster
+Play Cost           2
+DP                  3000 DP
+Level               3
+Form                Child
+Attribute           EARTH
+Type                Fighting_Beast
+Rarity              Common
+Evolution Requirements
+Colour         Blue
+Level          2
+Evolve Cost 0
+Card Effect(s)
+[Start of Your Main Phase] Attack with this monster
+Card Restriction

@@ -1,0 +1,20 @@
+VERSION:2
+# [Main] Delete all of your opponent's Monsters with the lowest level.
+
+# p1 has three Lv.4, and four Lv.5, and three of those Lv.5 are phoenix.
+# Some have a cancel, some don't.
+FIELD1:Four1,CS1-06,PLUG,CS3-Fairy Four2,CS1-06,PLUG,CS3-Fairy Four3,CS1-07,PLUG,CS3-Fairy Five1,CS1-Phoenix
+EGGS2:CS2-01
+HAND2:CS2-Quick CS2-Quick
+DECK1:CS1-02
+GAME:P2 T3 HATCHING 9
+CMD:HATCH
+DUMP:EGGZONE,TRASH
+
+ECHO: -- Use first quick slash, kill the level 4s
+CMD:PLAY CS2-Quick
+
+STEP:AUTOANSWER:CAPTURE
+DUMP:TRASH
+
+EXIT

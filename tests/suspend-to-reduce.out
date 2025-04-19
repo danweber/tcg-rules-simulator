@@ -1,0 +1,21 @@
+FIELD1:CanSusp,CS3-Enchantowl Second,CS3-Fairyfeatherlink
+FIELD2:
+EGGZONE1:Egg,CS3-Beaklet
+EGGZONE2:
+GAME:P1 T4 MAIN 9
+ECHO: -- don't see breeding
+FIELD1:CanSusp,CS3-Enchantowl Second,CS3-Fairyfeatherlink
+FIELD2:
+EGGZONE1:Egg,CS3-Fairyfeatherlink,CS3-Beaklet
+EGGZONE2:
+GAME:P1 T4 MAIN 9
+ECHO: -- evo, pay cost, suspending self
+CAPTURE:Activate EnchantOwl suspending
+CAPTURE:Don't pay/activate
+CAPTURE:Target EnchantOwl 1
+CAPTURE:Target FairyFeatherlink 2
+FIELD1:CanSusp,CS3-Enchantowl,REST Second,CS3-Enchantowl,CS3-Fairyfeatherlink
+FIELD2:
+EGGZONE1:Egg,CS3-Fairyfeatherlink,CS3-Beaklet
+EGGZONE2:
+GAME:P1 T4 MAIN 8

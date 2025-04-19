@@ -1,0 +1,23 @@
+VERSION:2
+
+# When one of your green Monster would evolve, by suspending 1 of your Monster, reduce the evolution cost by 5.
+
+
+FIELD1:CanSusp,CS3-05 Second,CS3-02
+EGGZONE1:Egg,CS3-01
+HAND1:CS3-02 CS3-05
+
+GAME:P1 T4 MAIN 9
+
+DUMP:EGGZONE
+
+ECHO: -- don't see breeding
+
+CMD:EVO CS3-02 Egg
+STEP:AUTOANSWER:CAPTURE
+DUMP:EGGZONE
+
+ECHO: -- evo, pay cost, suspending self
+CMD:EVO CS3-05 Second
+STEP:AUTOANSWER:CAPTURE
+DUMP:EGGZONE

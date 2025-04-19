@@ -1,0 +1,40 @@
+FIELD1:Attack1,CS3-Shieldwing Attack2,CS3-Shieldwing Attack3,CS3-Shieldwing
+FIELD2:
+TRASH1:CS3-17
+TRASH2:
+HAND1:CS3-17 CS3-17
+HAND2:
+GAME:P1 T3 MAIN 6
+ECHO: -- attack! play a thing
+CAPTURE:Activate ShieldWing playing
+CAPTURE:Don't pay/activate
+CAPTURE:Target Birdwatcher Bill HAND-CS3-17
+CAPTURE:Target Birdwatcher Bill HAND-CS3-17
+CAPTURE:Target Birdwatcher Bill TRASH-CS3-17
+FIELD1:Attack1,CS3-Shieldwing,REST Attack2,CS3-Shieldwing Attack3,CS3-Shieldwing I4,CS3-17
+FIELD2:
+TRASH1:CS3-17
+TRASH2:DW1-Vanillamon
+HAND1:CS3-17
+HAND2:
+GAME:P1 T3 MAIN 6
+ECHO: -- attack a second time, play a thing
+CAPTURE:Activate ShieldWing playing
+CAPTURE:Don't pay/activate
+CAPTURE:Target Birdwatcher Bill HAND-CS3-17
+CAPTURE:Target Birdwatcher Bill TRASH-CS3-17
+FIELD1:Attack1,CS3-Shieldwing,REST Attack2,CS3-Shieldwing,REST Attack3,CS3-Shieldwing I4,CS3-17 I5,CS3-17
+FIELD2:
+TRASH1:CS3-17
+TRASH2:DW1-Vanillamon DW1-Vanillamon
+HAND1:
+HAND2:
+GAME:P1 T3 MAIN 6
+ECHO: -- attack a third time, play a thing
+FIELD1:Attack1,CS3-Shieldwing,REST Attack2,CS3-Shieldwing,REST Attack3,CS3-Shieldwing,REST I4,CS3-17 I5,CS3-17
+FIELD2:
+TRASH1:CS3-17
+TRASH2:DW1-Vanillamon DW1-Vanillamon DW1-Vanillamon
+HAND1:
+HAND2:
+GAME:P1 T3 MAIN 6

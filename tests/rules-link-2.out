@@ -1,0 +1,17 @@
+FIELD1:Multi,CS3-Shieldwing,PLUG,CS3-Arcanetweet,CS3-Fairyfeatherlink,CS3-Arcanetweet,CS3-Fairyfeatherlink,9500DP,DODGE,LINK [-+]\D
+FIELD2:
+TRASH1:
+TRASH2:
+HAND1:CS3-Illumifalcon CS3-Arcanetweet CS3-Fairyfeatherlink
+HAND2:
+GAME:P1 T3 MAIN 5
+ECHO: -- evo into thing without link +3
+ECHO: -- we should get to select the things we trash
+ECHO: -- also the order things go into trash doesn't make sense
+FIELD1:Multi,CS3-Illumifalcon,CS3-Shieldwing,PLUG,CS3-Fairyfeatherlink,10000DP,DODGE
+FIELD2:
+TRASH1:CS3-Arcanetweet CS3-Arcanetweet CS3-Fairyfeatherlink
+TRASH2:
+HAND1:CS3-Arcanetweet CS3-Fairyfeatherlink
+HAND2:
+GAME:P1 T3 MAIN 1

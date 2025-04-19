@@ -1,0 +1,14 @@
+VERSION:2
+
+# most basic link test
+
+
+FIELD1:V1,DW1-Van I2,CS3-02 I3,CS3-02 Tamer,CS3-BirdwatcherBill
+HAND1:CS3-02
+GAME:P1 T3 MAIN 5
+DUMP:DP,KEYWORDS
+GET-X-PLAYS
+
+
+
+EXIT

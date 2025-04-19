@@ -1,0 +1,13 @@
+FIELD1:V1,DW1-Vanillamon,5000DP I2,CS3-Fairyfeatherlink,1000DP I3,CS3-Fairyfeatherlink,1000DP Tamer,CS3-17,NaNDP
+FIELD2:
+GAME:P1 T3 MAIN 5
+GET-X-PLAYS: json REFRESH
+GET-X-PLAYS: PLAY 0 Play FairyFeatherlink
+GET-X-PLAYS: ATTACK 1 0 Attack VanillaMon into player
+GET-X-PLAYS: ATTACK 2 0 Attack FairyFeatherlink into player
+GET-X-PLAYS: ATTACK 3 0 Attack FairyFeatherlink into player
+GET-X-PLAYS: LINK HAND 0 2 1 Link HAND-CS3-02 to FairyFeatherlink 2
+GET-X-PLAYS: LINK HAND 0 3 1 Link HAND-CS3-02 to FairyFeatherlink 3
+GET-X-PLAYS: LINK BATTLE 2 3 1 Link FairyFeatherlink to FairyFeatherlink 3
+GET-X-PLAYS: LINK BATTLE 3 2 1 Link FairyFeatherlink to FairyFeatherlink 2
+GET-X-PLAYS: NEXT PASS TURN

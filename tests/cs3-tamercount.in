@@ -1,0 +1,40 @@
+VERSION:2
+
+# link rules check
+
+FIELD1:Attack1,CS3-06 Attack2,CS3-06 Attack3,CS3-06
+HAND1:CS3-Birdwatcher CS3-Birdwatcher
+TRASH1:CS3-Birdwatcher
+SECURITY2:DW1-Van DW1-Van DW1-Van
+GAME:P1 T3 MAIN 6
+
+DUMP:HAND,TRASH
+
+ECHO: -- attack! play a thing
+CMD:ATTACK Attack1 Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:HAND,TRASH
+
+ECHO: -- attack a second time, play a thing
+CMD:ATTACK Attack2 Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:HAND,TRASH
+
+ECHO: -- attack a third time, play a thing
+CMD:ATTACK Attack3 Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:HAND,TRASH
+
+
+
+EXIT
+
+
+ECHO: -- evo into thing without link +3
+ECHO: -- we should get to select the things we trash
+ECHO: -- also the order things go into trash doesn't make sense
+
+CMD:EVO CS3-11 Multi
+DUMP:DP,KEYWORDS,HAND,TRASH
+
+EXIT

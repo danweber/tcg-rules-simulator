@@ -1,0 +1,20 @@
+VERSION:2
+# [Your Turn] [Once Per Turn] When this Monster attacks one of your opponent's Monster, this Monster gets +1000 DP for the turn.
+
+FIELD1:Attacker,DW1-Vanilla,CS1-01 Other,DW1-Vanilla,CS1-01 Green,DW1-Birder
+FIELD2:Vic1,CS1-02,REST Vic2,CS1-02,REST
+SECURITY2:CS1-02
+HAND1:DW1-Standup
+GAME:P1 T2 MAIN 5
+DUMP:DP
+ECHO: -- Attack once with Attacker, have DP boost afterwards.
+CMD:ATTACK Attacker Vic1
+DUMP:DP
+ECHO: -- Stand up Attacker, attack again, no DP boost this time
+CMD:PLAY DW1-Standup
+STEP:AUTOANSWER
+CMD:ATTACK Attacker Vic2
+DUMP:DP
+ECHO: -- Attack into health
+CMD:ATTACK Other Player
+DUMP:DP

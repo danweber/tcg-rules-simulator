@@ -1,0 +1,22 @@
+VERSION:2
+# Suspend 2 of your opponent's Monsters. Then, return 1 of your opponent's suspended Monster to its owner's hand
+When this Monster attacks, trash the top card of your opponent's security stack.
+HAND1:CS1-DoubleBind CS1-02
+FIELD1:Green,DW1-Bird
+FIELD2:Target,DW1-Van
+GAME:P1 T3 MAIN 10
+DUMP
+
+ECHO: -- Try to use option, can't because colors missing
+CMD:PLAY CS1-DoubleBind
+STEP:AUTOANSWER:CAPTURE
+DUMP
+
+ECHO: -- Play a yellow
+CMD:PLAY CS1-02 Yellow
+DUMP
+
+ECHO: -- Now use option. Tough to see what happened, other tests will need to be more fine-grained.
+CMD:PLAY CS1-DoubleBind
+DUMP
+

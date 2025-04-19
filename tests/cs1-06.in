@@ -1,0 +1,18 @@
+VERSION:2
+#             When you would play a yellow monster, by suspending this Monster, reduce the play cost by 2
+# [Your Turn] When you would play a yellow monster, by suspending this Monster, reduce the cost by 2.
+FIELD1:Van,DW1-Van Sneaky,CS1-06
+GAME:P1 T2 MAIN 7
+HAND1:CS1-03 CS1-03
+DUMP
+
+ECHO: -- Play the monster, and activate the effect
+CMD:PLAY CS1-03 New
+STEP:AUTOANSWER:CAPTURE
+DUMP
+
+ECHO: -- Play again. Can't pay cost this time. (Shouldn't even be prompted to activate, technically)
+CMD:PLAY CS1-03 New
+STEP:AUTOANSWER:CAPTURE
+DUMP
+EXIT
