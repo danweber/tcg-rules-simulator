@@ -25,6 +25,7 @@ export class Instance {
     n_other_player: number;
     suspended: boolean;
     id: number;
+    index: number; // numeric index, to match CardLocation interface
     pile: Card[];
     // given plugged cards, we should move to a model where an instance
     // is exactly 1 card, with a pile of "evolution cards" and a pile of "plugged cards"
@@ -52,6 +53,7 @@ export class Instance {
         this.n_other_player = other_player.player_num;
         this.suspended = false;
         this.id = empty ? Instance.PLAYER_ID : game.next_id();
+        this.index = this.id;
         this.pile = []; // 0 is bottom of pile
         this.play_turn = 0;
         this.record = [];

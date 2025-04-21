@@ -116,7 +116,11 @@ export class Game {
         this.seed = seed;
         this.rng = seedrandom(seed);
 
-
+        let unused = function() {
+            let x = 1;
+//              seedrandom(seed);
+            return x;
+        }
         this.memory = 0;
         this.n_turn = 0;
         this.turn_player = 0;
@@ -443,12 +447,14 @@ export class Game {
             fs.writeSync(this.control_log, `_QUESTION: ${this.get_question()}\n`);
             fs.writeSync(this.control_log, `_ANSWERS:\n`);
             let n = Math.floor(this.rng() * (this.wait_choices.length - 1) + 1);
+            logger.info("RNG" +  n);
             let count = 0;
             let opt = "!!!";
             for (let play of this.wait_choices) {
                 fs.writeSync(this.control_log, `_\t${play.command.padEnd(20, " ")} ${play.text}\n`);
                 if (count++ == n) opt = play.command;
             }
+            
             /*
             fs.writeSync(this.control_log, `_WOULD MAKE RANDOM CHOICE: ${n} ${opt} \n`);
             if (c == autorun) {
@@ -469,6 +475,7 @@ export class Game {
             fs.writeSync(this.control_log, `_\t${play.command.padEnd(20, " ")} ${play.text}\n`);
             if (count++ == n) opt = play.command;
         }
+        // getting random command
         /*
         fs.writeSync(this.control_log, `_WOULD MAKE RANDOM CHOICE: ${n} ${opt} \n`);
         if (c == autorun) {
@@ -589,6 +596,8 @@ export class Game {
         let extras = (extra ? extra : "").split(",");
         let version = 1; // this will update
         let dp = extras.includes("DP");
+
+        if (extras.includes("V2")) testmode = 2;
         let show_keywords = extras.includes("KEYWORDS");
         let name = extras.includes("NAME");
         let color = extras.includes("COLOR");
@@ -2096,10 +2105,11 @@ export class Game {
     // game commands come in through two portals, this one
     // and 
     execute_string(msg: string, n_player: number, last_id: number) {
-        logger.debug(`executing2 ${msg} last_id ${last_id} command_id ${this.command_id}`);
+        logger.info(`executing2 ${msg} last_id ${last_id} command_id ${this.command_id}`);
         if (last_id != this.command_id) {
             this.la(`UI out of sync 2: ${this.command_id} expected, got ${last_id} `);
         }
+
         // This declaration conflicts!
         let c: GameCommand = {
             id: this.command_id,
@@ -2114,7 +2124,7 @@ export class Game {
 
     // this should be called receive... ?
     send(msg: string, n_player: number, last_id: number): void {
-        logger.debug(`executing1 ${msg} last_id ${last_id} command_id ${this.command_id}`);
+        logger.info(`executing1 ${msg} last_id ${last_id} command_id ${this.command_id}`);
         if (last_id != this.command_id) {
             this.la(`UI out of sync 1: ${this.command_id} expected, got ${last_id} `);
         }
@@ -2305,7 +2315,8 @@ export class Game {
                             ? len - 1
                             : Math.floor(this.rng() * (len - 1.8)) + 1);
                         cmd = plays[index].command;
-                        logger.debug("doing command? " + cmd);
+                        logger.info("doing command? " + cmd);
+                        logger.info("executing3 " + cmd);
                         fs.writeSync(this.control_log, "DOING COMMAND? " + cmd + "\n")
                         break;
                     } else {

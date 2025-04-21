@@ -36,6 +36,7 @@ export interface Command {
     evo_right?: any; // location obj
     link_source?: any,
     link_target?: any,
+    link_trash?: any,
     cost?: string;
     evo_target?: string;
     evo_card?: any;
@@ -682,22 +683,28 @@ export class Player {
         let ret: Command[] = [];
         for (let link of links) {
             let [plugger, recipient, cost, totrash] = link;
-            let str = `Link ${plugger.get_name()} ${plugger.id} to ${recipient.get_name()} ${recipient.id} ${cost}`;
+            let str = `Link ${plugger.get_name()} ${plugger.id} to ${recipient.get_name()} ${recipient.id} `;
             let key_array = [plugger.get_key(), recipient.get_key(), cost]
+            let cmd_trash:any = false;
             if (typeof totrash == "number") {
                 key_array.push(totrash);
+                let trash_name = recipient.plugged[totrash].get_name()
+                str += "trashing " + trash_name;
+                cmd_trash = { location: "FIELD", id: totrash, name: trash_name }
+                 
             }
+            str += cost;
             let key = key_array.join("-");
             logger.info("CMD: " + key);
-            let cmd_plugger = { location: Location[plugger.location], id: plugger.id };
-            let cmd_recipient = { location: Location[recipient.location], id: recipient.id };
-
+            let cmd_plugger = { location: Location[plugger.location], id: plugger.index };
+            let cmd_recipient = { location: Location[recipient.location], id: recipient.id, name: recipient.name() };
             ret.push({
                 command: key,
                 text: str,
                 ver: uuidv4(),
                 link_source: cmd_plugger,
                 link_target: cmd_recipient,
+                link_trash:  cmd_trash,
                 cost: String(cost)
             });
         }
@@ -1493,14 +1500,16 @@ export class Player {
             let card: CardLocation | Instance, instance: Instance, cost: number, totrash: number | undefined;
             [card, instance, cost, totrash] = link;
             let card_location: string = Location[card.location];
-            let card_index = ("index" in card) ? card.index : card.id;
+            let card_index = card.index;
             let instance_id = instance.id;
             v_key = `LINK ${card_location} ${card_index} ${instance.id} ${cost}`;
-            let card_label: string = ("index" in card) ? card.id : card.name();
+            let card_label: string = ("cardloc" in card) ? card.id : card.name();
             v_value = `Link ${card_label} to ${instance.get_name()} ${instance.id}`;
+            let link_trash:any = false;
             if (typeof totrash === "number") {
                 v_key += ` ${totrash}`;
                 const v_trash = instance.plugged[totrash].get_name();
+                link_trash = { location: "FIELD", id: totrash, name: v_trash }
                 v_value += ` and trash ${v_trash}`;
             }
             let link_source = { location: card_location, id: card_index };
@@ -1510,6 +1519,7 @@ export class Player {
                 command: v_key, text: v_value,
                 link_source: link_source,
                 link_target: link_target,
+                link_trash: link_trash,
                 cost: String(cost),
                 ver: uuidv4()
             });

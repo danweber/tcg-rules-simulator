@@ -131,12 +131,14 @@ router.get('/witness', (req, res) => {
     test_case = 'pending-gravitycrush';
   } else if (test === 3) {
     test_case = 'pending-gravitycrush-2';
-
+  } else if (test === 4) {
+    test_case = 'replay'
   } else if (test !== 1) {
     res.send(`<ul> Visualized Test Cases
         <li> <a href="?test=1">Failed Xros from trash<a>
         <li> <a href="?test=2">Multiple Gravity Crush in one turn</a>
         <li> <a href="?test=3">Gravity Crush w/ multiple EoT<a>
+        <li> <a href="?test=4">Appmon v Royal Base</a>
       </ul>`);
     return;
   }
@@ -168,6 +170,7 @@ router.get('/witness', (req, res) => {
       if (words[0].trim() === "TEXT")
         text = words[1].replace(/[^.-a-z0-9_ <>＜＞]/gi, ''); // 
     }
+    // first line with DUMP is where we stop?
     if (line.startsWith("DUMP")) {
       past = true;
     }
@@ -230,17 +233,30 @@ router.post('/set_up_board', (req, res) => {
   let gid = clean(req.query.gid);
   let pid = parseInt(req.query.pid);
   let launch = parseInt(req.query.launch || req.body.launch);
-  gid = new_game(gid);
-  if (!game_exists(gid)) { res.redirect('new111_game'); return; }
-  let game = game_list[gid];
-  let player = game.player(pid);
-  let board = req.query.board || req.body.board;
 
+  let board = req.query.board || req.body.board;
+  let no_init = parseInt(req.query.no_init || req.body.no_init);
+  let game;    
   if (!board || board.length < 2 || JSON.stringify(board).length < 4) {
     res.redirect(301, `/game/set_up_board`);
     return;
   }
-
+    console.error(244, no_init);
+    if (no_init) {
+        game = game_list[gid];
+        console.log("contingueing");
+        let test_data = game._continue_board(board);
+       if (test_data.length > 0) {
+          res.send(test_data);
+          return;
+       }
+        console.error("NO DATA, FALL THROUGH");
+    }
+  gid = new_game(gid);
+  if (!game_exists(gid)) { res.redirect('new111_game'); return; }
+  game = game_list[gid];
+  let player = game.player(pid);
+    
   let test_data = game._set_up_board(board);
   if (test_data.length > 0) {
     res.send(test_data);
