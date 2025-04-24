@@ -139,8 +139,8 @@ enum RLStep {
 // a dry-run for terminus_loop would be awesome
 function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: SolidEffectLoop): boolean {
     if (3 < 2) return true; // when debugging, make this always true
-    logger.info(" can pay cost for " + eff.raw_text);
-    logger.info("can we pay this cost?");
+    logger.info("can pay cost for " + eff.raw_text);
+    logger.info("can we pay this cost?1");
     // just see if we can do the first weirdo
     logger.info("there are " + eff.events.length + " events");
 
@@ -1937,9 +1937,20 @@ export class SolidEffectLoop {
 
             // only some events need to ask about the second target
             if (!w.td2 ||
-                !([GameEvent.EVOSOURCE_MOVE, GameEvent.TUCK].includes(w.game_event))) {
+                !([GameEvent.EVOSOURCE_MOVE, GameEvent.TUCK, GameEvent.TARGETED_CARD_MOVE].includes(w.game_event))) {
                 this.s = FakeStep.ASSIGN_TARGET_SUBS;
                 return false;
+            }
+
+            if (w.td2.raw_text.includes("security")) {
+                // no need to find a target if we're targeting card move to security
+                this.s = FakeStep.ASSIGN_TARGET_SUBS;
+                return false;
+            }
+
+            let game_event2 = w.game_event;
+            if (game_event2 === GameEvent.TARGETED_CARD_MOVE) {
+                game_event2 = GameEvent.DELETE; // 2nd target is an instance?
             }
             // target2 is really simple, we took care of all the complex cases,
             // this is just when a specific generic effect needs a second target
@@ -1948,7 +1959,7 @@ export class SolidEffectLoop {
             let prior: Instance = this.chosen_targets![0] as Instance;
             let special_previous = new SpecialInstance(prior);
             logger.info(`special_previous is ${!!special_previous}`);
-            let potential_targets = this.game.find_target(w.td2, w.game_event, this.effect.source!, this, Location.SECURITY, special_previous);
+            let potential_targets = this.game.find_target(w.td2, game_event2, this.effect.source!, this, Location.SECURITY, special_previous);
             logger.info(this.rand + "Searched for targerts2 for " + GameEvent[w.game_event] + " in " + w.td2.raw_text + " AKA " + w.td2.toPlainText());
 
             logger.warn("hard code second target to choose 1");

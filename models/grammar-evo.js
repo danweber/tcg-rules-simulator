@@ -75,6 +75,8 @@
             { "name": "WhenSentence", "symbols": ["WhenRemoval"], "postprocess": function (d) { return { raw_text: gv(d), type: 'WhenSentence', When: d[0] }; } },
             { "name": "WhenSentence", "symbols": ["WhenEffect"], "postprocess": function (d) { return { raw_text: gv(d), type: 'WhenSentence', When: d[0] }; } },
             { "name": "WhenSentence", "symbols": ["WhenGets"], "postprocess": function (d) { return { raw_text: gv(d), type: 'WhenSentence', When: d[0] }; } },
+            { "name": "WhenSentence", "symbols": ["WhenPlaced"], "postprocess": function (d) { return { raw_text: gv(d), type: 'WhenSentence', When: d[0] }; } },
+            { "name": "WhenSentence", "symbols": ["WhenAttacks"], "postprocess": function (d) { return { raw_text: gv(d), type: 'WhenSentence', When: d[0] }; } },
             { "name": "WhenGets$string$1", "symbols": [{ "literal": " " }, { "literal": "g" }, { "literal": "e" }, { "literal": "t" }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "WhenGets$ebnf$1", "symbols": [{ "literal": "s" }], "postprocess": id },
             { "name": "WhenGets$ebnf$1", "symbols": [], "postprocess": function (d) { return null; } },
@@ -119,6 +121,10 @@
             { "name": "WhenEvo", "symbols": ["Target", "WhenEvo$ebnf$1", "WhenEvo$ebnf$2", "WhenEvo$ebnf$3", "WhenEvo$string$1", "WhenEvo$ebnf$4", "WhenEvo$ebnf$5", "WhenEvo$ebnf$6"], "postprocess": function (d) {
                     return { raw_text: gv(d), event: "EVOLVE", before: d[0], after: d[7], dna: !!d[3] };
                 } },
+            { "name": "WhenAttacks$string$1", "symbols": [{ "literal": " " }, { "literal": "a" }, { "literal": "t" }, { "literal": "t" }, { "literal": "a" }, { "literal": "c" }, { "literal": "k" }, { "literal": "s" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenAttacks", "symbols": ["Target", "WhenAttacks$string$1"], "postprocess": function (d) {
+                    return { raw_text: gv(d), event: "ATTACK", target: d[0], after: d[7], dna: !!d[3] };
+                } },
             { "name": "WhenSusp$string$1", "symbols": [{ "literal": " " }, { "literal": "b" }, { "literal": "e" }, { "literal": "c" }, { "literal": "o" }, { "literal": "m" }, { "literal": "e" }, { "literal": "s" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "WhenSusp$ebnf$1$string$1", "symbols": [{ "literal": "u" }, { "literal": "n" }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "WhenSusp$ebnf$1", "symbols": ["WhenSusp$ebnf$1$string$1"], "postprocess": id },
@@ -127,9 +133,44 @@
             { "name": "WhenSusp", "symbols": ["Target", "WhenSusp$string$1", "WhenSusp$ebnf$1", "WhenSusp$string$2"], "postprocess": function (d) {
                     return { raw_text: gv(d), event: d[2] ? "UNSUSPEND" : "SUSPEND", target: d[0] };
                 } },
-            { "name": "WhenPlay$string$1", "symbols": [{ "literal": " " }, { "literal": "i" }, { "literal": "s" }, { "literal": " " }, { "literal": "p" }, { "literal": "l" }, { "literal": "a" }, { "literal": "y" }, { "literal": "e" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
-            { "name": "WhenPlay", "symbols": ["Target", "WhenPlay$string$1"], "postprocess": function (d) {
-                    return { raw_text: gv(d), event: "PLAY", target: d[0] };
+            { "name": "WhenPlay$subexpression$1$string$1", "symbols": [{ "literal": " " }, { "literal": "w" }, { "literal": "o" }, { "literal": "u" }, { "literal": "l" }, { "literal": "d" }, { "literal": " " }, { "literal": "X" }, { "literal": "X" }, { "literal": "X" }, { "literal": " " }, { "literal": "b" }, { "literal": "e" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlay$subexpression$1", "symbols": ["WhenPlay$subexpression$1$string$1"] },
+            { "name": "WhenPlay$subexpression$1$string$2", "symbols": [{ "literal": " " }, { "literal": "i" }, { "literal": "s" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlay$subexpression$1", "symbols": ["WhenPlay$subexpression$1$string$2"] },
+            { "name": "WhenPlay$subexpression$1$string$3", "symbols": [{ "literal": " " }, { "literal": "a" }, { "literal": "r" }, { "literal": "e" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlay$subexpression$1", "symbols": ["WhenPlay$subexpression$1$string$3"] },
+            { "name": "WhenPlay$string$1", "symbols": [{ "literal": " " }, { "literal": "p" }, { "literal": "l" }, { "literal": "a" }, { "literal": "y" }, { "literal": "e" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlay$ebnf$1", "symbols": ["FromRegion"], "postprocess": id },
+            { "name": "WhenPlay$ebnf$1", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "WhenPlay", "symbols": ["Target", "WhenPlay$subexpression$1", "WhenPlay$string$1", "WhenPlay$ebnf$1"], "postprocess": function (d) {
+                    return { raw_text: gv(d), event: "PLAY", target: d[0], from: d[3], xxx: d[1] };
+                } },
+            { "name": "WhenPlaced$ebnf$1$subexpression$1$string$1", "symbols": [{ "literal": " " }, { "literal": "i" }, { "literal": "s" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlaced$ebnf$1$subexpression$1", "symbols": ["WhenPlaced$ebnf$1$subexpression$1$string$1"] },
+            { "name": "WhenPlaced$ebnf$1$subexpression$1$string$2", "symbols": [{ "literal": " " }, { "literal": "a" }, { "literal": "r" }, { "literal": "e" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlaced$ebnf$1$subexpression$1", "symbols": ["WhenPlaced$ebnf$1$subexpression$1$string$2"] },
+            { "name": "WhenPlaced$ebnf$1", "symbols": ["WhenPlaced$ebnf$1$subexpression$1"], "postprocess": id },
+            { "name": "WhenPlaced$ebnf$1", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "WhenPlaced$subexpression$1$string$1", "symbols": [{ "literal": " " }, { "literal": "p" }, { "literal": "l" }, { "literal": "a" }, { "literal": "c" }, { "literal": "e" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlaced$subexpression$1", "symbols": ["WhenPlaced$subexpression$1$string$1"] },
+            { "name": "WhenPlaced$subexpression$1$string$2", "symbols": [{ "literal": " " }, { "literal": "r" }, { "literal": "e" }, { "literal": "t" }, { "literal": "u" }, { "literal": "r" }, { "literal": "n" }, { "literal": "s" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlaced$subexpression$1", "symbols": ["WhenPlaced$subexpression$1$string$2"] },
+            { "name": "WhenPlaced$ebnf$2$subexpression$1$string$1", "symbols": [{ "literal": " " }, { "literal": "t" }, { "literal": "o" }, { "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "e" }, { "literal": " " }, { "literal": "b" }, { "literal": "o" }, { "literal": "t" }, { "literal": "t" }, { "literal": "o" }, { "literal": "m" }, { "literal": " " }, { "literal": "o" }, { "literal": "f" }, { "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "e" }, { "literal": " " }, { "literal": "d" }, { "literal": "e" }, { "literal": "c" }, { "literal": "k" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlaced$ebnf$2$subexpression$1", "symbols": ["WhenPlaced$ebnf$2$subexpression$1$string$1"] },
+            { "name": "WhenPlaced$ebnf$2", "symbols": ["WhenPlaced$ebnf$2$subexpression$1"], "postprocess": id },
+            { "name": "WhenPlaced$ebnf$2", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "WhenPlaced$ebnf$3", "symbols": ["FromRegion"], "postprocess": id },
+            { "name": "WhenPlaced$ebnf$3", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "WhenPlaced$ebnf$4$subexpression$1$string$1", "symbols": [{ "literal": " " }, { "literal": "u" }, { "literal": "n" }, { "literal": "d" }, { "literal": "e" }, { "literal": "r" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlaced$ebnf$4$subexpression$1", "symbols": ["WhenPlaced$ebnf$4$subexpression$1$string$1", "Target"] },
+            { "name": "WhenPlaced$ebnf$4$subexpression$1$string$2", "symbols": [{ "literal": " " }, { "literal": "i" }, { "literal": "n" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlaced$ebnf$4$subexpression$1", "symbols": ["WhenPlaced$ebnf$4$subexpression$1$string$2", "Location"] },
+            { "name": "WhenPlaced$ebnf$4$subexpression$1$string$3", "symbols": [{ "literal": " " }, { "literal": "a" }, { "literal": "t" }, { "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "e" }, { "literal": " " }, { "literal": "b" }, { "literal": "o" }, { "literal": "t" }, { "literal": "t" }, { "literal": "o" }, { "literal": "m" }, { "literal": " " }, { "literal": "o" }, { "literal": "f" }, { "literal": " " }, { "literal": "i" }, { "literal": "t" }, { "literal": "s" }, { "literal": " " }, { "literal": "o" }, { "literal": "w" }, { "literal": "n" }, { "literal": "e" }, { "literal": "r" }, { "literal": "'" }, { "literal": "s" }, { "literal": " " }, { "literal": "d" }, { "literal": "e" }, { "literal": "c" }, { "literal": "k" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "WhenPlaced$ebnf$4$subexpression$1", "symbols": ["WhenPlaced$ebnf$4$subexpression$1$string$3"] },
+            { "name": "WhenPlaced$ebnf$4", "symbols": ["WhenPlaced$ebnf$4$subexpression$1"], "postprocess": id },
+            { "name": "WhenPlaced$ebnf$4", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "WhenPlaced", "symbols": ["Target", "WhenPlaced$ebnf$1", "WhenPlaced$subexpression$1", "WhenPlaced$ebnf$2", "WhenPlaced$ebnf$3", "WhenPlaced$ebnf$4"], "postprocess": function (d) {
+                    return { raw_text: gv(d), event: "MOVE_CARD", target: d[0] };
                 } },
             { "name": "WhenRemoval$ebnf$1$string$1", "symbols": [{ "literal": " " }, { "literal": "w" }, { "literal": "o" }, { "literal": "u" }, { "literal": "l" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "WhenRemoval$ebnf$1", "symbols": ["WhenRemoval$ebnf$1$string$1"], "postprocess": id },
@@ -386,11 +427,14 @@
                         raw_text: gv(d), action: 'link', target: d[1], target2: d[3], no_cost: !!d[4]
                     };
                 } },
-            { "name": "Suspend$string$1", "symbols": [{ "literal": "s" }, { "literal": "u" }, { "literal": "s" }, { "literal": "p" }, { "literal": "e" }, { "literal": "n" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "Suspend$subexpression$1$string$1", "symbols": [{ "literal": "s" }, { "literal": "u" }, { "literal": "s" }, { "literal": "p" }, { "literal": "e" }, { "literal": "n" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "Suspend$subexpression$1", "symbols": ["Suspend$subexpression$1$string$1"] },
+            { "name": "Suspend$subexpression$1$string$2", "symbols": [{ "literal": "S" }, { "literal": "u" }, { "literal": "s" }, { "literal": "p" }, { "literal": "e" }, { "literal": "n" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "Suspend$subexpression$1", "symbols": ["Suspend$subexpression$1$string$2"] },
             { "name": "Suspend$ebnf$1$string$1", "symbols": [{ "literal": "i" }, { "literal": "n" }, { "literal": "g" }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Suspend$ebnf$1", "symbols": ["Suspend$ebnf$1$string$1"], "postprocess": id },
             { "name": "Suspend$ebnf$1", "symbols": [], "postprocess": function (d) { return null; } },
-            { "name": "Suspend", "symbols": ["Suspend$string$1", "Suspend$ebnf$1", { "literal": " " }, "MultiTarget"], "postprocess": function (d, l) { return { raw_text: gv(d), action: 'suspend', target: d[3] }; } },
+            { "name": "Suspend", "symbols": ["Suspend$subexpression$1", "Suspend$ebnf$1", { "literal": " " }, "MultiTarget"], "postprocess": function (d, l) { return { raw_text: gv(d), action: 'suspend', target: d[3] }; } },
             { "name": "Return$string$1", "symbols": [{ "literal": "R" }, { "literal": "e" }, { "literal": "t" }, { "literal": "u" }, { "literal": "r" }, { "literal": "n" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Return$string$2", "symbols": [{ "literal": " " }, { "literal": "t" }, { "literal": "o" }, { "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "e" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Return$subexpression$1$string$1", "symbols": [{ "literal": "b" }, { "literal": "o" }, { "literal": "t" }, { "literal": "t" }, { "literal": "o" }, { "literal": "m" }], "postprocess": function joiner(d) { return d.join(''); } },
@@ -454,6 +498,7 @@
             { "name": "Imperative", "symbols": ["ModifyCost"], "postprocess": function (d, l) { return { raw_text: gv(d), type: 'Action1', action: d[0].action, action_args: d[0] }; } },
             { "name": "Imperative", "symbols": ["Suspend"], "postprocess": function (d, l) { return { raw_text: gv(d), type: 'Action', action: d[0].action, action_args: d[0] }; } },
             { "name": "Imperative", "symbols": ["GiveStatus"], "postprocess": function (d, l) { return { raw_text: gv(d), type: 'Action', action: d[0].action, action_args: d[0] }; } },
+            { "name": "Imperative", "symbols": ["MemChange"], "postprocess": function (d, l) { return { raw_text: gv(d), type: 'Action', action: d[0].action, action_args: d[0] }; } },
             { "name": "Activate$string$1", "symbols": [{ "literal": "A" }, { "literal": "c" }, { "literal": "t" }, { "literal": "i" }, { "literal": "v" }, { "literal": "a" }, { "literal": "t" }, { "literal": "e" }, { "literal": " " }, { "literal": "1" }, { "literal": " " }, { "literal": "o" }, { "literal": "f" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Activate$string$2", "symbols": [{ "literal": "'" }, { "literal": "s" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Activate$string$3", "symbols": [{ "literal": " " }, { "literal": "e" }, { "literal": "f" }, { "literal": "f" }, { "literal": "e" }, { "literal": "c" }, { "literal": "t" }, { "literal": "s" }, { "literal": " " }, { "literal": "a" }, { "literal": "s" }, { "literal": " " }, { "literal": "a" }, { "literal": "n" }, { "literal": " " }, { "literal": "e" }, { "literal": "f" }, { "literal": "f" }, { "literal": "e" }, { "literal": "c" }, { "literal": "t" }, { "literal": " " }, { "literal": "o" }, { "literal": "f" }, { "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "i" }, { "literal": "s" }, { "literal": " " }, { "literal": "M" }, { "literal": "o" }, { "literal": "n" }, { "literal": "s" }, { "literal": "t" }, { "literal": "e" }, { "literal": "r" }], "postprocess": function joiner(d) { return d.join(''); } },
@@ -481,6 +526,9 @@
             { "name": "Add$subexpression$2", "symbols": ["Add$subexpression$2$string$2"] },
             { "name": "Add$string$2", "symbols": [{ "literal": " " }, { "literal": "h" }, { "literal": "a" }, { "literal": "n" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Add", "symbols": ["Add$subexpression$1", "MultiTarget", "Add$ebnf$1", "Add$string$1", "Add$subexpression$2", "Add$string$2"] },
+            { "name": "MemChange$string$1", "symbols": [{ "literal": "g" }, { "literal": "a" }, { "literal": "i" }, { "literal": "n" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "MemChange$string$2", "symbols": [{ "literal": " " }, { "literal": "m" }, { "literal": "e" }, { "literal": "m" }, { "literal": "o" }, { "literal": "r" }, { "literal": "y" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "MemChange", "symbols": ["MemChange$string$1", "Number", "MemChange$string$2"] },
             { "name": "Place$subexpression$1$string$1", "symbols": [{ "literal": "P" }, { "literal": "l" }, { "literal": "a" }, { "literal": "c" }, { "literal": "e" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Place$subexpression$1", "symbols": ["Place$subexpression$1$string$1"] },
             { "name": "Place$subexpression$1$string$2", "symbols": [{ "literal": "p" }, { "literal": "l" }, { "literal": "a" }, { "literal": "c" }, { "literal": "i" }, { "literal": "n" }, { "literal": "g" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
@@ -496,6 +544,7 @@
                         choose: 1,
                         target: d[1],
                         target2: d[3],
+                        place_location: "bottom"
                     };
                 } },
             { "name": "Trash$subexpression$1$string$1", "symbols": [{ "literal": "T" }, { "literal": "r" }, { "literal": "a" }, { "literal": "s" }, { "literal": "h" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
@@ -1293,6 +1342,49 @@
             { "name": "xxTarget$string$44", "symbols": [{ "literal": "y" }, { "literal": "o" }, { "literal": "u" }, { "literal": "r" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "xxTarget$string$45", "symbols": [{ "literal": "s" }, { "literal": "t" }, { "literal": "a" }, { "literal": "c" }, { "literal": "k" }, { "literal": "s" }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "xxTarget", "symbols": ["xxTarget$string$42", "xxTarget$string$43", "xxTarget$string$44", "xxTarget$string$45"], "postprocess": function (d, l) { return { raw_text: gv(d), type: 'Target', text: l.source, which: "ALL" }; } },
+            { "name": "CollectiveTarget$ebnf$1$subexpression$1", "symbols": ["Adjectives", { "literal": " " }] },
+            { "name": "CollectiveTarget$ebnf$1", "symbols": ["CollectiveTarget$ebnf$1$subexpression$1"], "postprocess": id },
+            { "name": "CollectiveTarget$ebnf$1", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "CollectiveTarget$ebnf$2$string$1", "symbols": [{ "literal": "f" }, { "literal": "i" }, { "literal": "l" }, { "literal": "l" }, { "literal": "e" }, { "literal": "r" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "CollectiveTarget$ebnf$2", "symbols": ["CollectiveTarget$ebnf$2$string$1"], "postprocess": id },
+            { "name": "CollectiveTarget$ebnf$2", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "CollectiveTarget$ebnf$3$subexpression$1$subexpression$1$string$1", "symbols": [{ "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "a" }, { "literal": "t" }, { "literal": " " }, { "literal": "i" }, { "literal": "s" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "CollectiveTarget$ebnf$3$subexpression$1$subexpression$1", "symbols": ["CollectiveTarget$ebnf$3$subexpression$1$subexpression$1$string$1"] },
+            { "name": "CollectiveTarget$ebnf$3$subexpression$1$subexpression$1$string$2", "symbols": [{ "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "a" }, { "literal": "t" }, { "literal": " " }, { "literal": "a" }, { "literal": "r" }, { "literal": "e" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "CollectiveTarget$ebnf$3$subexpression$1$subexpression$1", "symbols": ["CollectiveTarget$ebnf$3$subexpression$1$subexpression$1$string$2"] },
+            { "name": "CollectiveTarget$ebnf$3$subexpression$1$subexpression$1$string$3", "symbols": [{ "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "a" }, { "literal": "t" }, { "literal": "'" }, { "literal": "s" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "CollectiveTarget$ebnf$3$subexpression$1$subexpression$1", "symbols": ["CollectiveTarget$ebnf$3$subexpression$1$subexpression$1$string$3"] },
+            { "name": "CollectiveTarget$ebnf$3$subexpression$1", "symbols": ["CollectiveTarget$ebnf$3$subexpression$1$subexpression$1", "Adjectives"] },
+            { "name": "CollectiveTarget$ebnf$3", "symbols": ["CollectiveTarget$ebnf$3$subexpression$1"], "postprocess": id },
+            { "name": "CollectiveTarget$ebnf$3", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "CollectiveTarget$ebnf$4$subexpression$1$subexpression$1$string$1", "symbols": [{ "literal": " " }, { "literal": "w" }, { "literal": "i" }, { "literal": "t" }, { "literal": "h" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "CollectiveTarget$ebnf$4$subexpression$1$subexpression$1", "symbols": ["CollectiveTarget$ebnf$4$subexpression$1$subexpression$1$string$1"] },
+            { "name": "CollectiveTarget$ebnf$4$subexpression$1$subexpression$1$string$2", "symbols": [{ "literal": " " }, { "literal": "w" }, { "literal": "/" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "CollectiveTarget$ebnf$4$subexpression$1$subexpression$1", "symbols": ["CollectiveTarget$ebnf$4$subexpression$1$subexpression$1$string$2"] },
+            { "name": "CollectiveTarget$ebnf$4$subexpression$1$subexpression$1$string$3", "symbols": [{ "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "a" }, { "literal": "t" }, { "literal": " " }, { "literal": "h" }, { "literal": "a" }, { "literal": "s" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "CollectiveTarget$ebnf$4$subexpression$1$subexpression$1", "symbols": ["CollectiveTarget$ebnf$4$subexpression$1$subexpression$1$string$3"] },
+            { "name": "CollectiveTarget$ebnf$4$subexpression$1$subexpression$1$string$4", "symbols": [{ "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "a" }, { "literal": "t" }, { "literal": " " }, { "literal": "h" }, { "literal": "a" }, { "literal": "v" }, { "literal": "e" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "CollectiveTarget$ebnf$4$subexpression$1$subexpression$1", "symbols": ["CollectiveTarget$ebnf$4$subexpression$1$subexpression$1$string$4"] },
+            { "name": "CollectiveTarget$ebnf$4$subexpression$1", "symbols": ["CollectiveTarget$ebnf$4$subexpression$1$subexpression$1", "WithSentence"] },
+            { "name": "CollectiveTarget$ebnf$4", "symbols": ["CollectiveTarget$ebnf$4$subexpression$1"], "postprocess": id },
+            { "name": "CollectiveTarget$ebnf$4", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "CollectiveTarget$ebnf$5$subexpression$1$subexpression$1$string$1", "symbols": [{ "literal": " " }, { "literal": "o" }, { "literal": "f" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "CollectiveTarget$ebnf$5$subexpression$1$subexpression$1", "symbols": ["CollectiveTarget$ebnf$5$subexpression$1$subexpression$1$string$1"] },
+            { "name": "CollectiveTarget$ebnf$5$subexpression$1$subexpression$1$string$2", "symbols": [{ "literal": " " }, { "literal": "u" }, { "literal": "n" }, { "literal": "d" }, { "literal": "e" }, { "literal": "r" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "CollectiveTarget$ebnf$5$subexpression$1$subexpression$1", "symbols": ["CollectiveTarget$ebnf$5$subexpression$1$subexpression$1$string$2"] },
+            { "name": "CollectiveTarget$ebnf$5$subexpression$1", "symbols": ["CollectiveTarget$ebnf$5$subexpression$1$subexpression$1", "Target"] },
+            { "name": "CollectiveTarget$ebnf$5", "symbols": ["CollectiveTarget$ebnf$5$subexpression$1"], "postprocess": id },
+            { "name": "CollectiveTarget$ebnf$5", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "CollectiveTarget", "symbols": ["CollectiveTarget$ebnf$1", "CollectiveTarget$ebnf$2", "Entity", "CollectiveTarget$ebnf$3", "CollectiveTarget$ebnf$4", "CollectiveTarget$ebnf$5"], "postprocess": function (d, l) {
+                    return { raw_text: gv(d), type: 'collectivetarget-1',
+                        and: d[0] && d[0].adjectives, with: d[4] && d[4][1],
+                        count: max_number(d[0].adjectives),
+                        upto: max_upto(d[0].adjectives),
+                        under: d[5] && d[5][1],
+                        // there's no logical reason for is_evo_card here
+                        is_evo_card: true,
+                        adj_text: gv(d[0]), adjs: d[0], entity: gv(d[2]), entity_txt: gv(d[2]), entity_match: d[2] };
+                } },
             { "name": "Target$ebnf$1$subexpression$1$subexpression$1$string$1", "symbols": [{ "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "a" }, { "literal": "t" }, { "literal": " " }, { "literal": "i" }, { "literal": "s" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Target$ebnf$1$subexpression$1$subexpression$1", "symbols": ["Target$ebnf$1$subexpression$1$subexpression$1$string$1"] },
             { "name": "Target$ebnf$1$subexpression$1$subexpression$1$string$2", "symbols": [{ "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "a" }, { "literal": "t" }, { "literal": " " }, { "literal": "a" }, { "literal": "r" }, { "literal": "e" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
@@ -1379,7 +1471,7 @@
             { "name": "Article$string$4", "symbols": [{ "literal": "a" }, { "literal": "n" }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Article", "symbols": ["Article$string$4"], "postprocess": function (d, l) { return { raw_text: gv(d) }; } },
             { "name": "Article$string$5", "symbols": [{ "literal": "a" }, { "literal": "l" }, { "literal": "l" }], "postprocess": function joiner(d) { return d.join(''); } },
-            { "name": "Article", "symbols": ["Article$string$5"], "postprocess": function (d, l) { return { raw_text: gv(d) }; } },
+            { "name": "Article", "symbols": ["Article$string$5"], "postprocess": function (d, l) { return { raw_text: gv(d), count: 999 }; } },
             { "name": "Article$string$6", "symbols": [{ "literal": "t" }, { "literal": "h" }, { "literal": "e" }, { "literal": "i" }, { "literal": "r" }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Article", "symbols": ["Article$string$6"], "postprocess": function (d, l) { return { raw_text: gv(d), player: "other" }; } },
             { "name": "Article$string$7", "symbols": [{ "literal": "y" }, { "literal": "o" }, { "literal": "u" }, { "literal": "r" }, { "literal": " " }, { "literal": "o" }, { "literal": "p" }, { "literal": "p" }, { "literal": "o" }, { "literal": "n" }, { "literal": "e" }, { "literal": "n" }, { "literal": "t" }, { "literal": "'" }, { "literal": "s" }], "postprocess": function joiner(d) { return d.join(''); } },
@@ -1471,16 +1563,18 @@
             { "name": "Whose", "symbols": ["Whose$string$4"], "postprocess": function (d, l) { return { raw_text: gv(d), player: "other" }; } },
             { "name": "Location$string$1", "symbols": [{ "literal": "h" }, { "literal": "a" }, { "literal": "n" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Location", "symbols": ["Location$string$1"], "postprocess": function (d, l) { return { raw_text: gv(d), location: "hand" }; } },
-            { "name": "Location$string$2", "symbols": [{ "literal": "t" }, { "literal": "r" }, { "literal": "a" }, { "literal": "s" }, { "literal": "h" }], "postprocess": function joiner(d) { return d.join(''); } },
-            { "name": "Location", "symbols": ["Location$string$2"], "postprocess": function (d, l) { return { raw_text: gv(d), location: "trash" }; } },
-            { "name": "Location$string$3", "symbols": [{ "literal": "t" }, { "literal": "h" }, { "literal": "i" }, { "literal": "s" }, { "literal": " " }, { "literal": "M" }, { "literal": "o" }, { "literal": "n" }, { "literal": "s" }, { "literal": "t" }, { "literal": "e" }, { "literal": "r" }, { "literal": "'" }, { "literal": "s" }, { "literal": " " }, { "literal": "e" }, { "literal": "v" }, { "literal": "o" }, { "literal": "l" }, { "literal": "u" }, { "literal": "t" }, { "literal": "i" }, { "literal": "o" }, { "literal": "n" }, { "literal": " " }, { "literal": "c" }, { "literal": "a" }, { "literal": "r" }, { "literal": "d" }, { "literal": "s" }], "postprocess": function joiner(d) { return d.join(''); } },
-            { "name": "Location", "symbols": ["Location$string$3"], "postprocess": function (d, l) {
+            { "name": "Location$string$2", "symbols": [{ "literal": "t" }, { "literal": "h" }, { "literal": "e" }, { "literal": " " }, { "literal": "x" }, { "literal": "x" }, { "literal": "x" }, { "literal": "b" }, { "literal": "a" }, { "literal": "t" }, { "literal": "t" }, { "literal": "l" }, { "literal": "e" }, { "literal": " " }, { "literal": "a" }, { "literal": "r" }, { "literal": "e" }, { "literal": "a" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "Location", "symbols": ["Location$string$2"], "postprocess": function (d, l) { return { raw_text: gv(d), location: "battle" }; } },
+            { "name": "Location$string$3", "symbols": [{ "literal": "t" }, { "literal": "r" }, { "literal": "a" }, { "literal": "s" }, { "literal": "h" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "Location", "symbols": ["Location$string$3"], "postprocess": function (d, l) { return { raw_text: gv(d), location: "trash" }; } },
+            { "name": "Location$string$4", "symbols": [{ "literal": "t" }, { "literal": "h" }, { "literal": "i" }, { "literal": "s" }, { "literal": " " }, { "literal": "M" }, { "literal": "o" }, { "literal": "n" }, { "literal": "s" }, { "literal": "t" }, { "literal": "e" }, { "literal": "r" }, { "literal": "'" }, { "literal": "s" }, { "literal": " " }, { "literal": "e" }, { "literal": "v" }, { "literal": "o" }, { "literal": "l" }, { "literal": "u" }, { "literal": "t" }, { "literal": "i" }, { "literal": "o" }, { "literal": "n" }, { "literal": " " }, { "literal": "c" }, { "literal": "a" }, { "literal": "r" }, { "literal": "d" }, { "literal": "s" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "Location", "symbols": ["Location$string$4"], "postprocess": function (d, l) {
                     return {
                         raw_text: gv(d), is_evo_card: true, under: { raw_text: "this Monster", self: true }, location: "battle",
                     };
                 } },
-            { "name": "Location$string$4", "symbols": [{ "literal": "t" }, { "literal": "h" }, { "literal": "i" }, { "literal": "s" }, { "literal": " " }, { "literal": "M" }, { "literal": "o" }, { "literal": "n" }, { "literal": "s" }, { "literal": "t" }, { "literal": "e" }, { "literal": "r" }, { "literal": "'" }, { "literal": "s" }, { "literal": " " }, { "literal": "l" }, { "literal": "i" }, { "literal": "n" }, { "literal": "k" }, { "literal": " " }, { "literal": "c" }, { "literal": "a" }, { "literal": "r" }, { "literal": "d" }, { "literal": "s" }], "postprocess": function joiner(d) { return d.join(''); } },
-            { "name": "Location", "symbols": ["Location$string$4"], "postprocess": function (d, l) {
+            { "name": "Location$string$5", "symbols": [{ "literal": "t" }, { "literal": "h" }, { "literal": "i" }, { "literal": "s" }, { "literal": " " }, { "literal": "M" }, { "literal": "o" }, { "literal": "n" }, { "literal": "s" }, { "literal": "t" }, { "literal": "e" }, { "literal": "r" }, { "literal": "'" }, { "literal": "s" }, { "literal": " " }, { "literal": "l" }, { "literal": "i" }, { "literal": "n" }, { "literal": "k" }, { "literal": " " }, { "literal": "c" }, { "literal": "a" }, { "literal": "r" }, { "literal": "d" }, { "literal": "s" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "Location", "symbols": ["Location$string$5"], "postprocess": function (d, l) {
                     return {
                         l: l,
                         raw_text: gv(d), plugged_to: { raw_text: "this Monster", self: true, }, location: "battle",
@@ -1504,16 +1598,29 @@
                         ], type: 'Entity' };
                 } },
             { "name": "Card$string$2", "symbols": [{ "literal": "M" }, { "literal": "o" }, { "literal": "n" }, { "literal": "s" }, { "literal": "t" }, { "literal": "e" }, { "literal": "r" }, { "literal": " " }, { "literal": "c" }, { "literal": "a" }, { "literal": "r" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
-            { "name": "Card", "symbols": ["Card$string$2"], "postprocess": function (d, l) {
+            { "name": "Card$ebnf$2", "symbols": [{ "literal": "s" }], "postprocess": id },
+            { "name": "Card$ebnf$2", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "Card", "symbols": ["Card$string$2", "Card$ebnf$2"], "postprocess": function (d, l) {
                     return { raw_text: gv(d), entity: gv(d), and: [
-                            { raw_text: "card", entity: "card" },
+                            // technically when looking for "X card" we shouldn't match on "X entity"
+                            // but some effects do use 'card' to refer to the entity on field
+                            //    { raw_text: "card",  entity: "card" }, 
                             { raw_text: "Monster", entity_type: "Monster" }
                         ], type: 'Entity' };
                 } },
             { "name": "Card$string$3", "symbols": [{ "literal": "T" }, { "literal": "a" }, { "literal": "m" }, { "literal": "e" }, { "literal": "r" }, { "literal": " " }, { "literal": "c" }, { "literal": "a" }, { "literal": "r" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
-            { "name": "Card", "symbols": ["Card$string$3"] },
+            { "name": "Card$ebnf$3", "symbols": [{ "literal": "s" }], "postprocess": id },
+            { "name": "Card$ebnf$3", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "Card", "symbols": ["Card$string$3", "Card$ebnf$3"], "postprocess": function (d, l) {
+                    return { raw_text: gv(d), entity: gv(d), and: [
+                            //     { raw_text: "card",  entity: "card" },
+                            { raw_text: "Tamer", entity_type: "Tamer" }
+                        ], type: 'Entity' };
+                } },
             { "name": "Card$string$4", "symbols": [{ "literal": "O" }, { "literal": "p" }, { "literal": "t" }, { "literal": "i" }, { "literal": "o" }, { "literal": "n" }, { "literal": " " }, { "literal": "c" }, { "literal": "a" }, { "literal": "r" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
-            { "name": "Card", "symbols": ["Card$string$4"] },
+            { "name": "Card$ebnf$4", "symbols": [{ "literal": "s" }], "postprocess": id },
+            { "name": "Card$ebnf$4", "symbols": [], "postprocess": function (d) { return null; } },
+            { "name": "Card", "symbols": ["Card$string$4", "Card$ebnf$4"] },
             { "name": "Card$string$5", "symbols": [{ "literal": "M" }, { "literal": "o" }, { "literal": "n" }, { "literal": "s" }, { "literal": "t" }, { "literal": "e" }, { "literal": "r" }, { "literal": " " }, { "literal": "C" }, { "literal": "a" }, { "literal": "r" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Card", "symbols": ["Card$string$5"] },
             { "name": "Card$string$6", "symbols": [{ "literal": "O" }, { "literal": "p" }, { "literal": "t" }, { "literal": "i" }, { "literal": "o" }, { "literal": "n" }, { "literal": " " }, { "literal": "C" }, { "literal": "a" }, { "literal": "r" }, { "literal": "d" }], "postprocess": function joiner(d) { return d.join(''); } },

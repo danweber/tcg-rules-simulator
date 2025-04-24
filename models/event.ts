@@ -41,6 +41,7 @@ function isGameEvent(eventStr: string): eventStr is keyof typeof GameEvent {
 	return eventNames.some(name => name === eventStr);
 }
 export function strToEvent(str: string): GameEvent {
+	if (str.toUpperCase() === "PLACECARD") return GameEvent.TARGETED_CARD_MOVE;
 	if (str.toUpperCase() === "LINK") return GameEvent.PLUG;
 	if (str.toUpperCase() === "ATTACK") return GameEvent.MUST_ATTACK;
 	str = str.toUpperCase();

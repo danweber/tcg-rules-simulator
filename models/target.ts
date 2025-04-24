@@ -15,7 +15,7 @@ type ValueGetter = (obj: Instance) => number;
 
 
 import { createLogger } from "./logger";
-import { COMPARE, find_in_tree, num_compare, verify_special_evo } from './util'; // Adjust the path as necessary
+import { color_count, COMPARE, find_in_tree, num_compare, verify_special_evo } from './util'; // Adjust the path as necessary
 const logger = createLogger('target');
 
 export let ALL_OF = 999;
@@ -314,6 +314,30 @@ import { parseStringEvoCond } from './parse-evocond';
 function split_names(name: string): string[] {
     name = name.replace(/\]\/\[/ig, "] or [");
     return name.split("] or [");
+}
+
+export class ForEachTarget {
+    target: TargetDesc; // could be MultiTargetDesc
+
+    type: "instance" | "color" = "instance";
+    ratio: number = 1;
+
+    constructor(bob: string, target: TargetDesc, type?: "instance" | "color", ratio?: number) {
+        this.target = target;
+        if (type) this.type = type;
+        if (ratio) this.ratio = ratio;
+    }
+    get_count(game: Game, ts: TargetSource): number {
+        // STACK_ADD seems bad since it includes cards in hand :<
+        let i = game.find_target(this.target, GameEvent.DELETE, ts, false, Location.SECURITY);
+        logger.debug(`for ${i.map(i=>i.get_name())} objects count is ${i.length}`);
+
+        if (this.type === "instance") return Math.floor(i.length / this.ratio);
+
+        let n_colors = color_count(i);
+        logger.info(`for ${i.map(i=>i.get_name())} objects color count is ${n_colors}`);
+        return Math.floor(n_colors / this.ratio);
+       }
 }
 
 // For choosing two+ different things (1 [x] and 1 [y])

@@ -1,6 +1,6 @@
 
 
-import { CardLocation, word_to_color } from './card';
+import { all_colors, CardLocation, word_to_color } from './card';
 import { StatusCondition, SubEffect } from './effect';
 import { SolidEffectLoop } from './effectloop';
 import { GameEvent } from './event';
@@ -25,7 +25,7 @@ export class EffectAndTarget {
 }
 
 import { createLogger } from "./logger";
-import { SubTargetDesc, TargetDesc, TargetSource } from './target';
+import { ForEachTarget, SubTargetDesc, TargetDesc, TargetSource } from './target';
 const logger = createLogger('util');
 
 
@@ -36,24 +36,34 @@ export function get_mult(s: SubEffect): number {
     return s.n! * mult;
 }
 
+export function color_count(objects: (Instance|CardLocation)[]): number {
+     let count = all_colors.filter(c => 
+        objects.some( object => object.has_color(c) ));
+    return count.length;
+}
+
 // w n_count_tgt
 export function for_each_count_target(w: SubEffect, game: Game, ts: TargetSource, p: number): boolean {
-    let c1: TargetDesc | undefined = w.n_count_tgt;
+    if (2<1) return false;
+    let c1: ForEachTarget | undefined = w.n_count_tgt;
     if (!c1) return false; // shouldn't have ever gotten in here in the first place
     let i;
-    logger.info(`looking foreach, target ${c1.toString()} ${c1.raw_text}`);
-    if (c1.raw_text.match(/color of your opponent's Monster and Tamer/i)) {
+    logger.info(`looking foreach, target ${c1.toString()} ${c1.target.raw_text}`);
+    if (false && c1?.target.raw_text.match(/color of your opponent's Monster (and|or)f Tamer/i)) {
         let op = game.get_n_player(3 - p);
         i = op.my_colors(false).length;
+        console.error(49, i);
     } else {
-        i = game.find_target(c1, GameEvent.STACK_ADD, ts, false, Location.SECURITY).length;
+        i = c1.get_count(game, ts);
     }
+    logger.info("targets for " + c1.target.raw_text + " is " + i);
+
     // are we changing N or changing CHOOSE?
     // for now, we can tell by which is non-zero
     logger.info(`CHANGING n from ${w.n} to ${i} ?`);
     logger.info(`CHANGING choose from ${w.choose} to ${i} ?`);
     if (w.game_event === GameEvent.GIVE_STATUS_CONDITION && w.status_condition
-        && w.status_condition[0] && w.status_condition[0].s) {
+         && w.status_condition[0] && w.status_condition[0].s) {
         logger.info(`CHANGING s.n from ${w.status_condition[0].s.n} by ${i} ?`);
         logger.info("BEFORE " + w.status_condition[0].s.n_mult);
         w.status_condition[0].s.n_mult = i;

@@ -3,7 +3,7 @@ import { Game } from './game';
 import { Instance } from './instance'
 import { Location } from './location';
 
-import { GameTest, MultiTargetDesc, TargetDesc, TargetSource } from './target';
+import { ForEachTarget, GameTest, MultiTargetDesc, TargetDesc, TargetSource } from './target';
 import { GameEvent, EventCause, gerund, present } from './event';
 
 import { Phase, PhaseTrigger, GameStep } from './phase';
@@ -383,7 +383,7 @@ export interface SubEffect {
 	label?: string;  // name of the thing that gave us this effect
 	n?: number;
 	n_mult?: number; // right now only used for per-each on persistent effects
-	n_count_tgt?: TargetDesc; // are these used?
+	n_count_tgt?: ForEachTarget; // are these used?
 	n_repeat?: GameTest; // do subeffect N times
 	n_test?: GameTest; // "reduce by a further N"
 

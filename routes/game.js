@@ -236,27 +236,26 @@ router.post('/set_up_board', (req, res) => {
 
   let board = req.query.board || req.body.board;
   let no_init = parseInt(req.query.no_init || req.body.no_init);
-  let game;    
+  let game;
   if (!board || board.length < 2 || JSON.stringify(board).length < 4) {
     res.redirect(301, `/game/set_up_board`);
     return;
   }
-    console.error(244, no_init);
-    if (no_init) {
-        game = game_list[gid];
-        console.log("contingueing");
-        let test_data = game._continue_board(board);
-       if (test_data.length > 0) {
-          res.send(test_data);
-          return;
-       }
-        console.error("NO DATA, FALL THROUGH");
+  if (no_init) {
+    game = game_list[gid];
+    console.log("contingueing");
+    let test_data = game._continue_board(board);
+    if (test_data.length > 0) {
+      res.send(test_data);
+      return;
     }
+    console.error("NO DATA, FALL THROUGH");
+  }
   gid = new_game(gid);
   if (!game_exists(gid)) { res.redirect('new111_game'); return; }
   game = game_list[gid];
   let player = game.player(pid);
-    
+
   let test_data = game._set_up_board(board);
   if (test_data.length > 0) {
     res.send(test_data);

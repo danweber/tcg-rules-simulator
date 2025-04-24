@@ -62,7 +62,7 @@ String.prototype.after = function (s: string): string {
 import { AtomicEffect, InterruptCondition, Solid_is_triggered, StatusCondition, SubEffect, ic_to_plain_text, ic_to_string, ica_to_plain_text, ica_to_string, status_cond_to_string } from "./effect";
 import { EventCause, GameEvent, strToEvent } from "./event";
 import { Game } from "./game";
-import { ALL_OF, Conjunction, GameTest, GameTestType, MultiTargetDesc, SingleGameTest, SpecialCard, SubTargetDesc, TargetDesc, TargetSource } from "./target";
+import { ALL_OF, Conjunction, ForEachTarget, GameTest, GameTestType, MultiTargetDesc, SingleGameTest, SpecialCard, SubTargetDesc, TargetDesc, TargetSource } from "./target";
 import { Card, EvolveCondition, KeywordArray, parse_color } from "./card";
 import { Phase, PhaseTrigger } from "./phase";
 import { Location } from "./location";
@@ -492,6 +492,7 @@ function s1litParagraph(paragraph: string): string[] {
 // If "inherited" then populate the inherited keywords of cards, otherwise populate main text.
 // Returns card, solideffect, array of atomiceffect, as well as the unparsed text.
 export function new_parse_line(line: string, card: (Card | undefined), label: string, kind: "main" | "inherited" | "link" | "security"): [Card2, SolidEffect2, AtomicEffect2[], string] {
+
 
     line = Translator.text(line);
     // should we fill in missing keywords here?
@@ -1709,10 +1710,8 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
     let grammared = parseStringEvoCond(line, "WhenSentence");
     // console.error(line);
     if (grammared) {
-        //        console.error("WHEN", grammared);
-        //      console.dir(grammared, { depth: 99 });
-
-
+//        console.error("WHEN", grammared);
+//        console.dir(grammared, { depth: 99 });
 
         let w = grammared.When;
         if (w.event.includes("EVOLVE")) {
@@ -2254,7 +2253,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         game_event: GameEvent, td: TargetDesc, td2?: TargetDesc, td3?: TargetDesc,
         choose: number,
         n: number, immune: boolean, n_mod: string, n_max: number,
-        n_count_tgt?: TargetDesc, // "suspend 1 monster for each tamer"
+        n_count_tgt?: ForEachTarget, // "suspend 1 monster for each tamer"
         n_repeat?: GameTest, // repeat (Devolve 1) N times
         cause: EventCause,
         cost_change?: any,
@@ -2310,6 +2309,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (
         (
             line.toLowerCase().includes("play") ||
+            line.toLowerCase().includes("placing") ||
             line.toLowerCase().includes("attack") ||
             line.toLowerCase().includes("link") ||
             line.toLowerCase().includes("app fuse") ||
@@ -2322,7 +2322,9 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             line.toLowerCase().includes("delay")
 
         )
-        && !line.toLowerCase().includes("1 your")) {
+        && !line.toLowerCase().includes("1 your")
+        && !line.toLowerCase().includes("3 your")
+    ) {
         let grammared = parseStringEvoCond(line, "EffSentence");
         let action_args, target, x;
         if (grammared) {
@@ -2333,7 +2335,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             if (grammared.duration) {
                 expiration = grammared.duration.expiration;
             }
-            // console.log("GRAM"); console.dir(grammared, { depth: 99 });
+            //            console.log("GRAM");  console.dir(grammared, { depth: 99 });
             const eff = grammared.effect;
             const optional = eff.optional;
             if (optional) atomic.optional = true;
@@ -2377,8 +2379,9 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 line = "";
             }
 
+            // TUCK is more generic than EVOSOURCE_ADD
 
-            if (eff.action === 'link' || eff.action === 'evolve') {
+            if (eff.action === 'link' || eff.action === 'evolve' || eff.action === 'PlaceCard') {
                 // WAIT! we're not checking this is a valid link!
                 target = action_args.target;
                 let target2 = action_args.target2;
@@ -2400,6 +2403,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 let y = new MultiTargetDesc(target2.raw_text);
                 thing.td2 = y;
                 if (action_args.no_cost) thing.n_mod += "for free; ";
+                if (action_args.place_location) thing.n_mod += action_args.place_location + "; ";
+//                console.error(2407, thing);
                 line = "";
             }
 
@@ -2648,7 +2653,15 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             thing.n_repeat = new GameTest(GameTestType.TARGET_EXISTS, new TargetDesc(foreach));
         } else {
             // how many targets we can hit
-            thing.n_count_tgt = new TargetDesc(foreach);
+            let n;
+            if (n = foreach.match(/color of (.*)/)) {
+                thing.n_count_tgt = new ForEachTarget("bob", new TargetDesc(n[1]), "color");
+            } else if (n = foreach.match(/(\d+).?color.? (.*) ha(ve|s)/)) {
+                let count = parseInt(n[1]);
+                thing.n_count_tgt = new ForEachTarget("bob", new TargetDesc(n[2]), "color", count) ;
+            } else {
+                thing.n_count_tgt = new ForEachTarget("bob", new TargetDesc(foreach));
+            }
         }
     }
     // if X, increase n by delta
@@ -4424,7 +4437,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         }
     }
 
-
     proper_thing = thing;
     if (stat_cond) {
         if (stat_cond2) {
@@ -4435,14 +4447,11 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     }
 
     atomic.subs.push(proper_thing);
-
     if (line.match(/must block/)) {
         line = "";
     }
-
     return [atomic, line];
 }
-
 
 // doing keywords like this is no longer needed
 function make_alliance(solid: SolidEffect2): void {

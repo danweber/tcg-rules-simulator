@@ -1721,7 +1721,9 @@ export class Game {
             GameEvent.EVOSOURCE_MOVE,
             GameEvent.TRASH_LINK,
             GameEvent.PLUG, // can be both card and instance
-        ].includes(ge)) {
+        ].includes(ge) 
+        || t.raw_text.match("security")
+    ) {
 
             let to_search: CardLocation[] = [];
             if (t.raw_text.match(/token/i)) {
