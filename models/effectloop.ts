@@ -3089,7 +3089,7 @@ export class XX {
             logger.info(`source size ${pile.length} dest ${Location[dest]}`);
             for (let i = 0; i < n; i++) {
                 game.log(`${i} of ${weirdo.n!}`);
-                let c = pile?.pop();
+                let c = (from.includes("bottom")) ? pile?.shift() : pile?.pop();
                 if (!c) {
                     game.log("Couldn't get card from " + from);
                     return ret;

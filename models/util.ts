@@ -286,6 +286,14 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
         ret = base.is_plugged_card();
         if (!ret) return def;
     }
+    if (evo_cond.face) {
+        if (evo_cond.face === "up") {
+            ret = ("face_up" in base) && base.face_up() == true;
+        } else {
+            ret = ("face_up" in base) && base.face_up() == false;
+        }
+        if (!ret) return def;            
+    }
     if (evo_cond.location) {
         // only handles 1 location
         const loc: Location = string_to_location(evo_cond.location);

@@ -9,7 +9,9 @@ FIELD2:Shield,CS1-StoneShield,REST
 GAME:P1 T3 MAIN 8
 DUMP:HAND,DP
 
+ECHO: ----- this may fail if we haven't loaded <dodge>
 ECHO: ---- attack in, mon gets played out
+
 CMD:ATTACK Bird Shield
 STEP:AUTOANSWER:CAPTURE
 

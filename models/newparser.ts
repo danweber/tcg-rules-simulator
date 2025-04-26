@@ -61,17 +61,11 @@ String.prototype.after = function (s: string): string {
 
 import { AtomicEffect, InterruptCondition, Solid_is_triggered, StatusCondition, SubEffect, ic_to_plain_text, ic_to_string, ica_to_plain_text, ica_to_string, status_cond_to_string } from "./effect";
 import { EventCause, GameEvent, strToEvent } from "./event";
-import { Game } from "./game";
 import { ALL_OF, Conjunction, ForEachTarget, GameTest, GameTestType, MultiTargetDesc, SingleGameTest, SpecialCard, SubTargetDesc, TargetDesc, TargetSource } from "./target";
 import { Card, EvolveCondition, KeywordArray, parse_color } from "./card";
 import { Phase, PhaseTrigger } from "./phase";
 import { Location } from "./location";
-import { KeyObject } from "crypto";
-import { flatMap } from "lodash";
-import { CombatLoop } from './combat';
-import { parseString } from './parse-with';
 import { parseStringEvoCond } from './parse-evocond';
-import { find_in_tree } from './util';
 
 
 // These aren't used?
@@ -1556,10 +1550,13 @@ function single_parse_if(line: string): SingleGameTest {
     // }
 
     // in play is ending up in first match
-    if (m = line.match(/you (don.t )?have (an? )?(\d or (?:more|fewer))?(.*?)( in play)?$/i)) {
-        let count = m[1] ? "0" : m[3];
-        return new SingleGameTest(GameTestType.TARGET_EXISTS, new TargetDesc("your " + m[4].trim()), undefined, count);
-        //        atomic.state_check = m[1];
+
+
+    if (m = line.match(/you (don.t )?have (an? )?(no )?(\d or (?:more|fewer))?(.*?)( in play)?$/i)) {
+        let count = m[1] ? "0" : m[4];
+        if (m[3]) count = "0";
+        return new SingleGameTest(GameTestType.TARGET_EXISTS, new MultiTargetDesc("your " + m[5].trim()), undefined, count);
+        // changed this one 1 MultiTarget
     }
 
     // same in play issue as above. non-greedy doesn't fix this
@@ -1710,8 +1707,8 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
     let grammared = parseStringEvoCond(line, "WhenSentence");
     // console.error(line);
     if (grammared) {
-//        console.error("WHEN", grammared);
-//        console.dir(grammared, { depth: 99 });
+        //        console.error("WHEN", grammared);
+        //        console.dir(grammared, { depth: 99 });
 
         let w = grammared.When;
         if (w.event.includes("EVOLVE")) {
@@ -2319,7 +2316,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             line.toLowerCase().includes("bottom of the deck") ||
             line.toLowerCase().includes("top of the deck") ||
             line.toLowerCase().includes("evolution cards") ||
-            line.toLowerCase().includes("delay")
+            line.toLowerCase().includes("delay") ||
+            line.toLowerCase().includes("add") ||
+            line.toLowerCase().includes("give")
+
 
         )
         && !line.toLowerCase().includes("1 your")
@@ -2335,7 +2335,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             if (grammared.duration) {
                 expiration = grammared.duration.expiration;
             }
-            //            console.log("GRAM");  console.dir(grammared, { depth: 99 });
+            //               console.log("GRAM");  console.dir(grammared, { depth: 99 });
             const eff = grammared.effect;
             const optional = eff.optional;
             if (optional) atomic.optional = true;
@@ -2348,10 +2348,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
                 x = new MultiTargetDesc(target.raw_text);
                 thing.td = x;
-                thing.choose = 1;
+                thing.choose = x.choose;
 
 
-                let nested;
+                let nested, keyword_gains, status;
                 if (nested = action_args.nested_effect) {
                     let [_0, nested_solid_effect, _1] = new_parse_line(nested, card, label, "main"); // how could we pass through a card here, we won't have any card keywords
                     stat_cond = {
@@ -2364,17 +2364,31 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                         exp_description: expiration
                     }
                     line = "";
-                } else {
-                    // hard-coded to only give 1 status, can't attack
+                } else if (keyword_gains = action_args.keyword_gains) {
+                    let s1 = parse_give_status(keyword_gains, card!);
+                    if (s1) {
+                        stat_cond = s1;
+                        stat_cond.exp_description = expiration;
+                    } else {
+                        console.error("no s1");
+                    }
+                    /*
+
+                    */
+                } else if (status = action_args.status) {
+                    // forging some stuff here
                     stat_cond = {
                         s: {
-                            game_event: GameEvent.ATTACK_DECLARE,
+                            game_event: strToEvent(action_args.status.event),
                             td: new TargetDesc("player"),
                             cause: EventCause.ALL, // really?
                             immune: true,
                         },
                         exp_description: expiration
                     };
+
+                } else {
+                    console.error("UNHANDLED");
                 }
                 line = "";
             }
@@ -2404,7 +2418,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 thing.td2 = y;
                 if (action_args.no_cost) thing.n_mod += "for free; ";
                 if (action_args.place_location) thing.n_mod += action_args.place_location + "; ";
-//                console.error(2407, thing);
+                //                console.error(2407, thing);
                 line = "";
             }
 
@@ -2435,6 +2449,20 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     //thing.n_mod += "upto; ";
                 }
                 if (action_args.no_cost) thing.n_mod += "for free; ";
+                line = "";
+            }
+
+            if (eff.action === 'MoveCard') {
+                target = "hand"; //  action_args.target;
+                thing.game_event = GameEvent.MOVE_CARD
+                x = new TargetDesc(target); // not target.raw_text!
+                thing.td = x;
+                thing.choose = 0; // no targets needed
+                thing.n = 1;
+
+                let target2 = "your bottom security"; // action_args.target2;
+                x = new TargetDesc(target2); // not target2.raw_text
+                thing.td2 = x; // target 2
                 line = "";
             }
 
@@ -2658,7 +2686,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 thing.n_count_tgt = new ForEachTarget("bob", new TargetDesc(n[1]), "color");
             } else if (n = foreach.match(/(\d+).?color.? (.*) ha(ve|s)/)) {
                 let count = parseInt(n[1]);
-                thing.n_count_tgt = new ForEachTarget("bob", new TargetDesc(n[2]), "color", count) ;
+                thing.n_count_tgt = new ForEachTarget("bob", new TargetDesc(n[2]), "color", count);
             } else {
                 thing.n_count_tgt = new ForEachTarget("bob", new TargetDesc(foreach));
             }
