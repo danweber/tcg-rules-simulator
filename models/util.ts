@@ -234,8 +234,8 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
 
     }
 
-    if (evo_cond.self) {
-        ret = TargetDesc.match_self(base, s!);
+    if ("self" in evo_cond) {
+        ret = (TargetDesc.match_self(base, s!) === evo_cond.self)
         if (!ret) return def;
     }
 

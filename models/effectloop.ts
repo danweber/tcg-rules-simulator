@@ -2713,7 +2713,7 @@ export class XX {
             }
             // something else sets the cost here... PLAY should operate the same way but doesn't
             let origcost: number = 0 + weirdo.n!;
-            let [cost, msg] = get_modified_cost(origcost, weirdo);
+            let [cost, msg] = get_modified_cost(origcost, weirdo, game, "evo");
             // TODO: check for memory failure; need a test case, though
             game.pay_memory(cost);
             game.log(`Evolve into ${instance.get_name()} ${msg}`); // no need to announce, we did that at start
@@ -2771,7 +2771,7 @@ export class XX {
             if (c.p_cost == undefined && !c.is_token()) { return false; }
             let origcost = Number(c.p_cost);
 
-            let [cost, cost_msg] = get_modified_cost(origcost, weirdo); // modify_cost(origcost, weirdo);
+            let [cost, cost_msg] = get_modified_cost(origcost, weirdo, game, "play"); // modify_cost(origcost, weirdo);
 
 
             if (!game.can_pay_memory(cost)) {
@@ -2809,7 +2809,7 @@ export class XX {
             let origcost = Number(card.u_cost);
             fx.source = new SpecialCard(cl);
 
-            let [cost, cost_msg] = get_modified_cost(origcost, weirdo); // modify_cost(origcost, weirdo);
+            let [cost, cost_msg] = get_modified_cost(origcost, weirdo, game, "use"); // modify_cost(origcost, weirdo);
 
             if (!game.can_pay_memory(cost)) {
                 logger.warn("couldn't pay cost of " + cost);
@@ -2869,7 +2869,7 @@ export class XX {
                 c.extract().move_to(Location.BATTLE, recipient, "PLUG-BOTTOM");
             }
             let origcost: number = 0 + weirdo.n!;
-            let [cost, msg] = get_modified_cost(origcost, weirdo);
+            let [cost, msg] = get_modified_cost(origcost, weirdo, game, "link");
             game.pay_memory(cost);
             game.log(`Link ${target.get_name()} to ${recipient.get_name()} ${msg}`); // no need to announce, we did that at start
             return true;
@@ -3682,17 +3682,20 @@ export function get_responder_loop(g: Game, happened: SubEffect[], depth: number
 
 
 
-function get_modified_cost(origcost: number, weirdo: SubEffect): [number, string] {
+function get_modified_cost(origcost: number, weirdo: SubEffect, game: Game, type: "play" | "evo" | "use" | "link"): [number, string] {
     let delta = 0;
     logger.info(`origcost ${origcost}`);
     let for_free = weirdo.n_mod?.includes("free");
+    let floodgated = false;
+    let me = game.get_n_player(weirdo.n_player!);
+
     if (for_free) {
         // set by original effect. Can interrupters set the cost to free?
         // If not, we could return right here.
         origcost = 0;
     }
     if (weirdo.n_mod == "reduced") {
-        check_floodgate();
+        floodgated = check_reduction_floodgate(type, me);
         delta -= weirdo.n!;
         logger.info("delta now " + delta);
     }
@@ -3700,6 +3703,7 @@ function get_modified_cost(origcost: number, weirdo: SubEffect): [number, string
         for (let submod of weirdo.cost_change) {
             logger.info("submod: " + submod.n_mod + " " + submod.n);
             if (submod.n_mod == "reduced")
+                floodgated = check_reduction_floodgate(type, me);
                 delta -= submod.n;
         }
     }
@@ -3707,10 +3711,15 @@ function get_modified_cost(origcost: number, weirdo: SubEffect): [number, string
     let newcost: number = origcost;
     let msg: string;
     if (!for_free) {
-        newcost += delta;
+        if (!floodgated) newcost += delta;
         if (newcost < 0) newcost = 0;
         msg = `for cost ${newcost}`;
-        if (delta) msg += ` [modified from ${origcost} by ${delta}]`;
+        if (delta) {
+            if (floodgated)
+                msg += ` [modification of ${delta} prevented]`;
+            else
+                msg += ` [modified from ${origcost} by ${delta}]`;
+        }
     } else {
         msg = `for no cost`;
         if (delta != 0) msg += ` [modification of ${delta} ignored]`;
@@ -3719,7 +3728,8 @@ function get_modified_cost(origcost: number, weirdo: SubEffect): [number, string
     return [newcost, msg];
 }
 
-function check_floodgate() {
-    // memory floodgate placeholder
-    logger.info("memory floodgate");
+function check_reduction_floodgate(type: "play" | "evo" | "use" | "link", me: Player): boolean {
+    if (me.other_player.has_reduction_floodgate(type, false)) return true;
+    if (me.has_reduction_floodgate(type, true)) return true;
+    return false;
 }

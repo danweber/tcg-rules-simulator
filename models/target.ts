@@ -101,10 +101,12 @@ export enum GameTestType {
 
     CARDS_IN_LOCATION = 6,
     ATTACKER_IS = 7,
-    COUNT = 8, // just returns a number
+    COUNT = 8, // just returns a number, always a constant
     MEMORY = 9,
     NOT_THIS_TURN = 10,
-
+    
+    // COMPARE_COUNT is the more generic version of TARGET_EXISTS
+    COMPARE_COUNT = 11,
 };
 
 export class GameTest {
@@ -162,7 +164,8 @@ export class SingleGameTest {
         this.td = td;
         if (td) {
             this.raw_text = td.raw_text;
-        } else {
+        };
+        if (text) {
             // trim garbage off either end
             this.raw_text = text?.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '');
         }
@@ -214,7 +217,22 @@ export class SingleGameTest {
             return new Array(n).fill("CARD");
         }
 
-        if (this.type == GameTestType.TARGET_EXISTS) {
+        if (this.type === GameTestType.COMPARE_COUNT) {
+            // find entities in play, then count a feature of them
+            let type: "instance" | "color" = "instance";
+            if (this.raw_text?.includes("color")) type = "color";
+            let fet: ForEachTarget = new ForEachTarget("sgt", this.td!, type);
+            let n_found = fet.get_count(g, source);
+            if (this.less_than) {
+                console.error("not handling less than");
+            }
+            let success = n_found >= this.count;
+            logger.info(`success ${success} n_found ${n_found} this.count ${this.count} text ${this.raw_text}`);
+            return success ? ["X"] : [];
+        }
+
+
+        if (this.type === GameTestType.TARGET_EXISTS) {
             if (!this.td) return []
             let l = Location.UNKNOWN;
             let e = GameEvent.NIL;

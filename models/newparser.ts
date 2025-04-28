@@ -1572,6 +1572,9 @@ function single_parse_if(line: string): SingleGameTest {
         return new SingleGameTest(GameTestType.TARGET_EXISTS, new TargetDesc(`this monster with ${m[1]} in its evolution cards`));
     }
 
+    if (m = line.match(/(.*) have (\d or more)( total)? colors/)) {
+        return new SingleGameTest(GameTestType.COMPARE_COUNT, new TargetDesc(m[1]), undefined, m[2], "color");
+    }
 
     if (m = line.match(/there (is|are) (\d or more)?(.*?)$/i)) {
         return new SingleGameTest(GameTestType.TARGET_EXISTS, new TargetDesc(m[3]), undefined, m[2]);
@@ -1715,7 +1718,7 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
             // can i recognize what it *was* properly, on a non-interruptive?`
             let cause = w.effect ? EventCause.EFFECT : EventCause.ALL;
             if (w.dna) cause = EventCause.DNA;
-            if (w.appfuse) cause = EventCause.APP_FUSE;
+            if (w.appfuse) cause = EventCause.APP_FUSE; 
             let int_evo: InterruptCondition = {
                 ge: GameEvent.EVOLVE,
                 // again, we're re-grammaring

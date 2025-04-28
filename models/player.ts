@@ -1701,6 +1701,16 @@ export class Player {
         return d + 1;
     }
 
+    // doesn't distinguish "play cost" or "evolution" cost reduction; nor which player is hit by it
+    has_reduction_floodgate(type: "play" | "evo" | "use" | "link", both: boolean): boolean {
+
+        let who = both ? "Players" : "opponent";
+        if (this.all_effects().find(e => e.raw_text.match(`${who}.* can't reduce .*${type}.* costs`)))
+            return true;
+        return false;
+
+    }
+
     has_mem_floodgate(): boolean {
         if (this.all_effects().find(e => e.raw_text.match(/gain memory.*Tamer effects/i)))
             return true;
