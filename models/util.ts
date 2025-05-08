@@ -106,14 +106,17 @@ function appendArrays(array1: any[],
     return result;
 }
 
-export function verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: TargetSource): boolean {
-    let ret = _verify_special_evo(base, evo_cond, s);
+export function verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: TargetSource,
+    sel?: SolidEffectLoop): boolean {
+    let ret = _verify_special_evo(base, evo_cond, s, sel);
     logger.info(" verify _special_evo " + ret + "  for " + base.get_name() + " " + evo_cond.raw_text); //  JSON.stringify(evo_cond) + " = " + ret);
     return ret;
 }
-function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: TargetSource): boolean {
+function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: TargetSource,
+    sel?: SolidEffectLoop): boolean {
     //console.error("looking for match for " + base.get_name() + " " + JSON.stringify(evo_cond));
     //console.error(evo_cond); 
+
     if (Array.isArray(evo_cond)) {
         evo_cond = evo_cond[0]; // we shouldn't need this
     }
@@ -132,7 +135,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
     if (evo_cond.under) {
         let i = base.get_instance();
         if (!i) return def;
-        ret = verify_special_evo(i, evo_cond.under, s);
+        ret = verify_special_evo(i, evo_cond.under, s, sel);
         logger.debug("we are under " + evo_cond.under.raw_text + "  verified " + ret);
         if (!ret) return def;
     }
@@ -152,7 +155,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
         if (!t.targets) {
             console.error("no t targets????");
             // if any source matches, say we succeed. will fail on A & B
-            ret = actual_sources.some(c => verify_special_evo(c, t, s));
+            ret = actual_sources.some(c => verify_special_evo(c, t, s, sel));
             if (!ret) return def;
 
             return true;
@@ -171,7 +174,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
                 // 3. make sure we have at least 2 total
                 let count = 0;
                 actual_sources.forEach(function (c) {
-                    let m = verify_special_evo(c, t, s);
+                    let m = verify_special_evo(c, t, s, sel);
                 //    console.error("any", any, " return ", m, " for " + c.get_name() + " " + t.raw_text);
                     if (m) {
                         // if we just needed one match, this was it
@@ -203,17 +206,18 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
 
     array = appendArrays(evo_cond.and, evo_cond.entity_match, evo_cond.with, evo_cond.from);
 
-    //console.dir(array, { depth: 44 });
+   // console.log(evo_cond.entity_match);
+   // console.dir(array, { depth: 44 });
 
     // empty AND is false, this is incorrect from a boolean logic sense
     if (array.length > 0) {
         //  if (evo_cond.with) array = array.concat(evo_cond.with);
         if (Array.isArray(array)) {
-            let ret = array.every((x: any) => verify_special_evo(base, x, s));
+            let ret = array.every((x: any) => verify_special_evo(base, x, s, sel));
             //console.error("return of all is " + ret);
             return ret;
         }
-        return verify_special_evo(base, array, s);
+        return verify_special_evo(base, array, s, sel);
     }
     /*
     what if OR + WITH?
@@ -228,10 +232,23 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
 
 
     if (array = evo_cond.or) {
-        let ret = array.some((x: any) => verify_special_evo(base, x, s));
+        let ret = array.some((x: any) => verify_special_evo(base, x, s, sel));
         return ret;
         //         if (!ret) return def;
 
+    }
+
+    if ("it" in evo_cond) {
+        if (!sel) {
+            console.error("no sel found in target source for evo_cond.it");
+            console.trace();
+            return def;
+        }
+        let last_thing = Game.get_last_thing_from_sel(sel, s!);
+        ret = last_thing.includes(base);
+
+//        ret = (TargetDesc.match_last_thing(base, s!, g));
+        if (!ret) return def;
     }
 
     if ("self" in evo_cond) {

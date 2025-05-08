@@ -104,7 +104,7 @@ export enum GameTestType {
     COUNT = 8, // just returns a number, always a constant
     MEMORY = 9,
     NOT_THIS_TURN = 10,
-    
+
     // COMPARE_COUNT is the more generic version of TARGET_EXISTS
     COMPARE_COUNT = 11,
 };
@@ -113,16 +113,16 @@ export class GameTest {
     singles: SingleGameTest[] = [];
     conjunction: Conjunction = Conjunction.OR;
 
-    test(g: Game, source: TargetSource, subs?: SubEffect[]): string[] {
+    test(g: Game, source: TargetSource, subs?: SubEffect[] | undefined, sel?: SolidEffectLoop): string[] {
 
         // if ALL, test all and return simple flag if they all succeeded
         if (this.conjunction == Conjunction.ALL) {
-            let all = this.singles.every(s => s.test(g, source, subs).length > 0);
+            let all = this.singles.every(s => s.test(g, source, subs, sel).length > 0);
             if (all) return ["ALL"];
             return [];
         }
         // if OR, show all matches
-        let result = this.singles.map(s => s.test(g, source, subs)).flat();
+        let result = this.singles.map(s => s.test(g, source, subs, sel)).flat();
         return result;
     }
     my_raw_text: string = "";
@@ -181,7 +181,7 @@ export class SingleGameTest {
     // test() takes a source, because it was like TargetDesc, but
     // should the source just be built in?
     //    test(g: Game, source: TargetSource): Instance[] | CardLocation[] {
-    test(g: Game, source: TargetSource, subs?: SubEffect[]): string[] {
+    test(g: Game, source: TargetSource, subs: SubEffect[] | undefined, sel?: SolidEffectLoop): string[] {
         if (this.type === GameTestType.NOT_THIS_TURN) {
             let instance = source.get_instance();
             if (instance.play_turn === g.n_turn) return [];
@@ -246,7 +246,7 @@ export class SingleGameTest {
             if (this.td.raw_text.includes("card")) {
                 e = GameEvent.STACK_ADD; // search security
             }
-            let t = g.find_target(this.td, e, source, false, l);
+            let t = g.find_target(this.td, e, source, sel!, l);
             logger.info("checking game test " + this.count + "?,  " + this.less_than + " " + t.map(c => c.get_name()).join(","));
 
             // it would be better to check this number some place else
@@ -256,9 +256,9 @@ export class SingleGameTest {
                 return t.length == 0 ? ["X"] : [];
             }
             if (this.less_than) {
-                if (t.length <= this.count) 
+                if (t.length <= this.count)
                     return ["X"]; // sometimes 0 entries is the true match
-                 return [];
+                return [];
             }
             if (t.length >= this.count)
                 return t.map(i => i.get_name());
@@ -327,6 +327,7 @@ import { CombatLoop } from './combat';
 import { ic_to_plain_text, InterruptCondition, SolidEffect, SubEffect } from './effect';
 import { newRecoverText, parseString, printParseTree } from './parse-with';
 import { parseStringEvoCond } from './parse-evocond';
+import { SolidEffectLoop } from './effectloop';
 
 // change "[X]/[Y]" or "[X] or [Y]" into array
 function split_names(name: string): string[] {
@@ -348,14 +349,14 @@ export class ForEachTarget {
     get_count(game: Game, ts: TargetSource): number {
         // STACK_ADD seems bad since it includes cards in hand :<
         let i = game.find_target(this.target, GameEvent.DELETE, ts, false, Location.SECURITY);
-        logger.debug(`for ${i.map(i=>i.get_name())} objects count is ${i.length}`);
+        logger.debug(`for ${i.map(i => i.get_name())} objects count is ${i.length}`);
 
         if (this.type === "instance") return Math.floor(i.length / this.ratio);
 
         let n_colors = color_count(i);
-        logger.info(`for ${i.map(i=>i.get_name())} objects color count is ${n_colors}`);
+        logger.info(`for ${i.map(i => i.get_name())} objects color count is ${n_colors}`);
         return Math.floor(n_colors / this.ratio);
-       }
+    }
 }
 
 // For choosing two+ different things (1 [x] and 1 [y])
@@ -405,7 +406,7 @@ export class MultiTargetDesc {
         if (!text.includes("1 your")) {// skip this for stack summons for now
             let grammared = parseStringEvoCond(text.trim(), "MultiTarget");
 
-            // console.log("xxx " + !!grammared  +  " " + text); console.dir(grammared, {depth: null} );
+            //console.log(409, " xxx " + !!grammared  +  " " + text); console.dir(grammared, {depth: null} );
             if (grammared) {
                 //   if (grammared.type === "MultiTarget" <-- always true 
                 const all = grammared.targets;
@@ -494,16 +495,17 @@ export class MultiTargetDesc {
     UNUSED_find_merged() {
 
     }
-    matches(t: Instance | CardLocation, s: TargetSource, g: Game): boolean {
+    matches(t: Instance | CardLocation, s: TargetSource, g: Game,
+         previous?: TargetSource, sel?: SolidEffectLoop | false): boolean {
         // matches if any target matches; when "pick 1 X and 1 Y"  we can show
         // all things that match either. (Later the user picks a pair.)
 
-        logger.info("MTD MATCH? " + !!this.parse_matches);
+        logger.info("MTD MATCH? " + !!this.parse_matches + " " + !!sel);
         if (this.parse_matches) {
             logger.info("MTD " + JSON.stringify(this.parse_matches));
             let ret = this.parse_matches.some(
-                pm => verify_special_evo(t, pm, s));
-            logger.info("ret for " + t.get_name() + " is " + ret);
+                pm => verify_special_evo(t, pm, s, sel || undefined));
+            logger.info("ret for " + t.get_name() + "  is " + ret);
             return ret;
         }
 
@@ -759,7 +761,8 @@ export class TargetDesc {
         return (t.id == s.id())
     }
 
-    matches(t: Instance | CardLocation, s: TargetSource, g: Game, previous?: TargetSource): boolean {
+    matches(t: Instance | CardLocation, s: TargetSource, g: Game,
+        previous?: TargetSource, sel?: SolidEffectLoop | false): boolean {
         logger.silly("testing main target for " + Conjunction[this.conjunction]);
 
         if (this.conjunction == Conjunction.SELF || this.conjunction == Conjunction.ANOTHER) {
@@ -906,6 +909,7 @@ export class TargetDesc {
         // it is "what was targeted"
         if (text == "it" ||
             text.match(/^that monster.?.?$/) ||
+            text.match(/^any of them$/) ||
             text.match(/^those monsters?.?$/)) {
             // LAST_THING is singular but should be a set
             // also "The tamer that was played" should make sure we also match that
@@ -1080,7 +1084,8 @@ export class TargetDesc {
                 if (w_clause) {
                     //   if (w_clause.clause1 && w_clause.clause1[0])
                     //       console.log(928, newRecoverText(w_clause.clause1[0].origdata));
-
+                 //   console.log(1087, "WITH", m[1]);
+                   // console.dir( w_clause, { depth: null });
 
                     // move more and more into this
                     this.with = w_clause;

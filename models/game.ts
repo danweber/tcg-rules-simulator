@@ -1549,6 +1549,105 @@ export class Game {
         return new CardLocation(this, player_num, location, index);
     }
 
+    static get_last_thing_from_sel(sel: SolidEffectLoop | false, s: TargetSource): (Instance | CardLocation)[] {
+
+
+        if (!sel) {
+            // I'm not sure why we want the old pronoun logic, but some tests fail without it
+            // we're searching on the NIL event which is worrisome.
+            // even weirder is that some tests seem to use that logic but still don't fail if it's skipped
+            //         return [];
+            console.error("NO SEL!");
+            console.trace()
+        } else {
+            // check solid_starter if another solid effect started us, and check
+            // the targets of both of those in turn
+            let _solid = sel.effect;
+
+            for (let solid of [_solid, _solid.solid_starter]) {
+                if (!solid) continue;
+
+                let n = solid.effects.length;
+                // work backwards, looking for prior target
+                // if looking for "THAT MONSTER" we shouldn't match on self
+                while (n > 0) {
+                    n--;
+                    let atomic = solid.effects[n];
+                    let eff = atomic.events[0];
+                    // is instance is a function but just its existence is checked
+                    if (eff.chosen_target && eff.chosen_target.kind === "Instance"
+                        && eff.chosen_target.in_play() // if the instance isn't there any more, no match: should this end the search, or do we keep searching for something else?
+                        && eff.chosen_target.top()) {
+                        logger.info("PROIPR LOCATION IS " + eff.chosen_target.location_to_string);
+                        logger.info("PRIOR TARGET FOUND! prior thing was " + eff.chosen_target.get_name() + " or " + eff.chosen_target.id + " and " + eff.chosen_target.kind);
+                        // does s.get_name() ever return a *function*? 
+                        logger.info("i am " + s.get_name(true) + " " + s.id());
+                        // how do we compare for equality??
+                        if (eff.chosen_target.id == s.id()) {
+                            // "THAT" will never be self... right? Maybe what we should be skipping is *costs*
+                            // "when a monster is played, by suspending a monster, that monster may evolve into..."
+                            continue;
+                        }
+                        logger.warn("returing prior thing");
+                        logger.warn("prior thing is " + eff.chosen_target.get_name());
+                        return [eff.chosen_target];
+                    }
+                }
+
+                // if this was a set pending effect, look back in the effect that started us
+                // does this clause belong inside the loop or not?
+                logger.info("no prior found in effect, should check trigger clause");
+                // if we couldn't find it in effects, search for triggers
+                // Right here we capture the problem that we might need to react to 2 different played monsters 
+
+                let ti = solid.trigger_incidents;
+                if (ti && ti.length > 0) {
+
+                    // if the triggering incident was "attacking" we're going
+                    // to cheat and assume the attacker was the pronoun. We
+                    // probably determine this in posteffect / preflight and that's 
+                    // where we should get our answer
+                    let ret = (ti[0].game_event == GameEvent.ATTACK_DECLARE) ?
+                        ti.map(e => e.spec_source) :
+                        ti.map(e => e.chosen_target);
+                    logger.info("returning " + ret.length + " pronouns");
+
+                    logger.info(ret.map(x => x.get_name()).join(":::"));
+
+                    return ret;
+                }
+            }
+            /*
+            for (let eff of sel.reacted_to) {
+                console.error(`checking REACT event  ${GameEvent[eff.game_event]}`);
+                if (eff.chosen_target) {
+                    logger.warn("returing prior thing");
+                    logger.warn("prior thing is " + eff.chosen_target.get_name());
+                    console.error("prior thing was " + eff.chosen_target.get_name());
+                    return [eff.chosen_target];
+                }    
+                logger.warn("prior thing is " + eff.chosen_target.get_name());
+
+            }*/
+
+
+            logger.warn("no prior thing in effect");
+        }
+
+        return []; 
+        /*
+        if (!this.last_thing || 5 > 4) {
+            console.error("nothing found " + GameEvent[ge]);
+            logger.error("no last thing!");
+            return [];
+        } else {
+
+            logger.error("getting last thing! " + this.last_thing.length);
+            logger.error(this.last_thing.map(x => x.get_name()).join(":"));
+            return this.last_thing;
+        }*/
+    }
+
     // I've used the gameevent as a clue to where I'm searching and what I'm returning,
     // but I think I should just explicitly 
     find_target(t: TargetDesc, ge: GameEvent, s: TargetSource, sel: SolidEffectLoop | false,
@@ -1563,100 +1662,12 @@ export class Game {
         //       this.log("Searching for targets for " + t.raw_text);
         let debug = false;
         let ret: (Instance | CardLocation)[] = [];
+
         logger.info(`FINDING FOR TARGET: ${t.toString()} Event ${GameEvent[ge]} TargetSource ${s.id()},${s.card_id()},${s.location()} `);
         if (t.conjunction == Conjunction.LAST_THING) {
 
-            if (!sel) {
-                // I'm not sure why we want the old pronoun logic, but some tests fail without it
-                // we're searching on the NIL event which is worrisome.
-                // even weirder is that some tests seem to use that logic but still don't fail if it's skipped
-                //         return [];
-                console.error("NO SEL!");
-                console.trace()
-            } else {
-                // check solid_starter if another solid effect started us, and check
-                // the targets of both of those in turn
-                let _solid = sel.effect;
-
-                for (let solid of [_solid, _solid.solid_starter]) {
-                    if (!solid) continue;
-
-                    let n = solid.effects.length;
-                    // work backwards, looking for prior target
-                    // if looking for "THAT MONSTER" we shouldn't match on self
-                    while (n > 0) {
-                        n--;
-                        let atomic = solid.effects[n];
-                        let eff = atomic.events[0];
-                        // is instance is a function but just its existence is checked
-                        if (eff.chosen_target && eff.chosen_target.kind === "Instance"
-                            && eff.chosen_target.in_play() // if the instance isn't there any more, no match: should this end the search, or do we keep searching for something else?
-                            && eff.chosen_target.top()) {
-                            logger.info("PROIPR LOCATION IS " + eff.chosen_target.location_to_string);
-                            logger.info("PRIOR TARGET FOUND! prior thing was " + eff.chosen_target.get_name() + " or " + eff.chosen_target.id + " and " + eff.chosen_target.kind);
-                            // does s.get_name() ever return a *function*? 
-                            logger.info("i am " + s.get_name(true) + " " + s.id());
-                            // how do we compare for equality??
-                            if (eff.chosen_target.id == s.id()) {
-                                // "THAT" will never be self... right? Maybe what we should be skipping is *costs*
-                                // "when a monster is played, by suspending a monster, that monster may evolve into..."
-                                continue;
-                            }
-                            logger.warn("returing prior thing");
-                            logger.warn("prior thing is " + eff.chosen_target.get_name());
-                            return [eff.chosen_target];
-                        }
-                    }
-
-                    // if this was a set pending effect, look back in the effect that started us
-                    // does this clause belong inside the loop or not?
-                    logger.info("no prior found in effect, should check trigger clause");
-                    // if we couldn't find it in effects, search for triggers
-                    // Right here we capture the problem that we might need to react to 2 different played monsters 
-
-                    let ti = solid.trigger_incidents;
-                    if (ti && ti.length > 0) {
-
-                        // if the triggering incident was "attacking" we're going
-                        // to cheat and assume the attacker was the pronoun. We
-                        // probably determine this in posteffect / preflight and that's 
-                        // where we should get our answer
-                        let ret = (ti[0].game_event == GameEvent.ATTACK_DECLARE) ?
-                            ti.map(e => e.spec_source) :
-                            ti.map(e => e.chosen_target);
-                        logger.info("returning " + ret.length + " pronouns");
-
-                        logger.info(ret.map(x => x.get_name()).join(":::"));
-
-                        return ret;
-                    }
-                }
-                /*
-                for (let eff of sel.reacted_to) {
-                    console.error(`checking REACT event  ${GameEvent[eff.game_event]}`);
-                    if (eff.chosen_target) {
-                        logger.warn("returing prior thing");
-                        logger.warn("prior thing is " + eff.chosen_target.get_name());
-                        console.error("prior thing was " + eff.chosen_target.get_name());
-                        return [eff.chosen_target];
-                    }    
-                    logger.warn("prior thing is " + eff.chosen_target.get_name());
-    
-                }*/
-
-
-                logger.warn("no prior thing in effect");
-            }
-            if (!this.last_thing || 5 > 4) {
-                console.error("nothing found " + GameEvent[ge]);
-                logger.error("no last thing!");
-                return [];
-            } else {
-
-                logger.error("getting last thing! " + this.last_thing.length);
-                logger.error(this.last_thing.map(x => x.get_name()).join(":"));
-                return this.last_thing;
-            }
+            if (sel) return Game.get_last_thing_from_sel(sel, s);
+            // a b c
         }
 
         let p = s.get_player();
@@ -1770,7 +1781,7 @@ export class Game {
             }
             logger.info(`t is ${t.raw_text} or ${t.toString()} or ${t.toPlainText()}`);
             // we don't have a "biggest level" or anything for CardLocations
-            ret.push(...to_search.filter(x => t.matches(x, s, this)));
+            ret.push(...to_search.filter(x => t.matches(x, s, this, undefined, sel)));
             logger.info(`ret length is ${ret.length}`);
             // play-self-from-trash, or for anything else that requires targeting a specific card in trash
             if (t.conjunction == Conjunction.SELF) {
@@ -1800,7 +1811,7 @@ export class Game {
         // call with EGGZONE: just eggzone
         let locus = Location.BATTLE;
         if (search_loc === Location.EGGZONE || search_loc === Location.FIELD) locus = search_loc;
-        let bb = this.instances.filter(x => (x.location & locus) && t.matches(x, s, this, prior_target));
+        let bb = this.instances.filter(x => (x.location & locus) && t.matches(x, s, this, prior_target, sel));
 
         let ss = t.sort(bb); // for when we need "biggest level" or something
 

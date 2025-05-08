@@ -1499,6 +1499,9 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
 }
 
+
+
+
 // targetdesc is "find this thing and if we do we pass"
 // It won't meet conditions like "we have 3 cards in security"
 
@@ -1518,6 +1521,20 @@ function single_parse_if(line: string): SingleGameTest {
     logger.info("parse if: " + line);
     let m;
 
+    let grammared = parseStringEvoCond("If " + line, "IfClause");
+    if (grammared) {
+   //     console.log(1526, "IF ");
+   //   console.dir(grammared, {depth: 6 });       
+
+            // reparsing 
+        if (grammared.testtype === "TARGET_EXISTS") {
+            let tgt = grammared.passive_text; 
+            let td = new MultiTargetDesc(tgt);
+
+            return new SingleGameTest(GameTestType.TARGET_EXISTS, td);
+        }    
+    }
+
     //                  1                                2        3                          4              5                                         
     if (m = line.match(/(you|your opponent) (?:have|has) (\d+ or (fewer|less|more)) cards in (your |their )?(hand|trash|security stack)/i)) { // ,( or .*?,)?(.*)/i)) {
         let player = "your";
@@ -1526,7 +1543,6 @@ function single_parse_if(line: string): SingleGameTest {
         let location = player + " " + m[5];
         return new SingleGameTest(GameTestType.CARDS_IN_LOCATION,
             undefined, undefined, count, location);
-
     }
 
     if (m = line.match(/(you have|your opponent has) (\d+ memory or (less|more))/i)) {

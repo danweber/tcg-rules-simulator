@@ -912,7 +912,7 @@ export class SolidEffectLoop {
 
                 // this checks for field conditions, but absolutely could
                 // include checking for stuff in trash. 
-                let t = test.test(this.game, this.effect.source, this.reacted_to);
+                let t = test.test(this.game, this.effect.source, this.reacted_to, this);
                 //                    this.game.get_n_player( this.effect.n_player ) );    
                 //                    this.effect.n_player ); 
                 if (t.length == 0) {
@@ -1290,7 +1290,7 @@ export class SolidEffectLoop {
                     count = previous_atomic.cost_paid || 0;
                 } else {
                     logger.info("TEST =====");
-                    let s: string[] | undefined = w.n_test?.test(this.game, this.effect.source);
+                    let s: string[] | undefined = w.n_test?.test(this.game, this.effect.source, undefined, this);
                     count = (s && s.length > 0) ? 1 : 0;
                 }
                 let per = parseInt(m[3]);
@@ -1357,7 +1357,7 @@ export class SolidEffectLoop {
                 let i: number;
                 logger.info(`looking repeat for each, target ${c1.toString()} ${c1.raw_text()}`);
                 // i = this.game.find_target(w.n_repeat, GameEvent.STACK_ADD, this.effect.source, this, Location.SECURITY).length;
-                i = w.n_repeat.test(this.game, this.effect.source).length //  this.effect.source, this, Location.SECURITY).length;
+                i = w.n_repeat.test(this.game, this.effect.source, undefined, this).length //  this.effect.source, this, Location.SECURITY).length;
 
                 logger.info("I IS " + i);
                 if (i == 0) {
