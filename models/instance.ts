@@ -78,6 +78,15 @@ export class Instance {
     public card_ids_s(): string {
         return this.pile.map(x => x.id).join(",");
     }
+    colors(): Color[] {
+        let ret: Color[] = [];
+        for (let i = Color.NONE; i < Color.MAX; i++) {
+            if (this.has_color(i)) {
+                ret.push(i);
+            }
+        }
+        return ret;
+    }
     s_colors(): string {
         let ret: string[] = [];
         for (let i = Color.NONE; i < Color.MAX; i++) {
@@ -789,15 +798,15 @@ export class Instance {
             (actual == GameEvent.TARGETED_CARD_MOVE && cand == GameEvent.MOVE_CARD) ||
             (cand == GameEvent.ALL_REMOVAL &&
                 [GameEvent.ALL_REMOVAL, GameEvent.DELETE, GameEvent.STACK_ADD, GameEvent.FIELD_TO_HAND, GameEvent.TUCK, GameEvent.TO_BOTTOM_DECK].includes(actual)) ||
-                // TARGETED_CARD_MOVE is how to put Instances into security
-                // It is also how we move a card from plugs to elsewhere
-                // Why don't plugs have a PLUG_MOVE like EVOSOURCE_MOVE ?
-                (cand == GameEvent.ALL_REMOVAL && actual == GameEvent.TARGETED_CARD_MOVE && 
+            // TARGETED_CARD_MOVE is how to put Instances into security
+            // It is also how we move a card from plugs to elsewhere
+            // Why don't plugs have a PLUG_MOVE like EVOSOURCE_MOVE ?
+            (cand == GameEvent.ALL_REMOVAL && actual == GameEvent.TARGETED_CARD_MOVE &&
                 actual_event.chosen_target.location == Location.BATTLE &&
                 actual_event.chosen_target.kind === "Instance" // not moving a card
             ) ||
             (cand == GameEvent.ALL_REMOVAL) && actual == GameEvent.PLUG &&
-                actual_event.chosen_target.kind === "Instance"
+            actual_event.chosen_target.kind === "Instance"
             ||
             // add_card_to_hand can be BOUNCE or DRAW
             (cand == GameEvent.ADD_CARD_TO_HAND &&
@@ -820,9 +829,11 @@ export class Instance {
     // see if tf2 matches up, including special cases
     static check_td2(myTrigger: InterruptCondition, actualEvent: SubEffect, ge: GameEvent, me: SpecialInstance, game: Game): boolean {
         if (myTrigger.td2) {
+            let act2 = actualEvent.chosen_target2 && actualEvent.chosen_target2[0];
+
             if (ge === GameEvent.EVOLVE) {
                 logger.info(`TD2 check, ct2 ${!!actualEvent.chosen_target2} ct3 ${!!actualEvent.chosen_target3} `);
-                logger.info(`TD2 check, ct2t ${!!actualEvent.chosen_target2?.top()} ct3t ${!!actualEvent.chosen_target3?.top()} `);
+                logger.info(`TD2 check, ct2t ${!!act2?.top()} ct3t ${!!actualEvent.chosen_target3?.top()} `);
 
                 if (actualEvent.cause & EventCause.DNA) {
                     logger.info("fusion evo");
@@ -833,22 +844,23 @@ export class Instance {
                     // we've lost the original mons if we are post_effect'ing a fusion. we need
                     // to be able to track their references as they were for "when a X evolves"
                     // but aren't right now
-                    logger.info(`TD2 check, ct2t ${!!actualEvent.chosen_target2?.top()} ct3t ${!!actualEvent.chosen_target3?.top()} `);
-                    if (!actualEvent.chosen_target2?.top()) return true; // no actual target, better say we succeed
-                    if (myTrigger.td2.matches(actualEvent.chosen_target2, me, game)) return true;
+                    logger.info(`TD2 check, ct2t ${!!act2.top()} ct3t ${!!actualEvent.chosen_target3?.top()} `);
+                    console.warn("we just need to match on any td2, right?");
+                    if (!act2?.top()) return true; // no actual target, better say we succeed
+                    if (myTrigger.td2.matches(act2, me, game)) return true;
                     if (!actualEvent.chosen_target3?.top()) return true;
                     if (myTrigger.td2.matches(actualEvent.chosen_target3, me, game)) return true;
                     return false; // no match
                 }
                 logger.info("non-fusion evo");
                 // non-fusion evo
-                if (!actualEvent.chosen_target2?.top()) return true; // no actual target, better say we succeed
-                if (myTrigger.td2.matches(actualEvent.chosen_target2, me, game)) return true;
+                if (!act2?.top()) return true; // no actual target, better say we succeed
+                if (myTrigger.td2.matches(act2, me, game)) return true;
                 return false;
             }
             // if a second target, make sure it matches, too.
             // sometimes this can lead us to checking an instance that has no cards...
-            if (!myTrigger.td2.matches(actualEvent.chosen_target2, me, game))
+            if (!myTrigger.td2.matches(act2, me, game))
                 return false;
         }
         return true;
@@ -1407,6 +1419,7 @@ export class Instance {
             case "option": return this.is_option();
             case "tamer": return this.is_tamer();
             case "egg": return this.is_egg();
+            case "token": return this.is_token(); // is "token" appropriate at this level?            
             default: return false;
         }
     }
@@ -1668,10 +1681,31 @@ export class Instance {
         if (!this.has_dp()) return false; // not sure this ever happens
         return true;
     }
+    can_block(): boolean {
+        if (!this.in_play()) return false;
+        if (this.suspended) return false;
+        if (!this.has_blocker()) return false;
+        let [suspend, ] = attacking_events(this.game, this, this.other_player);
+
+        if (!this.can_do(suspend)) return false;
+        
+	    let block = {
+		// do we distinguish attacking by effect??
+		cause: EventCause.GAME_FLOW,
+		game_event: GameEvent.BLOCK,
+		label: "suspend to block",
+		chosen_target: this, td: new TargetDesc(""),
+		n_player: this.n_me_player,
+    	};
+        if (!this.can_do(block)) return false;
+
+        return true;
+    }
     can_attack(td?: TargetDesc, conditions?: string): (false | number[]) {
         logger.debug("can_attack conditions " + conditions);
         // I'm manually parsing td
         if (this.game.turn_player != this.n_me_player) return false;
+        if (this.game.phase === Phase.HATCHING) return false;
         if (this.game.n_turn == this.play_turn && !this.has_keyword("Rush")) {
             if (!conditions || !conditions.match(/the turn/)) {
                 return false;
@@ -1833,6 +1867,23 @@ export class Instance {
         return true;
     }
 
+    /*  never used, not even once
+    strip_source(location: string): boolean {
+        // if we strip multiple things we rebuild this data structure each time
+        if (!location) return false;
+        let sources = this.get_sources();
+        if (sources.length == 0) return false;
+        let cl: CardLocation;
+        if (location.includes("bottom")) {
+            cl = sources[0];
+        } else {
+            cl = sources[sources.length - 1];
+        }
+        let card = cl.extract();
+        card.move_to("trash");
+        return true;
+    }*/ 
+
     // "reason" is purely for human consumption
     do_bounce(reason: string) { this.do_removal("hand", reason); }
 
@@ -1951,7 +2002,9 @@ export class Instance {
 
         //        console.error(`sp card ${card.get_name()} in ${Location[card.get_location()]}`);
         // why only do this if it's in reveal? 
-        if (card.get_location() == Location.REVEAL) { card.extract(); }
+      //  if (card.get_location() == Location.REVEAL) { 
+             card.extract(); 
+     //   }
         card.move_to(Location.BATTLE, instance);
         //        console.error(`sp card ${card.get_name()} in ${Location[card.get_location()]}`);
         instance.play_turn = game.n_turn;

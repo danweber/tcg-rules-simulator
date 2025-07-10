@@ -1,4 +1,4 @@
-FIELD1:Blue,CS2-12,CS2-01 Yellow,CS1-10,CS1-01
+FIELD1:Blue,CS2-Colossalsword,CS2-Doggiedagger Yellow,CS1-Obsidianshield,CS1-Tinyshield
 FIELD2:
 TRASH1:
 TRASH2:
@@ -6,7 +6,7 @@ HAND1:CS2-Rampager
 HAND2:
 GAME:P1 T4 MAIN 7
 ECHO: --- FUZOR ---
-FIELD1:I3,CS2-Rampager,CS1-10,CS1-01,CS2-12,CS2-01
+FIELD1:I3,CS2-Rampager,CS1-Obsidianshield,CS1-Tinyshield,CS2-Colossalsword,CS2-Doggiedagger
 FIELD2:
 TRASH1:
 TRASH2:

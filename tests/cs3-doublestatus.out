@@ -1,0 +1,8 @@
+FIELD1:Plain,DW1-Vanillamon,5000DP
+FIELD2:
+GAME:P1 T3 MAIN 6
+CAPTURE:Target VanillaMon 1
+CAPTURE:Target Wizard Hawk 2
+FIELD1:Plain,DW1-Vanillamon,7000DP,SECURITY ATTACK Yyy,CS3-Wizardhawk,5500DP,LINK [-+]\D
+FIELD2:
+GAME:P1 T3 MAIN 0

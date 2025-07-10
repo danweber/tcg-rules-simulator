@@ -1,23 +1,23 @@
-FIELD1:Sneaky,CS1-06,REST,7000DP ObsidianShield,CS1-10,REST,13000DP
-FIELD2:Attacker1,CS2-11,9000DP Attacker2,CS2-11,9000DP PlayerAttacker,CS2-11,9000DP
+FIELD1:Sneaky,CS1-Sneakycat,REST,7000DP ObsidianShield,CS1-Obsidianshield,REST,13000DP
+FIELD2:Attacker1,CS2-Shieldsmasher,9000DP Attacker2,CS2-Shieldsmasher,9000DP PlayerAttacker,CS2-Shieldsmasher,9000DP
 TRASH1:
 TRASH2:
 GAME:P2 T3 MAIN 6
 ECHO: -- attack1 doesn't get DP boost (but still wins)
-FIELD1:ObsidianShield,CS1-10,REST,13000DP
-FIELD2:Attacker1,CS2-11,REST,9000DP Attacker2,CS2-11,9000DP PlayerAttacker,CS2-11,9000DP
-TRASH1:CS1-06
+FIELD1:ObsidianShield,CS1-Obsidianshield,REST,13000DP
+FIELD2:Attacker1,CS2-Shieldsmasher,REST,9000DP Attacker2,CS2-Shieldsmasher,9000DP PlayerAttacker,CS2-Shieldsmasher,9000DP
+TRASH1:CS1-Sneakycat
 TRASH2:
 GAME:P2 T3 MAIN 6
 ECHO: -- attack2 gets boost (but would win without it)
 FIELD1:
-FIELD2:Attacker1,CS2-11,REST,9000DP Attacker2,CS2-11,REST,14000DP PlayerAttacker,CS2-11,9000DP
-TRASH1:CS1-06 CS1-10
+FIELD2:Attacker1,CS2-Shieldsmasher,REST,9000DP Attacker2,CS2-Shieldsmasher,REST,14000DP PlayerAttacker,CS2-Shieldsmasher,9000DP
+TRASH1:CS1-Sneakycat CS1-Obsidianshield
 TRASH2:
 GAME:P2 T3 MAIN 6
 ECHO: -- attack3 does player attack
 FIELD1:
-FIELD2:Attacker1,CS2-11,REST,9000DP Attacker2,CS2-11,REST,14000DP PlayerAttacker,CS2-11,REST,9000DP
-TRASH1:CS1-06 CS1-10 CS1-02
+FIELD2:Attacker1,CS2-Shieldsmasher,REST,9000DP Attacker2,CS2-Shieldsmasher,REST,14000DP PlayerAttacker,CS2-Shieldsmasher,REST,9000DP
+TRASH1:CS1-Sneakycat CS1-Obsidianshield CS1-Papershield
 TRASH2:
 GAME:P2 T3 MAIN 6

@@ -1,24 +1,24 @@
-FIELD1:Sneaky,CS1-06,REST X1,CS1-04 X2,CS1-08 X3,CS1-12 X4,CS1-17 Sneaky2,CS1-06,REST
-FIELD2:Attacker1,CS2-12 Attacker2,CS2-12 Attacker3,CS2-12
+FIELD1:Sneaky,CS1-Sneakycat,REST X1,CS1-Stoneshield X2,CS1-Phoenixdefender X3,CS1-Onyxshield X4,CS1-Gideontheguardian Sneaky2,CS1-Sneakycat,REST
+FIELD2:Attacker1,CS2-Colossalsword Attacker2,CS2-Colossalsword Attacker3,CS2-Colossalsword
 GAME:P2 T3 MAIN 6
 ECHO: -- attack1 in sneaky, then kill it and attack stops
 CAPTURE:Target Sneaky Cat 1
 CAPTURE:Target Stone Shield 2
 CAPTURE:Target Phoenix Defender 3
 CAPTURE:Target Sneaky Cat 6
-FIELD1:X1,CS1-04 X2,CS1-08 X3,CS1-12 X4,CS1-17 Sneaky2,CS1-06,REST
-FIELD2:Attacker1,CS2-12,REST Attacker2,CS2-12 Attacker3,CS2-12
+FIELD1:X1,CS1-Stoneshield X2,CS1-Phoenixdefender X3,CS1-Onyxshield X4,CS1-Gideontheguardian Sneaky2,CS1-Sneakycat,REST
+FIELD2:Attacker1,CS2-Colossalsword,REST Attacker2,CS2-Colossalsword Attacker3,CS2-Colossalsword
 GAME:P2 T3 MAIN 6
 ECHO: -- attack2 in other sneaky, kill X1
 CAPTURE:Target Stone Shield 2
 CAPTURE:Target Phoenix Defender 3
 CAPTURE:Target Sneaky Cat 6
-FIELD1:X2,CS1-08 X3,CS1-12 X4,CS1-17
-FIELD2:Attacker1,CS2-12,REST Attacker2,CS2-12,REST Attacker3,CS2-12
+FIELD1:X2,CS1-Phoenixdefender X3,CS1-Onyxshield X4,CS1-Gideontheguardian
+FIELD2:Attacker1,CS2-Colossalsword,REST Attacker2,CS2-Colossalsword,REST Attacker3,CS2-Colossalsword
 GAME:P2 T3 MAIN 6
 ECHO: -- not attacking monster, nothing to kill
-FIELD1:X2,CS1-08,1000DP X3,CS1-12,8000DP X4,CS1-17,NaNDP
-FIELD2:Attacker1,CS2-12,REST,7500DP Attacker2,CS2-12,REST,7500DP Attacker3,CS2-12,REST,7500DP
-TRASH1:CS1-06 CS1-04 CS1-06 CS1-02
+FIELD1:X2,CS1-Phoenixdefender,1000DP X3,CS1-Onyxshield,8000DP X4,CS1-Gideontheguardian,NaNDP
+FIELD2:Attacker1,CS2-Colossalsword,REST,7500DP Attacker2,CS2-Colossalsword,REST,7500DP Attacker3,CS2-Colossalsword,REST,7500DP
+TRASH1:CS1-Sneakycat CS1-Stoneshield CS1-Sneakycat CS1-Papershield
 TRASH2:
 GAME:P2 T3 MAIN 6

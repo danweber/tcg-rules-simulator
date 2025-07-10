@@ -1,6 +1,6 @@
-FIELD1:Victim,CS1-02,500DP
-FIELD2:Stander,DW1-Vanillamon,CS2-05,CS2-04,5000DP
-SECURITY1:CS1-03 CS1-02
+FIELD1:Victim,CS1-Papershield,500DP
+FIELD2:Stander,DW1-Vanillamon,CS2-Greatsword,CS2-Rabiddog,5000DP
+SECURITY1:CS1-Garbagecanlid CS1-Papershield
 SECURITY2:
 GAME:P2 T1 MAIN 3
 ECHO: -- attack, deleting both opponent and standing up
@@ -9,7 +9,7 @@ CAPTURE:Rabid Dog [Your Turn] [Once Per Turn] When this Monster attacks your opp
 CAPTURE:Activate Rabid Dog unsuspending
 CAPTURE:Don't pay/activate
 FIELD1:
-FIELD2:Stander,DW1-Vanillamon,CS2-05,CS2-04,5000DP
-SECURITY1:CS1-03
+FIELD2:Stander,DW1-Vanillamon,CS2-Greatsword,CS2-Rabiddog,5000DP
+SECURITY1:CS1-Garbagecanlid
 SECURITY2:
 GAME:P2 T1 MAIN 3

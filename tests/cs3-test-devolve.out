@@ -1,0 +1,25 @@
+FIELD1:Stand,CS3-Chirpflare Lie,CS3-Chirpflare,REST Other,CS3-Chirpflare
+FIELD2:One,CS1-Phoenixdefender,CS1-Phoenixdefender,CS1-Phoenixdefender Two,CS2-Excalibur,CS2-Excalibur,CS2-Excalibur
+GAME:P1 T3 MAIN 10
+ECHO: -- evo, not suspended so nothing happens
+FIELD1:Stand,CS3-Wizardhawk,CS3-Chirpflare Lie,CS3-Chirpflare,REST Other,CS3-Chirpflare
+FIELD2:One,CS1-Phoenixdefender,CS1-Phoenixdefender,CS1-Phoenixdefender Two,CS2-Excalibur,CS2-Excalibur,CS2-Excalibur
+GAME:P1 T3 MAIN 7
+ECHO: -- evo, suspended, so I can choose an upto and a target
+EFFECT-TREE:DSE DEPTH 1 DONE:normal evolve
+EFFECT-TREE:RES DEPTH 2 PROCESSING:Wizard Hawk
+GET-CHOICES:Choose 'up to'
+GET-CHOICES:Do 1 time(s)
+GET-CHOICES:Do 2 time(s)
+FIELD1:Stand,CS3-Wizardhawk,CS3-Chirpflare Lie,CS3-Wizardhawk,CS3-Chirpflare,REST Other,CS3-Chirpflare
+FIELD2:One,CS1-Phoenixdefender,CS1-Phoenixdefender,CS1-Phoenixdefender Two,CS2-Excalibur,CS2-Excalibur,CS2-Excalibur
+TRASH1:
+TRASH2:
+GAME:P1 T3 MAIN 4
+ECHO: -- choose 1, then the second target
+GET-CHOICES:Choose 1 target for devolving:
+FIELD1:Stand,CS3-Wizardhawk,CS3-Chirpflare Lie,CS3-Wizardhawk,CS3-Chirpflare,REST Other,CS3-Chirpflare
+FIELD2:One,CS1-Phoenixdefender,CS1-Phoenixdefender,CS1-Phoenixdefender Two,CS2-Excalibur
+TRASH1:
+TRASH2:CS2-Excalibur CS2-Excalibur
+GAME:P1 T3 MAIN 4

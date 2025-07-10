@@ -218,7 +218,7 @@ router.get('/launch', (req, res) => {
 let rnd_words = ["time", "year", "people", "way", "day", "man", "woman", "thing", "life", "child", "world", "school", "state", "family", "student", "group", "country", "problem", "hand", "part", "place", "case", "week", "company", "system", "program", "question", "work", "government", "number", "night", "point", "home", "water", "room", "mother", "area", "money", "story", "fact", "month", "lot", "study", "books", "eye", "job", "word", "business", "issue", "side", "kind", "head", "house", "service", "friend", "father", "power", "hour", "game", "line", "end", "member", "law", "car", "city", "community", "name", "president", "team", "minute", "idea", "kid", "body", "information", "back", "parent", "face", "others", "level", "office", "door", "health", "person", "art", "war", "history", "party", "result", "charge", "morning", "reason", "research", "girl", "guy", "moment", "air", "teacher", "force", "education", "technology"]
 
 let prior_ip = "";
-router.post('/set_up_board', (req, res) => {
+router.post('/set_up_board', async (req, res) => {
 
   //console.log("Client IP?");
 
@@ -256,7 +256,7 @@ router.post('/set_up_board', (req, res) => {
   game = game_list[gid];
   let player = game.player(pid);
 
-  let test_data = game._set_up_board(board);
+  let test_data = await game._set_up_board(board);
   if (test_data.length > 0) {
     res.send(test_data);
     return;

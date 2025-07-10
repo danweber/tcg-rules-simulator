@@ -65,3 +65,9 @@ cs-multi-cancel
 suspend-to-reduce
 rules-link-2
 cs3-tamercount
+cs3-doublestatus
+cs3-tuckfromtamer
+cs3-doublecost
+cs3-doublecost-fail1
+cs3-doublecost-fail2
+cs3-test-devolve

@@ -1,6 +1,6 @@
 
 
-import { all_colors, CardLocation, word_to_color } from './card';
+import { all_colors, Card, CardLocation, word_to_color } from './card';
 import { StatusCondition, SubEffect } from './effect';
 import { SolidEffectLoop } from './effectloop';
 import { GameEvent } from './event';
@@ -36,19 +36,20 @@ export function get_mult(s: SubEffect): number {
     return s.n! * mult;
 }
 
-export function color_count(objects: (Instance|CardLocation)[]): number {
-     let count = all_colors.filter(c => 
-        objects.some( object => object.has_color(c) ));
+export function color_count(objects: (Instance | CardLocation)[]): number {
+    let count = all_colors.filter(c =>
+        objects.some(object => object.has_color(c)));
     return count.length;
 }
 
+
 // w n_count_tgt
 export function for_each_count_target(w: SubEffect, game: Game, ts: TargetSource, p: number): boolean {
-    if (2<1) return false;
+    if (2 < 1) return false;
     let c1: ForEachTarget | undefined = w.n_count_tgt;
     if (!c1) return false; // shouldn't have ever gotten in here in the first place
     let i;
-    logger.info(`looking foreach, target ${c1.toString()} ${c1.target.raw_text}`);
+    logger.info(`looking foreach, target ${c1.target.raw_text} ${c1.target.raw_text}`);
     if (false && c1?.target.raw_text.match(/color of your opponent's Monster (and|or)f Tamer/i)) {
         let op = game.get_n_player(3 - p);
         i = op.my_colors(false).length;
@@ -62,8 +63,11 @@ export function for_each_count_target(w: SubEffect, game: Game, ts: TargetSource
     // for now, we can tell by which is non-zero
     logger.info(`CHANGING n from ${w.n} to ${i} ?`);
     logger.info(`CHANGING choose from ${w.choose} to ${i} ?`);
+
+    // if it's a "give 3000 DP" then assume it's 3000*i
     if (w.game_event === GameEvent.GIVE_STATUS_CONDITION && w.status_condition
-         && w.status_condition[0] && w.status_condition[0].s) {
+        && w.status_condition[0] && w.status_condition[0].s
+        && w.status_condition[0].s.n) {
         logger.info(`CHANGING s.n from ${w.status_condition[0].s.n} by ${i} ?`);
         logger.info("BEFORE " + w.status_condition[0].s.n_mult);
         w.status_condition[0].s.n_mult = i;
@@ -72,8 +76,10 @@ export function for_each_count_target(w: SubEffect, game: Game, ts: TargetSource
         // don't alter N or choose if we have a DP... it could easily be the reverse
     }
     if (w.n) w.n = w.n * i;
+    logger.info(`w.choose ${w.choose} i ${i}`);
     if (w.choose) {
-        w.choose = w.choose * i;
+        console.warn("old style multiple mod");
+        w.choose.n = w.choose.n * i;
         if (i == 0) {
             // can't choose any, just fail the effect now
             //   sel.game.log(`No for-each, skipping`);
@@ -85,13 +91,16 @@ export function for_each_count_target(w: SubEffect, game: Game, ts: TargetSource
 
 // does multitarget match?
 
-function appendArrays(array1: any[],
+function appendArrays(array1: any | any[],
     array2: any[],
     array3?: any[],
     array4?: any[],
 ): any[] {
     let result: any[] = [];
     if (array1) {
+        if (!Array.isArray(array1)) {
+            array1 = [array1];
+        }
         result = result.concat(array1);
     }
     if (array2) {
@@ -109,7 +118,9 @@ function appendArrays(array1: any[],
 export function verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: TargetSource,
     sel?: SolidEffectLoop): boolean {
     let ret = _verify_special_evo(base, evo_cond, s, sel);
-    logger.info(" verify _special_evo " + ret + "  for " + base.get_name() + " " + evo_cond.raw_text); //  JSON.stringify(evo_cond) + " = " + ret);
+    logger.info(" verify _special_evo " + ret + "  for " + base.get_name() + " " + evo_cond.raw_text
+        //   + " " + JSON.stringify(evo_cond)); //  JSON.stringify(evo_cond) + " = " + ret);
+    );
     return ret;
 }
 function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: TargetSource,
@@ -120,7 +131,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
     if (Array.isArray(evo_cond)) {
         evo_cond = evo_cond[0]; // we shouldn't need this
     }
-    if (!evo_cond.raw_text) {
+    if (!("raw_text" in evo_cond)) {
         console.error("no raw text ", evo_cond);
         return false;
     }
@@ -130,11 +141,25 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
     if (evo_cond.not) def = true;
     let ret;
 
+    if (evo_cond.targetnumber) {
+        console.error("target nunber " + evo_cond.targetnumber);
+        let t = Game.get_target_number(sel, 999);
+        if (!t) return def;
+        if (t !== base) return def;
+    }
+
     // what cards am I under?
     // .under can refer to either links or sources
     if (evo_cond.under) {
+        let cl: CardLocation = base as CardLocation;
+        let index = cl.index;
         let i = base.get_instance();
         if (!i) return def;
+        // if we have 3 cards, length is 3, index of top is 2, make sure we're not top
+        if (i.pile.length - 1 === index && cl.mode !== "plug") {
+            // text for "under a Tamer" isn't "evolution card" which separately checks for "not top card"
+            return def;
+        }
         ret = verify_special_evo(i, evo_cond.under, s, sel);
         logger.debug("we are under " + evo_cond.under.raw_text + "  verified " + ret);
         if (!ret) return def;
@@ -149,8 +174,8 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
             return def;
         }
         let t = evo_cond.in_evocards;
-    //    console.log("COND");
-    //     console.dir(t, { depth: 4 }); 
+        //    console.log("COND");
+        //     console.dir(t, { depth: 4 }); 
 
         if (!t.targets) {
             console.error("no t targets????");
@@ -175,7 +200,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
                 let count = 0;
                 actual_sources.forEach(function (c) {
                     let m = verify_special_evo(c, t, s, sel);
-                //    console.error("any", any, " return ", m, " for " + c.get_name() + " " + t.raw_text);
+                    //    console.error("any", any, " return ", m, " for " + c.get_name() + " " + t.raw_text);
                     if (m) {
                         // if we just needed one match, this was it
                         count += 1;
@@ -184,7 +209,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
                     }
                 })
                 if (any && count > 0) {
-                    logger.info("any match, returning " + !def + " for " + evo_cond.raw_text);   
+                    logger.info("any match, returning " + !def + " for " + evo_cond.raw_text);
                     return !def;
                 }
 
@@ -203,12 +228,28 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
     }
 
 
+    // it handled in target::find_it()
+    if ("it" in evo_cond) {
+        if (!sel) {
+            console.error("no sel found in target source for evo_cond.it");
+            console.trace();
+            return def;
+        }
+        // we don't look up the last "it" and see if it matches; we keep looking 
+        // back through "it"s until we find one that matches
+        let last_thing = Game.get_last_thing_from_sel(sel, s!); // , evo_cond.and);
+        ret = last_thing.includes(base);
+        if (!ret) return def;
+    }
 
-    array = appendArrays(evo_cond.and, evo_cond.entity_match, evo_cond.with, evo_cond.from);
+    //   console.log(222, evo_cond.and);
+    array = appendArrays(
+        evo_cond.and,
+        evo_cond.entity_match,
+        evo_cond.with,
+        evo_cond.from);
 
-   // console.log(evo_cond.entity_match);
-   // console.dir(array, { depth: 44 });
-
+    // console.log(evo_cond.entity_match);
     // empty AND is false, this is incorrect from a boolean logic sense
     if (array.length > 0) {
         //  if (evo_cond.with) array = array.concat(evo_cond.with);
@@ -232,24 +273,31 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
 
 
     if (array = evo_cond.or) {
+        //    console.error("looking for OR " + JSON.stringify(array));
+        //  console.dir(evo_cond.or, { depth: 4 });
         let ret = array.some((x: any) => verify_special_evo(base, x, s, sel));
         return ret;
         //         if (!ret) return def;
 
     }
 
-    if ("it" in evo_cond) {
-        if (!sel) {
-            console.error("no sel found in target source for evo_cond.it");
-            console.trace();
-            return def;
+    if (evo_cond.other) {
+        let last_thing: any[] = [];
+        if (sel)
+            last_thing = Game.get_last_thing_from_sel(sel, s!);
+        // "other" means
+        // 1. if we have an "it", it means "not that"
+        // 2. if we don't have an "it", it means "not me"
+        // comapre to 2 clauses below
+        if (last_thing.length > 0) {
+            ret = !last_thing.includes(base);
+            if (!ret) return def;
+        } else {
+            ret = (TargetDesc.match_self(base, s!) === false)
+            if (!ret) return def;
         }
-        let last_thing = Game.get_last_thing_from_sel(sel, s!);
-        ret = last_thing.includes(base);
-
-//        ret = (TargetDesc.match_last_thing(base, s!, g));
-        if (!ret) return def;
     }
+
 
     if ("self" in evo_cond) {
         ret = (TargetDesc.match_self(base, s!) === evo_cond.self)
@@ -265,7 +313,9 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
     }
 
     if (evo_cond.entity) {
-        if (evo_cond.entity === "card") ret = (base.constructor.name == "CardLocation");
+        if (evo_cond.entity === "card") ret = (
+            base.constructor.name == "CardLocation" || base.location == Location.REVEAL);
+        // cards in the progress of being played are instances at this point
         if (evo_cond.entity === "entity") ret = (base.constructor.name == "Instance");
         if (!ret) return def;
     }
@@ -288,7 +338,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
 
     if (evo_cond.tamer && !base.is_tamer()) return def;
     if (evo_cond.colors) {
-
+        //   console.error(311, evo_cond.colors);
         // match any color
         //  if (Array.isArray(evo_cond.colors)) {
         ret = evo_cond.colors.some((c: string) => base.has_color(word_to_color(c)));
@@ -309,18 +359,41 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
         } else {
             ret = ("face_up" in base) && base.face_up() == false;
         }
-        if (!ret) return def;            
+        if (!ret) return def;
     }
     if (evo_cond.location) {
-        // only handles 1 location
+
+        let base_location = base.location;
         const loc: Location = string_to_location(evo_cond.location);
-        let ret = base.location & loc;
-        if (!ret) return def;
+        // if we're deliberately searching reveal, then yes, search reveal
+        if (loc & Location.REVEAL) {
+            console.log(371, base_location, loc);
+            let ret = base_location & loc;
+            if (!ret) return def;
+        } else {
+            // cards that are "revealed" are still in their original location... what code tests this?
+           if ("prior_location" in base) {
+                const c_loctn: CardLocation = base.prior_location as CardLocation;
+                const loctn: Location = c_loctn.location;
+                if (base.location === Location.REVEAL) {
+                    // if we're currently in REVEAL, check our prior location, 
+                    // so we can see if we were played or evo'd *from* some place
+                    base_location = loctn;
+                }
+            }
+            let ret = base_location & loc;
+            if (!ret) return def;
+        }
     }
     if (evo_cond.player) {
         // doesn't handle NOT
         let me = evo_cond.player === "self";
         let player_num = base.n_me_player;
+        if ("n_player" in base) { // in case we have Card not CardLocation
+            let c: Card = (base as unknown) as Card;
+            let num_player: number = c.n_player;
+            player_num = num_player;
+        }
         let target_num = s?.get_n_player();
         if (me) return player_num === target_num;
         return player_num !== target_num;
@@ -338,7 +411,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
             default:
                 console.error("unknown number type " + evo_cond.type);
         }
-        ret = num_compare(mine, strToCompare(evo_cond.compare), evo_cond.number, s, evo_cond.relative);
+        ret = num_compare(mine, strToCompare(evo_cond.compare), evo_cond.number, s, evo_cond.relative, sel!);
         if (!ret) return def;
     }
     //        if (evo_cond.name_is && !base.name_is(evo_cond.name_is)) return false;
@@ -356,20 +429,33 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
 
 }
 
-export function num_compare(a: number, b: number, c: number, s?: TargetSource, relative: string = "") {
+export function num_compare(a: number, b: number, c: number, s: TargetSource | undefined,
+    relative: string | undefined, sel: SolidEffectLoop): boolean {
     if (s && relative) {
         logger.info("checking relative " + relative);
         // we can only check the value of the targetsource for now
         const [source, value] = relative.split("-");
+        logger.info("source " + source + " value " + value);
+        let i: Instance | CardLocation | undefined = undefined;
         if (source == "targetsource") {
-            let i: Instance;
-            // Effects that exist on cards need to reference the instance they're part of
+            // Fow now effects that exist on cards need to reference the instance they're part of,
+            // but there will be a time when we want to compare cards to instances
             if (s.kind() === "card") {
                 let cl = s.get_card_location();
                 i = cl.get_instance()!;
             } else {
                 i = s.get_instance();
             }
+        }
+        if (sel && source == "it") {
+            const its = Game.get_last_thing_from_sel(sel, s);
+            if (its.length > 1) console.error("too many its"); // we want to see if we match ANY of the "it"s
+            if (its.length == 0) {
+                return false;
+            }
+            i = its[0];
+        }
+        if (i)
             // TODO: this should be a common library
             switch (value) {
                 case "dp": c = i.dp(); break;
@@ -378,10 +464,9 @@ export function num_compare(a: number, b: number, c: number, s?: TargetSource, r
                 case "colorcount": c = i.color_count(); break;
                 default: c = 0; console.error("NO VALUE " + value);
             }
-            logger.info("relative set c to " + c);
-        }
+        logger.info("relative set c to " + c);
     }
-    logger.debug(`a ${a} b ${COMPARE[b]} c ${c}`);
+    logger.info(`a ${a} b ${COMPARE[b]} c ${c} relative ${relative}`);
 
     if (a === undefined || a === null || c == undefined || c == null) return false;
     if (b == COMPARE.IS) return a == c;
@@ -407,16 +492,27 @@ export function strToCompare(str: string): COMPARE {
 }
 
 
+// finds either the first thing with the 'type' of needle, or with an attribute of needle
 export function find_in_tree(tree: any, needle: string): any {
+    // function find_in_tree(tree, needle) {
     if (!tree) return tree;
+    if (tree.type === needle) return tree;
+    if (needle in tree) return tree;
+
     if (Array.isArray(tree)) {
         for (let child of tree) {
             let ret = find_in_tree(child, needle);
             if (ret) return ret;
         }
-
     }
-    if (tree.type === needle) return tree;
+    // search subclauses, really trying to find Superlative
+    for (let kind of ["and", "with", "or"]) {
+        if (kind in tree) {
+            let ret = find_in_tree(tree[kind], needle);
+            if (ret) return ret;
+        }
+    }
+
     if (tree.children) {
         console.error("i don't think anything goes in here");
         for (let child of tree.children) {

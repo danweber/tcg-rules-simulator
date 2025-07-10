@@ -3,6 +3,17 @@
 
 
 import * as winston from "winston";
+import fs from "fs";
+
+const getLogFileName = () => {
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:.]/g, "-"); // Avoid special characters
+    return `my_app-${timestamp}.log`;
+};
+
+const logFileName = getLogFileName();
+const logFilePath = logFileName; 
+const symlinkPath = "my_app.log";
 
 const base_logger = winston.createLogger({
     level: "info", // Minimum log level
@@ -12,16 +23,22 @@ const base_logger = winston.createLogger({
     ),
     transports: [
         new winston.transports.File({
-            filename: "my_app.log",
+            filename: logFileName,
             options: { sync: true } as any,
         }),
-
-        //new winston.transports.Console({
-        //    format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
-        //}),
-
     ],
 });
+
+try {
+    if (fs.existsSync(symlinkPath) || fs.lstatSync(symlinkPath).isSymbolicLink()) {
+        fs.unlinkSync(symlinkPath); // Remove existing symlink
+    }
+    fs.symlinkSync(logFilePath, symlinkPath);
+    //console.log(`Symlink updated: ${symlinkPath} → ${logFileName}`);
+} catch (error) {
+    //console.error("Error creating symlink:", error );
+}
+
 
 export const logger = base_logger; // legacy, try to find all places this is used and get rid of them
 

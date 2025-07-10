@@ -109,9 +109,9 @@ export class TranslatorSingleton {
         // we still have a ＜KEYWORD＞! Hope it's Atomic...
         let m;
         // console.error(96, strings);
-        // console.error(97, regexps); 
+        // console.error(97, regexps);    
         let keyword;
-        if (m = line.match(/^\s*＜(.*)＞(.*)/)) {
+        if (m = line.match(/^\s*＜([^＞]*)＞(.*)/)) {
             keyword = '＜' + m[1] + '＞';
             logger.info(" keyword " + line);
             let word = "＜" + m[1] + "＞";
@@ -119,7 +119,7 @@ export class TranslatorSingleton {
             // I shouldn't ever match SolidKeywords, I just matched above
             for (let str of strings) {
                 if (str == (word)) {
-                    logger.warn("MATCHED s " + str);
+                    logger.warn("MATCHED s  " + str);
                     unseenword = false;
                 }
             }

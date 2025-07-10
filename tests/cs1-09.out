@@ -1,4 +1,4 @@
-FIELD1:Mon1,CS1-09,7500DP Mon2,CS1-09,7500DP
+FIELD1:Mon1,CS1-Solidsteel,7500DP Mon2,CS1-Solidsteel,7500DP
 FIELD2:Victim,DW1-Vanillamon,5000DP Attacker,DW1-Vanillamon,5000DP Green,DW1-Birder,3000DP
 GAME:P2 T2 MAIN 7
 ECHO: -- Attacks, Victim gets penalized
@@ -10,7 +10,7 @@ CAPTURE:Target Birder 5
 CAPTURE:Target VanillaMon 3
 CAPTURE:Target VanillaMon 4
 CAPTURE:Target Birder 5
-FIELD1:Mon1,CS1-09,7500DP Mon2,CS1-09,7500DP
+FIELD1:Mon1,CS1-Solidsteel,7500DP Mon2,CS1-Solidsteel,7500DP
 FIELD2:Victim,DW1-Vanillamon,4200DP Attacker,DW1-Vanillamon,REST,5000DP Green,DW1-Birder,3000DP
 GAME:P2 T2 MAIN 7
 CAPTURE:Solid Steel [All Turns] When a Monster becomes suspended, 1 of your opponent's Monster gets -400 DP …
@@ -21,7 +21,7 @@ CAPTURE:Target Birder 5
 CAPTURE:Target VanillaMon 3
 CAPTURE:Target VanillaMon 4
 CAPTURE:Target Birder 5
-FIELD1:Mon1,CS1-09,7500DP Mon2,CS1-09,7500DP
+FIELD1:Mon1,CS1-Solidsteel,7500DP Mon2,CS1-Solidsteel,7500DP
 FIELD2:Victim,DW1-Vanillamon,3400DP Attacker,DW1-Vanillamon,REST,5000DP Green,DW1-Birder,3000DP
 GAME:P2 T2 MAIN 3
 ECHO: -- attack again, another 800 DP lost
@@ -33,10 +33,10 @@ CAPTURE:Target Birder 5
 CAPTURE:Target VanillaMon 3
 CAPTURE:Target VanillaMon 4
 CAPTURE:Target Birder 5
-FIELD1:Mon1,CS1-09,REST,7500DP Mon2,CS1-09,7500DP
+FIELD1:Mon1,CS1-Solidsteel,REST,7500DP Mon2,CS1-Solidsteel,7500DP
 FIELD2:Victim,DW1-Vanillamon,2600DP Green,DW1-Birder,3000DP
 GAME:P1 T3 MAIN 3
 ECHO: -- pass turn, all DP losses go away
-FIELD1:Mon1,CS1-09,REST,7500DP Mon2,CS1-09,7500DP
+FIELD1:Mon1,CS1-Solidsteel,REST,7500DP Mon2,CS1-Solidsteel,7500DP
 FIELD2:Victim,DW1-Vanillamon,5000DP Green,DW1-Birder,3000DP
 GAME:P2 T4 HATCHING 3

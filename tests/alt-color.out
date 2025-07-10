@@ -1,8 +1,8 @@
 FIELD1:
 FIELD2:Xxx,DW1-Vanillamon
-HAND1:CS3-13
+HAND1:CS3-Tagyoureit
 HAND2:
-EGGS1:CS1-01
+EGGS1:CS1-Tinyshield
 EGGS2:
 EGGZONE1:
 EGGZONE2:
@@ -16,9 +16,9 @@ GAME:P1 T3 MAIN 3
 ECHO: now back in my hatching
 FIELD1:
 FIELD2:Xxx,DW1-Vanillamon
-HAND1:CS3-13 DW1-Vanillamon
+HAND1:CS3-Tagyoureit DW1-Vanillamon
 HAND2:DW1-Vanillamon
-EGGS1:CS1-01
+EGGS1:CS1-Tinyshield
 EGGS2:
 EGGZONE1:
 EGGZONE2:
@@ -33,11 +33,11 @@ GET-X-PLAYS: PLAY 1 Play VanillaMon
 GET-X-PLAYS: NEXT PASS TURN
 FIELD1:
 FIELD2:Xxx,DW1-Vanillamon
-HAND1:CS3-13 DW1-Vanillamon
+HAND1:CS3-Tagyoureit DW1-Vanillamon
 HAND2:DW1-Vanillamon
 EGGS1:
 EGGS2:
-EGGZONE1:Xxx,CS1-01
+EGGZONE1:Xxx,CS1-Tinyshield
 EGGZONE2:
 GAME:P1 T5 MAIN 3
 ECHO: -- use it --
@@ -47,6 +47,6 @@ HAND1:DW1-Vanillamon
 HAND2:DW1-Vanillamon
 EGGS1:
 EGGS2:
-EGGZONE1:Xxx,CS1-01
+EGGZONE1:Xxx,CS1-Tinyshield
 EGGZONE2:
 GAME:P1 T5 MAIN 0

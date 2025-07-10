@@ -253,7 +253,7 @@ export class CombatLoop {
                 label: 'blast evolve',
                 chosen_target: cl, // always a card
                 spec_source: inst, //?
-                chosen_target2: inst, // left, card or instance
+                chosen_target2: [inst], // left, card or instance
                 chosen_target3: tgt3, // right, instance or card
                 td: td,
                 n_player: 3 - this.game.turn_player, // speifically for counter
@@ -310,6 +310,7 @@ export class CombatLoop {
                 choices.push({
                     command: b.id.toString(),
                     text: `Defend with ${b.name()} ${b.id}`,
+                    attack_source: b.id,
                     ver: uuidv4()
                 });
             }
@@ -341,6 +342,7 @@ export class CombatLoop {
 
             // Is there any chance we became suspended since checking?
 
+            // TODO: verify that we really did suspend. DSEL can't handle that, but DSEL is bad anyway
             let _ = new TargetDesc("dummy");
             let block_suspend: SubEffect = {
                 cause: EventCause.GAME_FLOW,

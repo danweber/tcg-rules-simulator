@@ -11,11 +11,51 @@ let targetdebug = 0;
 // 1 monster or 1 tamer with [Tai] in its name
 // your opponent's blue monster
 // 1 of your suspended tamers
-type ValueGetter = (obj: Instance) => number;
+type ValueGetter = (obj: Instance| CardLocation) => number;
+
+
+
+// Map of each item to the list of colors it can take
+
+type ColorName = string; // color OR name OR .... ?
+// Map to track which color is currently assigned to which item
+const match: Map<ColorName, Item> = new Map();
+function canAssign(
+    item: Item,
+    visited: Set<ColorName>,
+    itemColorMap: ItemColorMap,
+): boolean {
+    for (const color of itemColorMap.get(item) || []) {
+        if (visited.has(color)) continue;
+        visited.add(color);
+
+        // If this color is not taken, or we can reassign the item currently using it
+        if (!match.has(color) || canAssign(match.get(color)!, visited, itemColorMap)) {
+            match.set(color, item);
+            return true;
+        }
+    }
+    return false;
+}
+
+function getMaxDistinctAssignments(itemColorMap: ItemColorMap): Map<Item, ColorName> {
+    match.clear();
+
+    for (const item of itemColorMap.keys()) {
+        canAssign(item, new Set(), itemColorMap);
+    }
+
+    // Reverse mapping to return item → color
+    const result: Map<Item, ColorName> = new Map();
+    for (const [color, item] of match.entries()) {
+        result.set(item, color);
+    }
+    return result;
+}
 
 
 import { createLogger } from "./logger";
-import { color_count, COMPARE, find_in_tree, num_compare, verify_special_evo } from './util'; // Adjust the path as necessary
+import { color_count, COMPARE, find_in_tree, for_each_count_target, num_compare, verify_special_evo } from './util'; // Adjust the path as necessary
 const logger = createLogger('target');
 
 export let ALL_OF = 999;
@@ -335,28 +375,103 @@ function split_names(name: string): string[] {
     return name.split("] or [");
 }
 
+export function ForEachTargetCreator(foreach: string): ForEachTarget {
+
+    let n;
+    if (n = foreach.match(/color (?:of|in) (.*)/)) {
+        return new ForEachTarget("bob", new TargetDesc(n[1]), "color");
+    } else if (n = foreach.match(/its evolution cards/)) {
+        return new ForEachTarget("bob", new MultiTargetDesc("this Monster's evolution cards"));
+    } else if (n = foreach.match(/(\d+)?.?color.? (.*) ha(ve|s)/)) {
+        let count = parseInt(n[1]) || 1;
+        return new ForEachTarget("bob", new TargetDesc(n[2]), "color", count);
+    } else if (n = foreach.match(/(Tamer you have in play) with a (different color)/)) {
+        console.error(387, n);
+        return new ForEachTarget("different", new TargetDesc("your Tamer"), "color");
+    } else if (n = foreach.match(/(\d+) (.*)( in play)?/)) {
+        let count = parseInt(n[1]);
+        return new ForEachTarget("bob", new MultiTargetDesc("a " + n[2]), "instance", count);
+    } else {
+        return new ForEachTarget("bob", new TargetDesc(foreach));
+    }
+
+
+}
+
 export class ForEachTarget {
     target: TargetDesc; // could be MultiTargetDesc
 
     type: "instance" | "color" = "instance";
+    different: string; 
     ratio: number = 1;
 
     constructor(bob: string, target: TargetDesc, type?: "instance" | "color", ratio?: number) {
         this.target = target;
+        this.different = bob;
         if (type) this.type = type;
         if (ratio) this.ratio = ratio;
     }
     get_count(game: Game, ts: TargetSource): number {
         // STACK_ADD seems bad since it includes cards in hand :<
-        let i = game.find_target(this.target, GameEvent.DELETE, ts, false, Location.SECURITY);
-        logger.debug(`for ${i.map(i => i.get_name())} objects count is ${i.length}`);
-
+        let kind = this.target.raw_text.includes("card") ? GameEvent.PLAY : GameEvent.DELETE;
+        if (this.target.raw_text.includes("evolution card")) kind = GameEvent.TARGETED_CARD_MOVE;
+        let i = game.find_target(this.target, kind, ts, false, Location.SECURITY);
+        logger.info(`for each ${i.map(i => i.get_name())} objects count is ${i.length} ratio is ${this.ratio}`);
+        
         if (this.type === "instance") return Math.floor(i.length / this.ratio);
+
+        if (this.different === "different") {
+            // collect all elements, and a mapping of their XX
+            const data: ItemColorMap = new Map();
+            for (let obj of i) {
+                let name: string = obj.get_name() + " " + obj.id;
+                let array: string[] = obj.colors().map(x => Color[x]);
+                data.set(name, array);
+            }
+            
+            console.log("Input:");
+            for (const [item, color] of data.entries()) {
+                console.log(`${item} → ${color}`);
+            }
+
+            const result = getMaxDistinctAssignments(data);
+            console.log("Distinct assignments:");
+            for (const [item, color] of result.entries()) {
+                console.log(`${item} → ${color}`);
+            }
+            return result.size;
+        }
 
         let n_colors = color_count(i);
         logger.info(`for ${i.map(i => i.get_name())} objects color count is ${n_colors}`);
         return Math.floor(n_colors / this.ratio);
     }
+}
+
+export class DynamicNumber {
+    n: number = 0;
+    for_each?: string = "";
+    upto: boolean = false;
+    fet: ForEachTarget;
+
+    value(game?: Game, source?: TargetSource): number {
+        if (this.for_each) {
+
+            if (game && source) {
+                let multiplier = this.fet.get_count(game, source);
+                return this.n * multiplier;
+            }
+        }
+
+        return this.n
+    }
+
+    constructor(n: number, for_each?: string) {
+        this.fet = ForEachTargetCreator(for_each || "");
+        this.n = n;
+        this.for_each = for_each;
+    }
+
 }
 
 // For choosing two+ different things (1 [x] and 1 [y])
@@ -365,12 +480,31 @@ export class ForEachTarget {
 export class MultiTargetDesc {
     raw_text: string;
     targets: TargetDesc[] = [];
-    choose: number = 0;
+    choose: DynamicNumber;
     upto: boolean = false;
 
-    count(): number { return this.choose ? this.choose : this.targets.length; }
+    for_each: string = "";
+    //count(): number { return this.choose ? this.choose : this.targets.length; }
+    count(): DynamicNumber { return this.choose };
 
     mod_max(by: number): number {
+
+        if (this.parse_matches) {
+            // find first comparison, mod its number.
+            // TODO mod its raw_text: the problem is we need to mod the raw_text of its parents, too
+            const x = find_in_tree(this.parse_matches, "compare");
+            if (!("number" in x)) {
+                console.error("how could we not have this?");
+            } else {
+                let n = Number(x.number);
+                n += by;
+                x.number = n; // do we need to make back into a string?
+                return n;
+            }
+            return -1;
+        }
+
+
         for (let t of this.targets) {
             let r = t.mod_max(by);
             if (r != -1) return r;
@@ -394,17 +528,44 @@ export class MultiTargetDesc {
             this.targets.map(t => t.toString()).join("+");
     }
 
-    sort(items: Instance[]): Instance[] { logger.error("unimplemented2"); return items; }
+    sort<T extends Instance | CardLocation>(items: T[]) : T[] {
+        logger.info("SORTING MULTITARGET " + items.length + " " + items[0]?.constructor.name);
+        let superlative = find_in_tree(this.parse_matches, "SuperlativeClause");
+        logger.info("superlative is " + !!superlative);
+        if (!superlative) return items;
 
-    constructor(text: string) {
+        let kind;
+        if (superlative.count) { // is this for 'top 3 cards"?
+            if (superlative.superlative !== "top")
+                items.reverse();
+            // assume we got cards top to bottom
+            if (items.length > this.choose.value()) {
+                 items.length = this.choose.value();;   
+            }
+            return items;
+        }
+
+
+        const most = (superlative.superlative === "most") ? COMPARE.IS_HIGHEST : COMPARE.IS_LOWEST;
+        switch (superlative.field) {
+            case "level": kind = StatusTestWord.LEVEL; break;
+            case "dp": kind = StatusTestWord.DP; break;
+            default: /* "play cost":*/ kind = StatusTestWord.PLAY_COST; break;
+        }
+        let ret = TargetDesc.static_sort(most, kind, items);
+        return ret;
+
+    }
+
+    constructor(text: string, mod?: string) {
         this.raw_text = text;
 
         let m;
         logger.info(`MULTITARGET CTOR:<${text}>`);
         let from = "";
-        text = text.trim();
+        text = text ? text.trim() : "";
         if (!text.includes("1 your")) {// skip this for stack summons for now
-            let grammared = parseStringEvoCond(text.trim(), "MultiTarget");
+            let grammared = parseStringEvoCond(text, "MultiTarget");
 
             //console.log(409, " xxx " + !!grammared  +  " " + text); console.dir(grammared, {depth: null} );
             if (grammared) {
@@ -422,8 +583,10 @@ export class MultiTargetDesc {
                 if (match) {
                     all.forEach((t: any) => t.from = grammared.from);
                     this.parse_matches = all;
-                    this.choose = grammared.count;
-
+                    //this.choose = grammared.count;
+                    let c = grammared.count;
+                    if (!c) c = this.targets.length;
+                    this.choose = new DynamicNumber(c, grammared.for_each);
                     this.upto = grammared.upto;
                     return;
                 }
@@ -481,22 +644,42 @@ export class MultiTargetDesc {
                 }
                 this.targets.push(...tgts);
                 this.targets.push(left, right);
+                this.choose = new DynamicNumber(0 || this.targets.length, "");
                 return;
             }
             // didn't match, toss results and continue
         }
         if (m = text.match(/(\d+)(?: of)\s*(.*)/)) {
             text = m[2];
-            this.choose = parseInt(m[1]);
+            this.choose = new DynamicNumber(parseInt(m[1]), "");
+            console.error(557, this.choose);
+
         }
         let only = new TargetDesc(text);
         this.targets.push(only);
+        this.choose = new DynamicNumber(0 || this.targets.length, "");
     }
     UNUSED_find_merged() {
 
     }
+
+    // if we have "it" from the grammar, find it
+    find_it(sel: SolidEffectLoop | false, s: TargetSource): (CardLocation | Instance) [] {
+        if (!this.parse_matches) return [];
+      //  console.error(595, this.parse_matches);
+        console.dir(this.parse_matches, { depth: null });
+        let x = find_in_tree(this.parse_matches, "it");
+        console.error(596, x);
+        if (!x) return [];
+
+        return Game.get_last_thing_from_sel(sel, s, x);
+
+
+        return [];
+
+    }
     matches(t: Instance | CardLocation, s: TargetSource, g: Game,
-         previous?: TargetSource, sel?: SolidEffectLoop | false): boolean {
+        previous?: TargetSource, sel?: SolidEffectLoop | false): boolean {
         // matches if any target matches; when "pick 1 X and 1 Y"  we can show
         // all things that match either. (Later the user picks a pair.)
 
@@ -571,6 +754,7 @@ export class TargetDesc {
 
     //	target2?: (SubTargetDesc | TargetDesc);
     mod_max(by: number): number {
+        console.error(603, "mod " + by);
         for (let t of this.targets) {
             let r = t.mod_max(by);
             if (r != -1) return r;
@@ -662,22 +846,30 @@ export class TargetDesc {
     // not sure if "sort" is the best word
     // other things work one item at a time, this works on them all at once
 
-
-    sort(items: Instance[]): Instance[] {
+    sort<T extends Instance | CardLocation>(items: T[]) : T[] {
         // I'm just going to find any subtargest and sort by that
         // with the lowest level
         // let fn: ValueGetter = x => x.get_level();
         if (!this.most) return items;
+        if (!this.most_kind) return items;
         logger.info(`SORT ${this.most}, ${this.most_kind}`);
+        return TargetDesc.static_sort(this.most, this.most_kind, items);
+    }
+
+    static static_sort<T extends Instance | CardLocation>(most: COMPARE, most_kind: StatusTestWord, items: T[]): T[] {
         let fn: ValueGetter = (x => 0);
-        switch (this.most_kind) {
+        switch (most_kind) {
             case StatusTestWord.LEVEL: fn = (x => x.get_level()); break;
             case StatusTestWord.PLAY_COST: fn = (x => x.get_playcost()!); break;
             case StatusTestWord.USE_COST: fn = (x => x.get_usecost()!); break;
             case StatusTestWord.DP: fn = (x => x.dp()); break;
         }
+
+        // filter out, entirely, anything with an undefined value 
+        items = items.filter( x => Number.isInteger(fn(x)) );
+
         let min: number;
-        if (this.most == COMPARE.IS_HIGHEST) {
+        if (most == COMPARE.IS_HIGHEST) {
             min = Math.max(...items.map(fn));
         } else {
             min = Math.min(...items.map(fn));
@@ -760,6 +952,10 @@ export class TargetDesc {
 
         return (t.id == s.id())
     }
+    // only for MTD
+    find_it(sel: SolidEffectLoop | false, s: TargetSource): (CardLocation | Instance) [] {
+        return [];
+    }
 
     matches(t: Instance | CardLocation, s: TargetSource, g: Game,
         previous?: TargetSource, sel?: SolidEffectLoop | false): boolean {
@@ -813,8 +1009,8 @@ export class TargetDesc {
                 return false;
             }
             let last_thing = last[0];
-            logger.info(`tid is ${t.id} and last_thing is ${last_thing.id}`);
-
+            logger.info(`tid is ${t?.id} and last_thing is ${last_thing?.id}`);
+            if (!t || !last_thing) return false;
             // maky not work for CardLocation
             return (t.id == last_thing.id);
         }
@@ -1084,8 +1280,8 @@ export class TargetDesc {
                 if (w_clause) {
                     //   if (w_clause.clause1 && w_clause.clause1[0])
                     //       console.log(928, newRecoverText(w_clause.clause1[0].origdata));
-                 //   console.log(1087, "WITH", m[1]);
-                   // console.dir( w_clause, { depth: null });
+                    //   console.log(1087, "WITH", m[1]);
+                    // console.dir( w_clause, { depth: null });
 
                     // move more and more into this
                     this.with = w_clause;
@@ -2451,7 +2647,7 @@ export class SubTargetDesc {
         let b = this.compare;
         let c = this.n;
         let relative = this.relative;
-        return num_compare(a, b, c, s, relative)
+        return num_compare(a, b, c, s, relative, null!)
     }
 
 }

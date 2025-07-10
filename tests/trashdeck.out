@@ -1,8 +1,8 @@
 FIELD1:Attacker1,DW1-Vanillamon,DW1-Trasher,5000DP Attacker2,DW1-Vanillamon,DW1-Trasher,5000DP Attacker3,DW1-Vanillamon,DW1-Trasher,5000DP Noticer,DW1-Birder,3000DP
 FIELD2:
-TRASH1:CS1-06
+TRASH1:CS1-Sneakycat
 TRASH2:
-DECK1:CS1-02 CS1-03 CS1-04 CS1-05
+DECK1:CS1-Papershield CS1-Garbagecanlid CS1-Stoneshield CS1-Iceshield
 DECK2:
 GAME:P1 T3 MAIN 3
 ECHO: -- attack, cards go to trash, noticer gives +100 DP to something
@@ -12,9 +12,9 @@ CAPTURE:Target VanillaMon 3
 CAPTURE:Target Birder 4
 FIELD1:Attacker1,DW1-Vanillamon,DW1-Trasher,REST,5100DP Attacker2,DW1-Vanillamon,DW1-Trasher,5000DP Attacker3,DW1-Vanillamon,DW1-Trasher,5000DP Noticer,DW1-Birder,3000DP
 FIELD2:
-TRASH1:CS1-06 CS1-05 CS1-04 CS1-03
-TRASH2:CS2-02
-DECK1:CS1-02
+TRASH1:CS1-Sneakycat CS1-Iceshield CS1-Stoneshield CS1-Garbagecanlid
+TRASH2:CS2-Sharpblade
+DECK1:CS1-Papershield
 DECK2:
 GAME:P1 T3 MAIN 3
 ECHO: -- attack, cards go to trash, just 1 because we're empty, noticer gives +100 DP to something
@@ -24,16 +24,16 @@ CAPTURE:Target VanillaMon 3
 CAPTURE:Target Birder 4
 FIELD1:Attacker1,DW1-Vanillamon,DW1-Trasher,REST,5200DP Attacker2,DW1-Vanillamon,DW1-Trasher,REST,5000DP Attacker3,DW1-Vanillamon,DW1-Trasher,5000DP Noticer,DW1-Birder,3000DP
 FIELD2:
-TRASH1:CS1-06 CS1-05 CS1-04 CS1-03 CS1-02
-TRASH2:CS2-02 CS2-02
+TRASH1:CS1-Sneakycat CS1-Iceshield CS1-Stoneshield CS1-Garbagecanlid CS1-Papershield
+TRASH2:CS2-Sharpblade CS2-Sharpblade
 DECK1:
 DECK2:
 GAME:P1 T3 MAIN 3
 ECHO: -- attack, nothing goes to trash, noticer doesn't notice anything
 FIELD1:Attacker1,DW1-Vanillamon,DW1-Trasher,REST,5200DP Attacker2,DW1-Vanillamon,DW1-Trasher,REST,5000DP Attacker3,DW1-Vanillamon,DW1-Trasher,REST,5000DP Noticer,DW1-Birder,3000DP
 FIELD2:
-TRASH1:CS1-06 CS1-05 CS1-04 CS1-03 CS1-02
-TRASH2:CS2-02 CS2-02 CS2-02
+TRASH1:CS1-Sneakycat CS1-Iceshield CS1-Stoneshield CS1-Garbagecanlid CS1-Papershield
+TRASH2:CS2-Sharpblade CS2-Sharpblade CS2-Sharpblade
 DECK1:
 DECK2:
 GAME:P1 T3 MAIN 3

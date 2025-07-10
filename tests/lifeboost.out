@@ -1,15 +1,15 @@
-FIELD1:Tamer,CS1-17,NaNDP Mon,CS1-02,500DP
-FIELD2:Enemy,CS2-02,2000DP
-SECURITY1:CS1-02 CS1-05 CS1-05 DW1-Lifeboost CS1-06 CS1-06
+FIELD1:Tamer,CS1-Gideontheguardian,NaNDP Mon,CS1-Papershield,500DP
+FIELD2:Enemy,CS2-Sharpblade,2000DP
+SECURITY1:CS1-Papershield CS1-Iceshield CS1-Iceshield DW1-Lifeboost CS1-Sneakycat CS1-Sneakycat
 SECURITY2:
-EGGZONE1:Here,CS1-02,CS1-01,500DP
+EGGZONE1:Here,CS1-Papershield,CS1-Tinyshield,500DP
 EGGZONE2:
 GAME:P1 T3 MAIN 9
 ECHO: -- activate the card
-FIELD1:Tamer,CS1-17,NaNDP Mon,CS1-02,810DP
-FIELD2:Enemy,CS2-02,2000DP
-SECURITY1:DW1-Lifeboost,FACEUP CS1-02 CS1-05 CS1-05 DW1-Lifeboost CS1-06 CS1-06
+FIELD1:Tamer,CS1-Gideontheguardian,NaNDP Mon,CS1-Papershield,810DP
+FIELD2:Enemy,CS2-Sharpblade,2000DP
+SECURITY1:DW1-Lifeboost,FACEUP CS1-Papershield CS1-Iceshield CS1-Iceshield DW1-Lifeboost CS1-Sneakycat CS1-Sneakycat
 SECURITY2:
-EGGZONE1:Here,CS1-02,CS1-01,500DP
+EGGZONE1:Here,CS1-Papershield,CS1-Tinyshield,500DP
 EGGZONE2:
 GAME:P1 T3 MAIN 5

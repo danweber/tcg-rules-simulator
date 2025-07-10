@@ -1,11 +1,11 @@
 FIELD1:
-FIELD2:Attack1,DW1-Vanillamon Attack2,DW1-Vanillamon Blue,CS2-02
+FIELD2:Attack1,DW1-Vanillamon Attack2,DW1-Vanillamon Blue,CS2-Sharpblade
 GAME:P2 T2 MAIN 7
 ECHO: -- Attack, Phoenix plays out
-FIELD1:I4,CS1-08
-FIELD2:Attack1,DW1-Vanillamon,REST Attack2,DW1-Vanillamon Blue,CS2-02
+FIELD1:I4,CS1-Phoenixdefender
+FIELD2:Attack1,DW1-Vanillamon,REST Attack2,DW1-Vanillamon Blue,CS2-Sharpblade
 GAME:P2 T2 MAIN 7
 ECHO: -- delete by option, it rerises
-FIELD1:I5,CS1-08
-FIELD2:Attack1,DW1-Vanillamon,REST Attack2,DW1-Vanillamon Blue,CS2-02
+FIELD1:I5,CS1-Phoenixdefender
+FIELD2:Attack1,DW1-Vanillamon,REST Attack2,DW1-Vanillamon Blue,CS2-Sharpblade
 GAME:P2 T2 MAIN 1

@@ -1,0 +1,42 @@
+VERSION:2
+
+When one of your Monster would evolve into a level 5 green Monster card, by suspending this placing 1 card from under one of your Tamers as the bottom evolution card of that Monster, reduce the evolution cost by 1
+
+# [Your Turn] When one of your green Monster would be played, by placing 1 card from under one of your Tamers as the bottom digivolution card of that Monster, reduce the play cost by 1.
+
+FIELD1:FalseHit,CS3-Sorcery Tamer,CS3-Birdwatcher,CS3-02,CS3-03 Evo1,CS3-06 Evo2,CS3-06
+
+HAND1:CS3-11 CS3-11
+GAME:P1 T3 MAIN 10
+DUMP
+
+ECHO: ------ evo,  should interrupt
+CMD:EVO CS3-11 Evo1
+EFFECT-TREE
+GET-CHOICES
+DUMP
+
+ECHO: -- don't pay, skips next question and evo for 4
+STEP:TO:1
+EFFECT-TREE
+GET-CHOICES
+DUMP
+
+
+ECHO: ------ evo,  should interrupt
+CMD:EVO CS3-11 Evo2
+EFFECT-TREE
+GET-CHOICES
+DUMP
+
+ECHO: -- choose to pay, the tamer suspends and then we're asked what to tuck
+STEP:TO:0
+EFFECT-TREE
+GET-CHOICES
+DUMP
+
+ECHO: -- choose the featherlink, it's tucked and we evo for 3 instead of 4
+STEP:TO:0
+EFFECT-TREE
+GET-CHOICES
+DUMP

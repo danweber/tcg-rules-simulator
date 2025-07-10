@@ -1,11 +1,11 @@
-FIELD1:Defender,CS1-11,REST,7500DP
-FIELD2:Same,CS1-11,7500DP Bigger,CS2-10,12000DP
+FIELD1:Defender,CS1-Adamantiumshield,REST,7500DP
+FIELD2:Same,CS1-Adamantiumshield,7500DP Bigger,CS2-Animesword,12000DP
 GAME:P2 T2 MAIN 3
 ECHO: -- Attack with something bigger, defender lives
-FIELD1:Defender,CS1-11,REST,7500DP
-FIELD2:Same,CS1-11,7500DP Bigger,CS2-10,REST,12000DP
+FIELD1:Defender,CS1-Adamantiumshield,REST,7500DP
+FIELD2:Same,CS1-Adamantiumshield,7500DP Bigger,CS2-Animesword,REST,12000DP
 GAME:P2 T2 MAIN 3
 ECHO: -- Versus each other, only defender lives as it's an "oppenent's turn" effect
-FIELD1:Defender,CS1-11,REST,7500DP
-FIELD2:Bigger,CS2-10,REST,12000DP
+FIELD1:Defender,CS1-Adamantiumshield,REST,7500DP
+FIELD2:Bigger,CS2-Animesword,REST,12000DP
 GAME:P2 T2 MAIN 3

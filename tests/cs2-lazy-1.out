@@ -1,11 +1,11 @@
-FIELD1:Victim,CS1-02
+FIELD1:Victim,CS1-Papershield
 FIELD2:
 GAME:P2 T1 MAIN 9
 ECHO: -- play, get suspended immediately
-FIELD1:Victim,CS1-02
-FIELD2:Lazy,CS2-06,REST
+FIELD1:Victim,CS1-Papershield
+FIELD2:Lazy,CS2-Lazysword,REST
 GAME:P2 T1 MAIN 4
 ECHO: -- try to attack, fail
-FIELD1:Victim,CS1-02
-FIELD2:Lazy,CS2-06,REST
+FIELD1:Victim,CS1-Papershield
+FIELD2:Lazy,CS2-Lazysword,REST
 GAME:P2 T1 MAIN 4

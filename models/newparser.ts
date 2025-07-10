@@ -61,7 +61,7 @@ String.prototype.after = function (s: string): string {
 
 import { AtomicEffect, InterruptCondition, Solid_is_triggered, StatusCondition, SubEffect, ic_to_plain_text, ic_to_string, ica_to_plain_text, ica_to_string, status_cond_to_string } from "./effect";
 import { EventCause, GameEvent, strToEvent } from "./event";
-import { ALL_OF, Conjunction, ForEachTarget, GameTest, GameTestType, MultiTargetDesc, SingleGameTest, SpecialCard, SubTargetDesc, TargetDesc, TargetSource } from "./target";
+import { ALL_OF, Conjunction, DynamicNumber, ForEachTarget, ForEachTargetCreator, GameTest, GameTestType, MultiTargetDesc, SingleGameTest, SpecialCard, SubTargetDesc, TargetDesc, TargetSource } from "./target";
 import { Card, EvolveCondition, KeywordArray, parse_color } from "./card";
 import { Phase, PhaseTrigger } from "./phase";
 import { Location } from "./location";
@@ -292,7 +292,7 @@ export class AtomicEffect2 {
     subs: SubEffect[];
     events: SubEffect[];
 
-    is_cost?: boolean;
+    is_cost: number = 0;
     test_condition?: GameTest;
     flags?: any; // catch-all 
     per_unit?: boolean;
@@ -780,12 +780,13 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
                     let trash_top: SubEffect = {
                         game_event: GameEvent.DEVOLVE_FORCE, n: 1,
                         label: "lose top card", td: self,
-                        cause: EventCause.EFFECT
+                        cause: EventCause.EFFECT,
+                        choose: new DynamicNumber(1),
                     }; // trash_top_card_of_this_monster:
                     cost.optional = true;
                     cost.events = [trash_top];
                     cost.weirdo = trash_top;
-                    cost.is_cost = true;
+                    cost.is_cost = 1;
                     let canceller: SubEffect = {
                         game_event: GameEvent.CANCEL,
                         label: "cancel deletion",
@@ -879,6 +880,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     if (!Solid_is_triggered(solid) && !solid.keywords.includes("[Security]")) {
         //// RESPONDS TO! all "WHEN" stuff should be here
         if (m = line.match(/^When (.*?),(.*)/)) {
+            logger.info("line is " + line);
             // "when ... this card ...," is probably an interrupt on the play/use/evo of this card
             if (m[1].includes("this card")) {
                 logger.warn("play interrupt " + m[1]);
@@ -990,6 +992,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
         }
     }
 
+    // "Monster/" indicates token
     if (line.includes("Delay")) {
         let grammared = parseStringEvoCond(line, "EffSentence");
         if (grammared) {
@@ -1002,7 +1005,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
                 const clause2 = m[2].trim();
                 let [a1, l1] = parse_atomic(clause1, label, solid, card);
                 let [a2, l2] = parse_atomic("Activate the effect below:" + clause2, label, solid, card);
-                a1.is_cost = true;
+                a1.is_cost = 1;
                 a1.optional = true;
                 atomics.push(a1, a2);
                 solid.effects.push(a1, a2);
@@ -1017,6 +1020,26 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
         }
     }
 
+    // try an early parse. TODO: move as much in here as we can, for now limit to tokens
+
+        if (line.includes("Monster/")) {
+        console.error(997, line);
+        let grammared = parseStringEvoCond(line, "EffSentence");
+        if (grammared) {
+            console.error(1000, grammared);
+            logger.info("super new split: FULL PARSE " + line);
+
+
+                let [a1, l1] = parse_atomic(line, label, solid, card, {}, grammared);
+                atomics.push(a1);
+                solid.effects.push(a1);
+                logger.info("SDa1 " + a1.events.map(x => GameEvent[x.game_event]).join(","));
+                // by tradition, this is just a single thing
+                line = "";
+            }
+        }
+
+
     const sentences: string[] =
         //line.startsWith("Reveal") ? [line] : 
         splitParagraph(line);
@@ -1026,6 +1049,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     for (let n = 0; n < sentences.length - 1; n++) {
         let next_sentence = sentences[n + 1];
         let merge = false;
+        if (sentences[n].includes("Delay")) merge = true;
         // Play a N cost. For each X, increase N by 2.
         if (next_sentence.includes("increase")) merge = true;
 
@@ -1071,14 +1095,13 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
             // break up two atomics in a sentence. (not accounting for IF)
 
             // nearly obsolete
-            if (m = firstsentence.match("(＜Delay＞).(・.*)")) {
+            if (m = /*first*/sentence.match("(＜Delay＞).(・.*)")) {
                 logger.info("new split: Delay＞ do X.");
-
                 const clause1 = (m[1]).trim();
                 const clause2 = m[2].trim();
                 let [a1, l1] = parse_atomic(clause1, label, solid, card);
                 let [a2, l2] = parse_atomic("Activate the effect below:" + clause2, label, solid, card);
-                a1.is_cost = true;
+                a1.is_cost = 1;
                 a1.optional = true;
                 atomics.push(a1, a2);
                 solid.effects.push(a1, a2);
@@ -1109,22 +1132,49 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
             if (m = firstsentence.match(/(.*)(by .*?), (.*)/i)) {
                 if (m[1].length < 2 || m[1].match(/,\s+$/)) {
                     if (m = sentence.match(/(.*by .*?), (.*)/i)) {
-                        const clause1 = (m[1]).trim();
-                        const clause2 = m[2].trim();
-                        logger.info("new split: cost. By X, Y.");
-                        let [a1, l1] = parse_atomic(clause1, label, solid, card);
-                        let [a2, l2] = parse_atomic(clause2, label, solid, card);
-                        a1.is_cost = true;
-                        a1.optional = true;
 
-                        atomics.push(a1, a2);
-                        solid.effects.push(a1, a2);
-                        logger.info("a1 " + a1.events.map(x => GameEvent[x.game_event]).join(","));
+                        const clause1 = (m[1]).trim();
+                        // this isn't a complete sentence so EffSentence shouldn't hit it, but 
+                        // we handle treating "deleting 1 monster" as a proper English.
+                        let grammared = parseStringEvoCond(clause1, "EffSentence");
+                        if (grammared) {
+                            // MOSTLY DUPED from other "grammared.effect.forEach"
+                            grammared.effect.forEach((fx: any, index: number) => {
+                                let temp_grammar = { ...grammared };
+                                temp_grammar.effect = [fx];
+                                let pmay = index > 0 ? { previous_may: true } : {};
+                                let [a1, l1] = parse_atomic(fx.raw_text, label, solid, card, pmay, temp_grammar);
+                                // assume they must all point to the same target1
+                                if (false && index > 0) {
+                                    a1.weirdo.td = new MultiTargetDesc("it");
+                                    a1.events[0].td = new MultiTargetDesc("it");
+                                }
+                                a1.is_cost = grammared.effect.length - index;
+                                a1.optional = true;
+                                atomics.push(a1);
+                                solid.effects.push(a1);
+                            })
+
+                        } else {
+                            let [a1, l1] = parse_atomic(clause1, label, solid, card);
+                            logger.info("a1 " + a1.events.map(x => GameEvent[x.game_event]).join(","));
+                            a1.is_cost = 1;
+                            a1.optional = true;
+                            atomics.push(a1);
+                            solid.effects.push(a1);
+                        }
+
+                        const clause2 = m[2].trim();
+                        let [a2, l2] = parse_atomic(clause2, label, solid, card);
+                        logger.info("new split: cost. By X, Y.");
                         logger.info("a2 " + a2.events.map(x => GameEvent[x.game_event]).join(","));
                         if (a2.events[0].game_event == GameEvent.CANCEL) {
                             logger.info("is a canceller");
                             solid.cancels = true;
                         }
+                        atomics.push(a2);
+                        solid.effects.push(a2);
+
                         continue;
                     }
                 }
@@ -1135,7 +1185,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
                 logger.info("new split: old style cost?");
 
                 let [a1, l1] = parse_atomic(m[1], label, solid, card);
-                a1.is_cost = true;
+                a1.is_cost = 1;
                 a1.optional = true;
                 let [a2, l2] = parse_atomic(m[2], label, solid, card);
                 if (a2.events[0].game_event == GameEvent.CANCEL)
@@ -1155,7 +1205,49 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
                 }
             }
 
-            // only 1 thing uses this
+            // before the below suckage, give the grammar a chance
+            //console.error(1162, sentence);
+            let grammared = parseStringEvoCond(sentence, "EffSentence");
+            if (grammared) {
+                logger.info("new split: EffSentence match, atomic count is " + grammared.effect.length);
+                // not everything that gets parsed here is necessarily going to have a vald tree
+                // we end up reparsing the sentence needlessly
+                // if (grammared.effect.length > 1) console.error(1168, grammared);
+                // DUPED to other grammared.effect.forEach
+                grammared.effect.forEach((fx: any, index: number) => {
+                    //console.error(1198, "index", index);
+                    let temp_grammar = { ...grammared };
+                    temp_grammar.effect = [fx];
+                    let pif = index > 0 ? { previous_if: true } : {};
+                    //console.error(1202, temp_grammar);
+                    let [a1, l1] = parse_atomic(sentence, label, solid, card, pif, temp_grammar);
+                    // assume they must all point to the same target1
+                    if (false && index > 0) {
+                        a1.weirdo.td = new MultiTargetDesc("it");
+                        a1.events[0].td = new MultiTargetDesc("it");
+                    }
+                    atomics.push(a1);
+                    solid.effects.push(a1);
+                })
+                continue;
+            }
+
+
+            if (false && grammared) {
+                logger.info("new split: EffSentence match");
+
+                // we end up reparsing the sentence needlessly
+                let [a1, l1] = parse_atomic(sentence, label, solid, card);
+                atomics.push(a1);
+                solid.effects.push(a1);
+                continue;
+            }
+
+
+
+
+
+            // 
             if (m = sentence.match(/(.*) , and (.*)\./i)) {
                 logger.info("new split: bogus space-comma-space-and");
                 let [a1, l1] = parse_atomic(m[1], label, solid, card);
@@ -1192,7 +1284,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
             if (m = sentence.match(/^(.*)(＜.*?＞)[,\s]*(and|then) (.*)/i)) {
                 const prelude = m[1];
                 // what could be in prelude besides an "if"? 
-                // we already ate "when"
+                // we already ate "WHEN""
                 previous_if = !!prelude.match(/if /i);
                 if (prelude.length < 2 || prelude.match(/,\s+$/) &&
                     //    !(prelude.match(/n't/))
@@ -1294,7 +1386,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
         // where does the "cost / effect" logic go? 
         logger.info("split: (if X,) by Y, Z.");
         let [a1, l1] = parse_atomic(m[2], label, solid, card);
-        a1.is_cost = true;
+        a1.is_cost = 1;
         a1.optional = true;
         if (m[1]) a1.test_condition = parse_if(m[1]);
         let [a2, l2] = parse_atomic(m[3], label, solid, card);
@@ -1313,7 +1405,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
             logger.info("split: old style cost");
             // where does the "cost / effect" logic go? 
             let [a1, l1] = parse_atomic(m[1], label, solid, card);
-            a1.is_cost = true;
+            a1.is_cost = 1;
             let [a2, l2] = parse_atomic(m[2], label, solid, card);
             if (a2.events[0].game_event == GameEvent.CANCEL)
                 solid.cancels = true;
@@ -1520,19 +1612,23 @@ function parse_if(line: string, orline?: string): GameTest {
 function single_parse_if(line: string): SingleGameTest {
     logger.info("parse if: " + line);
     let m;
+    // TODO: fix the place that's passing this in with an "if" (in "GRAM", where else?)
+    if (m = line.match(/if (.*),/i)) {
+        line = m[1];
+    }
 
     let grammared = parseStringEvoCond("If " + line, "IfClause");
     if (grammared) {
-   //     console.log(1526, "IF ");
-   //   console.dir(grammared, {depth: 6 });       
+        //           console.log(1596, "IF ");
+        //           console.dir(grammared, {depth: 6 });       
 
-            // reparsing 
+        // reparsing 
         if (grammared.testtype === "TARGET_EXISTS") {
-            let tgt = grammared.passive_text; 
+            let tgt = grammared.passive_text;
             let td = new MultiTargetDesc(tgt);
 
             return new SingleGameTest(GameTestType.TARGET_EXISTS, td);
-        }    
+        }
     }
 
     //                  1                                2        3                          4              5                                         
@@ -1726,15 +1822,15 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
     let grammared = parseStringEvoCond(line, "WhenSentence");
     // console.error(line);
     if (grammared) {
-        //        console.error("WHEN", grammared);
-        //        console.dir(grammared, { depth: 99 });
+        //  console.error("WHEN", grammared);
+        //  console.dir(grammared, { depth: 99 });
 
         let w = grammared.When;
         if (w.event.includes("EVOLVE")) {
             // can i recognize what it *was* properly, on a non-interruptive?`
             let cause = w.effect ? EventCause.EFFECT : EventCause.ALL;
             if (w.dna) cause = EventCause.DNA;
-            if (w.appfuse) cause = EventCause.APP_FUSE; 
+            if (w.appfuse) cause = EventCause.APP_FUSE;
             let int_evo: InterruptCondition = {
                 ge: GameEvent.EVOLVE,
                 // again, we're re-grammaring
@@ -1747,9 +1843,16 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
         }
 
         if (w.event.includes("PLAY")) {
+            let mtd = new MultiTargetDesc(w.target.raw_text);
+
+            //            console.error("mtd", mtd);
+            //            console.error("wwww", w);
+            let with_from = w.target.targets;
+            with_from.forEach((x: any) => x.from = w.from); // assign "from" of multitarget to all individual targets
+            mtd.parse_matches = with_from; // no reparse, plus get the .from pulled in
             let int_evo: InterruptCondition = {
                 ge: GameEvent.PLAY,
-                td: new MultiTargetDesc(w.target.raw_text),
+                td: mtd,
                 cause: w.effect ? EventCause.EFFECT : EventCause.ALL
             }
             ret.push(int_evo);
@@ -2161,11 +2264,12 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
 // TODO: move *all* status effets in here
 function parse_give_status(s: string, card: Card): StatusCondition | false {
     let m;
-    let stat_cond: StatusCondition;
+    let internal_stat_cond: StatusCondition;
+    logger.info("parse_give_status: " + s);
     // 2. get DP
     // end $ breaks test?
     if (m = s.match(/^()(get|gain).?\s*([-0-9+]* DP(.*))/i)) {
-        stat_cond = {
+        internal_stat_cond = {
             s: {
                 game_event: GameEvent.DP_CHANGE,
                 n: parseInt(m[3]),
@@ -2175,7 +2279,7 @@ function parse_give_status(s: string, card: Card): StatusCondition | false {
             },
             exp_description: undefined
         };
-        return stat_cond;
+        return internal_stat_cond;
     }
     // 1. get keyword
     if (m = s.match(/^()(get|gain).?\s*(＜.*＞)\s*$/i)) {
@@ -2214,7 +2318,7 @@ function parse_give_status(s: string, card: Card): StatusCondition | false {
                     solid.push(nested_solid_effect);
             }
         }
-        let stat_cond: StatusCondition = {
+        internal_stat_cond = {
             s: {
                 cause: EventCause.EFFECT,
                 game_event: GameEvent.KEYWORD,
@@ -2226,7 +2330,7 @@ function parse_give_status(s: string, card: Card): StatusCondition | false {
             exp_description: undefined
         };
         //        if (and = text.match(/(1 .*) and ((1|all) .*)/i)) {
-        return stat_cond;
+        return internal_stat_cond;
     }
     return false;
 
@@ -2250,7 +2354,7 @@ function nested_solids(input: string, label: string, card?: Card): SolidsToActiv
 
 //export
 function parse_atomic(line: string, label: string, solid: SolidEffect2,
-    card: Card | undefined, flags?: any
+    card: Card | undefined, flags?: any, incoming_grammar?: any
 ): [AtomicEffect2, string] {
     logger.info("atomic " + line);
     if (!solid) logger.info("Warning, no solid");
@@ -2267,7 +2371,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     atomic.flags = flags;
     let thing: {
         game_event: GameEvent, td: TargetDesc, td2?: TargetDesc, td3?: TargetDesc,
-        choose: number,
+        choose: DynamicNumber,
         n: number, immune: boolean, n_mod: string, n_max: number,
         n_count_tgt?: ForEachTarget, // "suspend 1 monster for each tamer"
         n_repeat?: GameTest, // repeat (Devolve 1) N times
@@ -2279,16 +2383,16 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         n_test?: GameTest;
     } = {
         game_event: GameEvent.NIL,
-        td: new TargetDesc(""), choose: 0, n: 0,
+        td: new TargetDesc(""), choose: new DynamicNumber(0), n: 0,
         immune: false,
         n_mod: "", n_max: 0,
         cause: EventCause.EFFECT,
     };
+
     let m;
     let expiration = undefined;
     let proper_thing: SubEffect;
-    let stat_cond: StatusCondition | null = null;
-    let stat_cond2: StatusCondition | null = null;
+    let stat_conds: StatusCondition[] = [];
 
     if (m = line.match(/(.*),\s*$/)) {
         line = m[1];
@@ -2303,6 +2407,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
     // use new-style parser for play (except for stack summon)
 
+    let foreach;
 
     if (line.startsWith("＜xxxDelay＞.・")) {
         // is this branch even used?
@@ -2313,7 +2418,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         let proper_thing: any = { ...thing };
         proper_thing.game_event = GameEvent.TRASH_FROM_FIELD;
         proper_thing.td = new TargetDesc("this card");
-        proper_thing.choose = 1;
+        proper_thing.choose = new DynamicNumber(1);
         line = "";
         atomic.subs.push(proper_thing);
 
@@ -2322,45 +2427,65 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         atomic.sta.count = 1;
         line = "";
     }
+
     if (
         (
             line.toLowerCase().includes("play") ||
+            //   line.toLowerCase().includes("trash") ||
             line.toLowerCase().includes("placing") ||
+            line.toLowerCase().includes("place") ||
+            line.toLowerCase().includes("return") ||
             line.toLowerCase().includes("attack") ||
             line.toLowerCase().includes("link") ||
             line.toLowerCase().includes("app fuse") ||
             line.toLowerCase().includes("can't attack") ||
+            line.toLowerCase().includes("choose") ||
 
             line.toLowerCase().includes("suspend") ||
             line.toLowerCase().includes("bottom of the deck") ||
             line.toLowerCase().includes("top of the deck") ||
-            line.toLowerCase().includes("evolution cards") ||
+            line.toLowerCase().includes("evolution card") ||
             line.toLowerCase().includes("delay") ||
+            line.toLowerCase().includes("de-evolve") ||
+
             line.toLowerCase().includes("add") ||
-            line.toLowerCase().includes("give")
+            line.toLowerCase().includes("give") ||
+            line.toLowerCase().includes("gets") ||
+            line.toLowerCase().includes("delete") ||
+            line.toLowerCase().includes("don't affect")
 
 
         )
         && !line.toLowerCase().includes("1 your")
         && !line.toLowerCase().includes("3 your")
     ) {
-        let grammared = parseStringEvoCond(line, "EffSentence");
+        //console.error(2399, line);
+        let grammared = incoming_grammar || parseStringEvoCond(line, "EffSentence");
         let action_args, target, x;
         if (grammared) {
-
             if (grammared.if) {
+                // we're double parsing this :(
                 atomic.test_condition = parse_if(grammared.if);
             }
             if (grammared.duration) {
                 expiration = grammared.duration.expiration;
             }
-            //               console.log("GRAM");  console.dir(grammared, { depth: 99 });
-            const eff = grammared.effect;
+            //console.log("GRAM"); console.dir(grammared, { depth: 99 });
+            const effs = grammared.effect;
+            const eff = effs[0]; // we only handle one effect in here. We should call parse_atomic multiple times for multiple effects
             const optional = eff.optional;
             if (optional) atomic.optional = true;
+            if (eff.is_cost) atomic.is_cost = 1;
             action_args = eff.action_args;
             if (action_args?.optional) atomic.optional = true;
+            // part of action
+            if (action_args?.for_each) foreach = action_args.for_each;
+            // extra sentence
+            // just slappin' the for_each here w/o a care in the world.
+            // with the grammar we should have a better idea of 
+            // just what is being for_each'd.
 
+            //   console.error("action_args", action_args);
             if (eff.action === 'give status') {
                 target = action_args.target;
                 thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
@@ -2368,12 +2493,14 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 x = new MultiTargetDesc(target.raw_text);
                 thing.td = x;
                 thing.choose = x.choose;
+                if (x.upto) thing.n_mod += "upto; ";
+                // we need to handle "upto" transparently without n_mod
 
 
-                let nested, keyword_gains, status;
+                let nested, keyword_gains, status, dp_change;
                 if (nested = action_args.nested_effect) {
                     let [_0, nested_solid_effect, _1] = new_parse_line(nested, card, label, "main"); // how could we pass through a card here, we won't have any card keywords
-                    stat_cond = {
+                    stat_conds.push({
                         s: {
                             game_event: GameEvent.NIL,
                             td: new TargetDesc(""), // this doesn't need a target
@@ -2381,32 +2508,50 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                         },
                         solid: [nested_solid_effect],
                         exp_description: expiration
-                    }
+                    });
                     line = "";
-                } else if (keyword_gains = action_args.keyword_gains) {
-                    let s1 = parse_give_status(keyword_gains, card!);
+                }
+                if (dp_change = action_args.dp_change) {
+                    let s1 = parse_give_status(dp_change, card!);
                     if (s1) {
-                        stat_cond = s1;
-                        stat_cond.exp_description = expiration;
+                        s1.exp_description = expiration;
+                        stat_conds.push(s1);
                     } else {
                         console.error("no s1");
                     }
-                    /*
-
-                    */
-                } else if (status = action_args.status) {
+                    line = "";
+                }
+                if (keyword_gains = action_args.keyword_gains) {
+                    let s1 = parse_give_status(keyword_gains, card!);
+                    if (s1) {
+                        s1.exp_description = expiration;
+                        stat_conds.push(s1);
+                    } else {
+                        console.error("no s1");
+                    }
+                    line = "";
+                }
+                if (status = action_args.status) {
                     // forging some stuff here
-                    stat_cond = {
-                        s: {
-                            game_event: strToEvent(action_args.status.event),
-                            td: new TargetDesc("player"),
-                            cause: EventCause.ALL, // really?
-                            immune: true,
-                        },
-                        exp_description: expiration
-                    };
-
-                } else {
+                    if (!Array.isArray(status)) status = [status];
+                    for (let each of status) {
+                        const target = each.target || "";
+                        logger.debug("target status", target, status);
+                        const cause = each.cause || EventCause.ALL;
+                        stat_conds.push({
+                            s: {
+                                game_event: strToEvent(each.event),
+                                td: new TargetDesc(target),
+                                cause: cause, // step
+                                immune: each.immune,
+                                n: Number(each.n)
+                            },
+                            exp_description: expiration
+                        });
+                        line = "";
+                    }
+                }
+                if (line !== "") {
                     console.error("UNHANDLED");
                 }
                 line = "";
@@ -2414,31 +2559,61 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
             // TUCK is more generic than EVOSOURCE_ADD
 
-            if (eff.action === 'link' || eff.action === 'evolve' || eff.action === 'PlaceCard') {
+            if (eff.action === 'link' || eff.action === 'evolve' ||
+                eff.action === 'PlaceCard' || eff.action === 'MoveToSecurity' ||
+                eff.action === 'EvoSourceDoubleRemove' ||
+                eff.action === 'Tuck') {
                 // WAIT! we're not checking this is a valid link!
                 target = action_args.target;
                 let target2 = action_args.target2;
                 thing.game_event = strToEvent(eff.action);
-                if (action_args.dna) thing.cause = EventCause.DNA;
-                if (action_args.appfuse) {
-                    console.log("app fuse is set");
-                    thing.cause = EventCause.APP_FUSE;
 
+                // if we use PlaceCard our target better not be an instance
+                let target_entity = target.targets[0].entity;
+                //console.error(2542, "XXXXXXX", GameEvent[thing.game_event], target_entity, line);
+                if (thing.game_event === GameEvent.TARGETED_CARD_MOVE && (!target_entity || !target_entity.match(/card/))) {
+                    // we likely have an "it" object, fall back to old code. or if we're not "moving" a card.
+                    console.error("can't do it");
+                } else {
+
+                    // TUCK is for instance, TARGET_CARD_MOVE for cardlocatiion
+                    if (thing.game_event === GameEvent.TUCK &&
+                        target.raw_text.includes(" card ")) {
+                        // for moving non-card to security, use this instead
+                        thing.game_event = GameEvent.TARGETED_CARD_MOVE;
+                    }
+
+                    if (thing.game_event === GameEvent.TARGETED_CARD_MOVE &&
+                        !target.raw_text.includes(" card ") && false) {
+                        // for moving non-card to security, use this instead
+                        thing.game_event = GameEvent.FIELD_TO_SECURITY;
+                    }
+                    if (action_args.dna) thing.cause = EventCause.DNA;
+                    if (action_args.appfuse) {
+                        console.log("app fuse is set");
+                        thing.cause = EventCause.APP_FUSE;
+
+                    }
+                    x = new MultiTargetDesc(target.raw_text);
+                    thing.td = x;
+                    thing.choose = x.choose;
+                    if (!thing.choose.value()) {
+                        // chase all these down
+                        logger.error("forcing choose to be 1 instead of " + thing.choose);
+                        thing.choose = new DynamicNumber(1);
+                    }
+                    let y = new MultiTargetDesc(target2.raw_text);
+                    if (eff.action === 'EvoSourceDoubleRemove') {
+                        // parse_matches needed because it effectively puts "under td1" in the match
+                        //y.parse_matches = [target2];
+                    }
+                    y.parse_matches = target2.targets;
+
+                    thing.td2 = y;
+                    if (action_args.no_cost) thing.n_mod += "for free; ";
+                    if (action_args.place_location) thing.n_mod += action_args.place_location + "; ";
+                    line = "";
                 }
-                x = new MultiTargetDesc(target.raw_text);
-                thing.td = x;
-                thing.choose = x.choose;
-                if (!thing.choose) {
-                    // chase all these down
-                    logger.error("forcing choose to be 1 instead of " + thing.choose);
-                    thing.choose = 1;
-                }
-                let y = new MultiTargetDesc(target2.raw_text);
-                thing.td2 = y;
-                if (action_args.no_cost) thing.n_mod += "for free; ";
-                if (action_args.place_location) thing.n_mod += action_args.place_location + "; ";
-                //                console.error(2407, thing);
-                line = "";
             }
 
 
@@ -2453,13 +2628,13 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 x = new MultiTargetDesc(target.raw_text);
                 thing.td = x;
                 thing.choose = x.choose;
-                if (!thing.choose) {
+                if (!thing.choose.value()) {
                     // chase all these down
                     logger.error("forcing choose to be 1 instead of " + thing.choose);
-                    thing.choose = 1;
+                    thing.choose = new DynamicNumber(1);
                 }
 
-                if (thing.choose > 1) {
+                if (thing.choose.value() > 1) {
                     // dumbly assuming multitarget must be upto
                     // we are using "upto" to capture overlap logic
                     // but "play 2 X" isn't an "upto"
@@ -2476,7 +2651,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 thing.game_event = GameEvent.MOVE_CARD
                 x = new TargetDesc(target); // not target.raw_text!
                 thing.td = x;
-                thing.choose = 0; // no targets needed
+                thing.choose = new DynamicNumber(0); // no targets needed
                 thing.n = 1;
 
                 let target2 = "your bottom security"; // action_args.target2;
@@ -2490,19 +2665,35 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 thing.game_event = GameEvent.MUST_ATTACK
                 x = new MultiTargetDesc(target.raw_text);
                 thing.td2 = x; // target 2
+                if (action_args.without_suspending) thing.n_mod += "without suspending; "
+                const target2 = action_args.target2_text || "";
+                thing.td = new TargetDesc(target2);
+                // is the below needed any more?
                 if (action_args.optional) atomic.optional = true;
                 thing.choose = x.choose;
                 line = "";
             }
 
 
-            if (eff.action === 'suspend') {
+            if (eff.action === 'suspend' || eff.action === "unsuspend"
+                || eff.action === 'Choose'
+                || eff.action === 'devolve'
+                || eff.action === 'delete' || eff.action === 'XXXEntityStrip') {
                 target = action_args.target;
-                thing.game_event = GameEvent.SUSPEND; // targets an instance!
+                thing.game_event = strToEvent(eff.action) // targets an instance!
+                thing.n = action_args.number;
+                // for de-evolve and other keywords
+                if (action_args.for_each && eff.action === 'devolve') {
+                    thing.n_repeat = new GameTest(GameTestType.TARGET_EXISTS, new TargetDesc(foreach));
+                    foreach = undefined;
+                }
                 x = new MultiTargetDesc(target.raw_text);
                 thing.td = x;
+                thing.n_mod += "devolve";
+                thing.n_max = thing.n;
                 thing.choose = x.choose;
                 if (x.upto) thing.n_mod += "upto; ";
+                if (action_args.place) thing.n_mod += action_args.place + "; ";
                 line = "";
             }
 
@@ -2517,7 +2708,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
                 x = new MultiTargetDesc(target.raw_text);
                 thing.td = x;
-                thing.choose = x.choose;
+                thing.choose = x.choose
                 line = "";
             }
 
@@ -2537,7 +2728,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             }
             if (eff.action === 'SourceStrip') {
                 target = action_args.target;
-                thing.choose = parseInt(action_args.choose);
+                thing.choose = new DynamicNumber(parseInt(action_args.choose));
                 thing.game_event = GameEvent.EVOSOURCE_REMOVE;
                 if (target.raw_text.includes("link cards"))
                     thing.game_event = GameEvent.TRASH_LINK;
@@ -2549,7 +2740,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             }
             if (eff.action === 'PlugStripXXXXX') {
                 target = action_args.target;
-                thing.choose = parseInt(action_args.choose);
+                thing.choose = new DynamicNumber(parseInt(action_args.choose))
                 thing.game_event = GameEvent.TRASH_LINK;
                 x = new MultiTargetDesc(target.raw_text);
                 //x.parse_matches = target;
@@ -2573,8 +2764,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 line = "";
             }
 
-
+            // if we have a full "For each X, modify effect Y" then classic parsing will handle that below
+            if (grammared?.for_each) line = grammared.for_each;
         }
+
     }
 
     if (m = line.match(/\s*Activate (\d+|all) of the (?:.*?effects.*?):(.*)/)) {
@@ -2613,7 +2806,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         if (at) {
             let [_a, delayed, _b, _c] = new_parse_line(m[2], card, label, "main");
             thing.game_event = GameEvent.CREATE_PENDING_EFFECT;
-            thing.choose = 0;
+            thing.choose = new DynamicNumber(0);
             thing.delayed_effect = delayed;
             if (at.interrupt) {
                 thing.delayed_interrupt = at.interrupt;
@@ -2628,7 +2821,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
     // for each X, Y
     // do Y for each Y
-    let foreach;
 
 
     // DO X. For each Y, modify X. <-- handles this case
@@ -2637,11 +2829,19 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     //                  1                2             3                          4
 
 
+
     // is "each" an indication that this is a thing we did?
-    if (m = line.match(/(.*?)For (each|each of|every) (.*), (?:increase|add)(?:.*)(\d+)(?:.*)/)) {
-        thing.n_mod = `counter,td2,1,${m[4]}; `; // td2 is unused in most effects
-        thing.td2 = new TargetDesc(m[3]);
-        if (m[3].match(/effect/))
+    if (m = line.match(/(.*?)For (each|each of|every) (.*), (?:increase|add)(?:.*?)(\d+)(.*)/)) {
+        // counter
+        // td2: where we store our thing
+        // 1 ... nothing
+        // 2000 or whatever we mod by per unit
+
+        const fet = ForEachTargetCreator(m[3]) // gets parsed down below
+        thing.td3 = fet as any as TargetDesc; // ugly override
+        thing.n_mod = `counter,n_count_tgt,1,${m[4]}; `; // td2 is unused in most effects
+        //  thing.td2 = new TargetDesc(m[3]);
+        if (m[3].match(/effect/)) // for each done by the prior effect
             thing.n_mod = `counter,unit,1,${m[4]}; `;
         line = m[1];
     }
@@ -2675,6 +2875,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     }
     if (foreach) {
         logger.info("foreach parse: " + foreach);
+        logger.info("line is " + line);
         if (m = foreach.match(/(\d+) cards in (.*)/i)) {
             thing.n_repeat = new GameTest(GameTestType.CARDS_IN_LOCATION,
                 undefined, undefined, m[1], m[2]);
@@ -2695,20 +2896,16 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         } else if (foreach === "one") {
             atomic.per_unit = true;
             // keywords cannot be altered; todo make this able to identify keyword effects
-        } else if (line.includes("Draw ") || line.includes("De-Evolve") || line.includes("Security A") || line.includes("Link")) {
+        } else if (line.includes("Draw ") ||
+            line.includes("De-Evolve") ||
+            line.includes("Security A") ||
+            line.includes("Link") //. whhat's this for?
+        ) {
             logger.info("REPEAT KEYWORD");
             thing.n_repeat = new GameTest(GameTestType.TARGET_EXISTS, new TargetDesc(foreach));
         } else {
             // how many targets we can hit
-            let n;
-            if (n = foreach.match(/color of (.*)/)) {
-                thing.n_count_tgt = new ForEachTarget("bob", new TargetDesc(n[1]), "color");
-            } else if (n = foreach.match(/(\d+).?color.? (.*) ha(ve|s)/)) {
-                let count = parseInt(n[1]);
-                thing.n_count_tgt = new ForEachTarget("bob", new TargetDesc(n[2]), "color", count);
-            } else {
-                thing.n_count_tgt = new ForEachTarget("bob", new TargetDesc(foreach));
-            }
+            thing.n_count_tgt = ForEachTargetCreator(foreach);
         }
     }
     // if X, increase n by delta
@@ -2897,7 +3094,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         }
         thing.game_event = GameEvent.TRASH_FROM_FIELD;
         thing.td = new TargetDesc("this card");
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         line = "";
     }
 
@@ -2913,7 +3110,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.trim().match(/^by (.*)/i)) {
         logger.warn(1705, m);
         line = m[1].trim();
-        atomic.is_cost = true;
+        atomic.is_cost = 1;
         atomic.optional = true;
     }
 
@@ -2966,7 +3163,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
                     thing.n_max = parseInt(m[1]);
                     let filler = m[2];
-                    thing.choose = parse_number(m[3]);
+                    thing.choose = new DynamicNumber(parse_number(m[3]));
                     thing.td = new TargetDesc(m[4]);
                     line = m[5];
                     if (parserdebug) logger.debug("target " + m[4]);
@@ -3021,7 +3218,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         if (!m[1].includes("deck") && !m[1].includes("security")) { // skip 'trash top of deck' or 'trash top of security' effects
             thing.game_event = GameEvent.DEVOLVE_FORCE;
             thing.td = new TargetDesc(m[1]);
-            thing.choose = 1;
+            thing.choose = new DynamicNumber(1);
             line = "";
         }
     }
@@ -3035,14 +3232,14 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.match(/trash(?:ing)?(?: any)? (\d+) of (this monster.s evolution cards)/i)) {
         thing.game_event = GameEvent.EVOSOURCE_REMOVE;
         thing.td = new TargetDesc(m[2]);
-        thing.choose = parseInt(m[1]);
+        thing.choose = new DynamicNumber(parseInt(m[1]))
         line = "";
     }
 
     if (m = line.match(/trash(?:ing)? this card/i)) {
         thing.game_event = GameEvent.TRASH_FROM_FIELD;
         thing.td = new TargetDesc(m[2]);
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         line = "";
     }
 
@@ -3054,7 +3251,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.match(/Search your security stack/i)) {
         logger.error("searching is revealing to all");
         thing.game_event = GameEvent.SEARCH;
-        thing.choose = 0;
+        // thing.choose = new DynamicNumber(0);
         thing.n_mod = "your security";
         atomic.see_security = true; // ?? do we need this
         line = ""; // shouldnt' have anything else here
@@ -3063,7 +3260,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     //                       1     2                3     4     5
     if (m = line.match(/play (\d+) (\[.*\] Tokens?) (.*)\((.*)\)(.*)/i)) {
         thing.game_event = GameEvent.PLAY;
-        thing.choose = parseInt(m[1])
+        thing.choose = new DynamicNumber(parseInt(m[1]))
         thing.n = parseInt(m[1])
         thing.td = new TargetDesc(m[2]);
         thing.n_mod = "for free";
@@ -3241,7 +3438,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             thing.game_event = GameEvent.EVOLVE;
             // for .EVOLVE the "target" is the card.
             // I'm gonna need a special effect loop clause for this anyway.
-            thing.choose = 1;
+            thing.choose = new DynamicNumber(1);
             let td_text = evo_dest;
             if (evo_from) td_text += " from your " + evo_from;
             thing.td = new TargetDesc(td_text);
@@ -3268,9 +3465,9 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.match(/This monster ... evolve into a?n? ?\[(.*)\] in (your|the) hand/i)) {
         // "ignore requirements" is implied
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         thing.td = new TargetDesc("self"),
-            stat_cond = {
+            stat_conds.push({
                 s: {
 
                     game_event: GameEvent.MAY_EVO_FROM,
@@ -3280,7 +3477,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     n_mod: m[1]
                 },
                 exp_description: expiration
-            };
+            });
         line = "";
     }
 
@@ -3337,15 +3534,12 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         //Lv.4 w/[xxx]/[Rareyym]\u00a0in its name x Lv.4 w/[Dog]\u00a0trait
         //       3 Lv.4 [Zabbo]\u00a0trait monster cards w/different card numbers
         let multi = new MultiTargetDesc(tgt);
-        //      console.error(multi);
-        thing.choose = 99;
-        if (m[2]) thing.choose = parseInt(m[3]);
-        let c = multi.count();
-        if (c > 1) thing.choose = c;
+        if (m[2]) thing.choose = new DynamicNumber(parseInt(m[3]));
+        let c = multi.count()
+        if (c.value() > 1) thing.choose = c;
         thing.td = multi;
         thing.n_mod = "upto different " + (numbers ? "number" : "name");
 
-        // let stat_cond = null;
         line = "";
     }
 
@@ -3354,7 +3548,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         thing.game_event = GameEvent.EVOSOURCE_ADD;
         thing.td = new TargetDesc("1 of your [Terriers]");
         thing.cause = EventCause.EFFECT;
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         // let stat_cond = null;
         line = "";
     }
@@ -3362,13 +3556,12 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     // place this monster to
     if (m = line.match(/place (.*) to (?:1|one) of (.*?)(as its bottom evolution card.?)?$/i)) {
         thing.game_event = GameEvent.TUCK;
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         thing.td = new TargetDesc(m[1]);
         thing.td2 = new TargetDesc(m[2]); // where to put the card
         /*   thing.game_event = GameEvent.TARGETED_CARD_MOVE; this targets the cards you move 
         thing.td = new TargetDesc(m[1]);
         thing.td2 = new TargetDesc(m[2]);*/
-        thing.choose = 1;
         line = "";
     }
 
@@ -3380,8 +3573,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         thing.td = new TargetDesc(m[2]); // where to put the card
         /*   thing.game_event = GameEvent.TARGETED_CARD_MOVE; this targets the cards you move 
         thing.td = new TargetDesc(m[1]);
-        thing.td2 = new TargetDesc(m[2]);*/
-        thing.choose = 1;
+        thing.<td2> = new TargetDesc(m[2]);*/
+        thing.choose = new DynamicNumber(1);
         line = "";
     }
 
@@ -3394,7 +3587,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             /*   thing.game_event = GameEvent.TARGETED_CARD_MOVE; this targets the cards you move 
             thing.td = new TargetDesc(m[1]);
             thing.td2 = new TargetDesc(m[2]);*/
-            thing.choose = 1;
+            thing.choose = new DynamicNumber(1);
             line = "";
         }
 
@@ -3415,7 +3608,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         // this needs some more though
         thing.game_event = m[5].includes("battle area") ? GameEvent.STACK_ADD : GameEvent.TARGETED_CARD_MOVE;
         thing.n = 1;
-        thing.choose = parse_number(m[3]) || 1;
+        thing.choose = new DynamicNumber(parse_number(m[3]) || 1);
         thing.td = new TargetDesc(tgt); // from
         thing.td2 = new TargetDesc('self');
         line = "";
@@ -3425,7 +3618,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         let tgt = m[2];
         thing.game_event = GameEvent.TARGETED_CARD_MOVE;
         thing.n = 1;
-        thing.choose = parse_number(tgt);
+        thing.choose = new DynamicNumber(parse_number(tgt));
         thing.td = new TargetDesc(tgt); // from
         thing.td2 = new TargetDesc('it');
         thing.n_mod = `bottom`;
@@ -3446,7 +3639,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             thing.game_event = GameEvent.TARGETED_CARD_MOVE;
         }
         thing.n = 1;
-        thing.choose = parse_number(tgt);
+        thing.choose = new DynamicNumber(parse_number(tgt));
 
         thing.td = new TargetDesc(tgt); // from
         thing.td2 = new TargetDesc("security");
@@ -3459,7 +3652,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.match(/place this card in.?.? ....? battle area/i)) {
         thing.game_event = GameEvent.PLACE_IN_FIELD;
         thing.td = new TargetDesc("this card");
-        thing.choose = 1
+        thing.choose = new DynamicNumber(1);
         line = "";
     }
 
@@ -3467,7 +3660,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         console.error("obsoelete");
         atomic.search_n = 1; // parseInt(m[1]);
         thing.game_event = GameEvent.REVEAL_TO_HAND;
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         atomic.search_multitarget = new MultiTargetDesc(m[1]);
         thing.td = new TargetDesc(m[1]);
         atomic.search_final = Location.TRASH;
@@ -3494,8 +3687,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         thing.game_event = GameEvent.REVEAL_TO_HAND;
         let multitarget = new MultiTargetDesc(m[1]);
         thing.td = multitarget;
-        thing.choose = multitarget.count();
-        if (thing.choose > 1)
+        thing.choose = new DynamicNumber(multitarget.count().value());
+        if (thing.choose.value() > 1)
             thing.n_mod = "upto";
         line = ""
     }
@@ -3521,10 +3714,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             thing.game_event = GameEvent.REVEAL_TO_HAND;
 
             // I am totally cheating these search types
-            thing.choose = 2;
+            thing.choose = new DynamicNumber(2);
             thing.n_mod = "upto";
             if (m[2].match(/1 (\w*) card/)) {
-                thing.choose = 1;
+                thing.choose = new DynamicNumber(1);
                 thing.n_mod = "";
             }
             atomic.search_multitarget = new MultiTargetDesc(m[2]);
@@ -3546,7 +3739,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
         thing = {
             game_event: GameEvent.NIL,
-            td: new TargetDesc(""), choose: 0, n: 0, n_mod: "", n_max: 0,
+            td: new TargetDesc(""), choose: new DynamicNumber(0), n: 0, n_mod: "", n_max: 0,
             immune: false,
             cause: EventCause.EFFECT,
         };
@@ -3606,7 +3799,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         let [_0, nested_solid_effect, _1] = new_parse_line(m[2], card, label, "main"); // how could we pass through a card here, we won't have any card keywords
         // we don't give card keywords by effect inside quote marks
         if (parserdebug) logger.info(`NESTED EFFECT: ${_0} ${nested_solid_effect} ${_1}`);
-        stat_cond = {
+        stat_conds.push({
             s: {
                 game_event: GameEvent.NIL,
                 td: new TargetDesc(""), // this doesn't need a target
@@ -3616,15 +3809,15 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             // can't assign this, not proper recursion
             // solid: nested_solid_effect,
             exp_description: expiration
-        }
+        })
         // this is duplicate code, but attempting to refactor breaks tests
         let tgt = m[1];
 
-        thing.choose = parseInt(tgt);
+        thing.choose = new DynamicNumber(parseInt(tgt));
         let temp_m;
 
         if (temp_m = tgt.match(/all of (.*)/i)) {
-            thing.choose = 0;
+            thing.choose = new DynamicNumber(0);
             tgt = "blanket " + temp_m[1];
         }
 
@@ -3651,9 +3844,9 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.match(/(.*)your opponent.s effects can.t delete (this Monster )or return (it|this monster) to the hand or deck(.*)/i)) {
         logger.warn("ignoring field-to-hand");
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        thing.choose = 1; // we do need to target
+        thing.choose = new DynamicNumber(1); // we do need to target
         thing.td = new TargetDesc(m[2]); // "this monster"
-        stat_cond = {
+        stat_conds.push({
             s: {
                 game_event: GameEvent.DELETE,
                 td: new TargetDesc("opponent"), // This may be the opposite of what I want
@@ -3661,19 +3854,19 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 cause: EventCause.EFFECT
             },
             exp_description: expiration
-        };
+        });
         proper_thing = thing;
         logger.warn("use array");
-        proper_thing.status_condition = [stat_cond];
+        proper_thing.status_condition = [...stat_conds]; stat_conds.length = 0;
         atomic.subs.push(proper_thing);
         thing = {
             game_event: GameEvent.GIVE_STATUS_CONDITION,
-            td: new TargetDesc(m[2]), choose: 1, n: 0,
+            td: new TargetDesc(m[2]), choose: new DynamicNumber(1), n: 0,
             immune: true,
             n_mod: "", n_max: 0,
             cause: EventCause.EFFECT
         };
-        stat_cond = {
+        stat_conds.push({
             s: {
                 game_event: GameEvent.TO_BOTTOM_DECK,
                 td: new TargetDesc("opponent"), // This may be the opposite of what I want
@@ -3681,7 +3874,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 cause: EventCause.EFFECT
             },
             exp_description: expiration
-        };
+        });
 
         line = m[1] + " " + m[3]
     }
@@ -3696,11 +3889,11 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         // At the start of a sentence, like (all of) (your monsters) (get +2000 DP)
         // That becomes a status on the player which additionally has its own targets
         if (line.toLowerCase().startsWith("all of")) {
-            thing.choose = ALL_OF;
+            thing.choose = new DynamicNumber(ALL_OF);
             line = line.after("all of").trim();
             if (expiration) blanket = "blanket ";
         } else if (m = line.match(/^(up to )?(\d+) of (.*)/)) {
-            thing.choose = parseInt(m[2]); // isn't this what parse_number is for??
+            thing.choose = new DynamicNumber(parseInt(m[2])); // isn't this what parse_number is for??
             line = m[3];
             if (m[1]) thing.n_mod = "upto";
             //            blanket = "blanket ";
@@ -3728,10 +3921,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     // 1 of their monster can't unsuspend
     if (m = line.match(/^()(.*)(?:don.t|doesn.t|can.t|cannot) (un)?suspend( or evolve)?(.*)/i)) {
         //			thing['game_event'] = GameEvent.ALL;
-        if (!thing.choose) thing.choose = 1; // why 1?
+        if (!thing.choose.value()) thing.choose = new DynamicNumber(1); // why 1?
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        thing.td = new TargetDesc(blanket + m[2]);
-        stat_cond = {
+        thing.td = new MultiTargetDesc(m[2], blanket); // this blanket value is apparently unused?
+        stat_conds.push({
             s: {
                 game_event: m[3] ? GameEvent.UNSUSPEND : GameEvent.SUSPEND,
                 td: new TargetDesc(""),
@@ -3739,7 +3932,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 cause: EventCause.ALL // for any reason... maybe use 0?
             },
             exp_description: expiration
-        };
+        })
         // I need to either
         //  1) wrap both immunities into one effect, which has its advantages, or
         //  2) say "the targets of this are the targets of the last thing" and I think
@@ -3747,7 +3940,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         //     Already did. How did I do <Alliance>?
         if (m[4]) {
             proper_thing = thing;
-            proper_thing.status_condition = [stat_cond];
+            proper_thing.status_condition = [...stat_conds]; stat_conds.length = 0;
             logger.warn("use array?");
             atomic.subs.push(proper_thing);
             thing = {
@@ -3757,7 +3950,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 n_mod: "previous sub", n_max: 0,
                 cause: EventCause.EFFECT
             };
-            stat_cond = {
+            stat_conds.push({
                 s: {
                     game_event: GameEvent.EVOLVE,
                     td: new TargetDesc(""), // can't evolve, from any source or for any cause
@@ -3765,8 +3958,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     cause: EventCause.ALL
                 },
                 exp_description: expiration
-            }
-        }
+            })
+        };
         line = m[5]
     }
 
@@ -3774,13 +3967,13 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.match(/(.*) is\s*(un|not|n't)\s*affected.by (.*effects.*)/i)) {
         //			thing['game_event'] = GameEvent.ALL;
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        thing.choose = 1; // we do need to target
+        thing.choose = new DynamicNumber(1); // we do need to target
         thing.td = new TargetDesc(m[1]);
         let target = "";
         if (m[3].match(/monster/i)) {
             target = "their monster";
         }
-        stat_cond = {
+        stat_conds.push({
             s: {
                 game_event: GameEvent.ALL,
                 // td, in immunity, is the source of the effect I'm immune to,
@@ -3790,7 +3983,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 cause: EventCause.EFFECT
             },
             exp_description: expiration
-        };
+        });
         line = ""
     }
 
@@ -3798,7 +3991,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     // TODO: this probably could follow into the clause below
     if (line.match(/suspend(ing)? this tamer/i) || line.match(/suspend to attack/)) {
         thing.game_event = GameEvent.SUSPEND;
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         thing.td = new TargetDesc("self");
         line = ""; // do we lose anything?
     }
@@ -3819,9 +4012,9 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m) {
         logger.warn("need to make un-evolvable");
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        if (!thing.choose) thing.choose = 1;
+        if (!thing.choose.value()) thing.choose = new DynamicNumber(1);
         thing.td = new TargetDesc(m[1])
-        stat_cond = {
+        stat_conds.push({
             s: {
                 game_event: GameEvent.ADD_INFORMATION,
                 n_mod: "Monster:true;DP:" + m[2],
@@ -3829,22 +4022,22 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 cause: EventCause.EFFECT
             },
             exp_description: expiration
-        };
+        });
         if (m[4]) {
             let keywords: KeywordArray = {};
             let word = m[5];
             keywords[word] = word;
-            stat_cond2 = {
+            stat_conds.push({
                 s: {
                     cause: EventCause.EFFECT,
                     game_event: GameEvent.KEYWORD,
-                    n: 55,
+                    n: 58,
                     td: new TargetDesc(""),
                 },
                 solid: undefined,
                 keywords: keywords,
                 exp_description: expiration
-            };
+            });
         }
         line = ""; // m[3];
     }
@@ -3855,9 +4048,9 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     // change (.*) into (a color other than white)  // SKIPPING FOR INTERFACE ISSUES need to ask again
     if (m = line.match(/change the original DP of (.*) to (.*)/i)) {
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        if (!thing.choose) thing.choose = 1;
+        if (!thing.choose.value()) thing.choose = new DynamicNumber(1);
         thing.td = new TargetDesc(m[1])
-        stat_cond = {
+        stat_conds.push({
             s: {
                 game_event: GameEvent.CHANGE_INFORMATION,
                 n_mod: "DP:" + m[2],
@@ -3865,14 +4058,14 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 cause: EventCause.EFFECT
             },
             exp_description: expiration
-        };
+        });
         line = ""; // m[3];
     }
     if (m = line.match(/change (.*) into (?:being |a )?(red|blue|yellow|green|black|purple|white) (?:monster )?(?:with |and having )(\d+ )DP and an original name of \[(.*)\]/i)) {
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        if (!thing.choose) thing.choose = 1;
+        if (!thing.choose.value()) thing.choose = new DynamicNumber(1);
         thing.td = new TargetDesc(m[1])
-        stat_cond = {
+        stat_conds.push({
             s: {
                 game_event: GameEvent.CHANGE_INFORMATION,
                 n_mod: `Color:${m[2]};DP:${m[3].trim()};Name:${m[4]}`,
@@ -3880,19 +4073,20 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 cause: EventCause.EFFECT
             },
             exp_description: expiration
-        };
+        });
         line = ""; // m[3];
     }
 
 
 
-
-
+    // only used by 1 test
     if (m = line.match(/give (.*?)\s+([-0-9+]* DP(.*))/i)) {
+        console.error("legacy DP 1");
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        if (!thing.choose) thing.choose = 1;
+        if (!thing.choose.value()) thing.choose = new DynamicNumber(1);
         thing.td = new TargetDesc(m[1])
-        stat_cond = {
+
+        stat_conds.push({
             s: {
                 game_event: GameEvent.DP_CHANGE,
                 n: parseInt(m[2]),
@@ -3900,7 +4094,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 cause: EventCause.EFFECT
             },
             exp_description: expiration
-        };
+        });
         line = ""; // m[3];
     }
 
@@ -3915,7 +4109,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     }
 
     if (m = line.match(/^Return (\d)(.*) from (your)?\s*trash.*hand/i)) {
-        thing.choose = parseInt(m[1]);
+        thing.choose = new DynamicNumber(parseInt(m[1]));
         thing.game_event = GameEvent.TRASH_TO_HAND;
         thing.td = new TargetDesc(m[2] + " in your trash");
         line = "";
@@ -3947,16 +4141,16 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             if (n = tgt.match(/(\d) of (.*)/)) {
                 multi = new MultiTargetDesc(n[2]);
                 thing.td = new TargetDesc(n[2]);
-                thing.choose = parseInt(n[1]);
+                thing.choose = new DynamicNumber(parseInt(n[1]));
             } else {
                 multi = new MultiTargetDesc("");
                 //  console.error("missing?", tgt);
                 thing.td = new TargetDesc(tgt);
-                thing.choose = 1
+                thing.choose = new DynamicNumber(1);
                 logger.warn("missing thing");
             }
             if (tgt.match(/each monster card with different levels/i)) {
-                thing.choose = 99;
+                thing.choose = new DynamicNumber(99);
                 thing.n_mod = "upto different level; top deck";
                 tgt = "their monster from trash with a level";
                 thing.game_event = GameEvent.TARGETED_CARD_MOVE;
@@ -3969,7 +4163,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
     // this is should be obsolete, but isn't
     if (m = line.match(/^Return (\d) of(.*) to (its owner.s|the) hand/i)) {
-        thing.choose = parseInt(m[1]);
+        thing.choose = new DynamicNumber(parseInt(m[1]));
         // "reveal" is dumb, but does it work?
         thing.game_event = GameEvent.FIELD_TO_HAND;
         thing.td = new TargetDesc(m[2]);
@@ -3984,7 +4178,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         //thing.choose = parseInt(m[3]);
         // "reveal" is dumb, but does it work?
         thing.game_event = GameEvent.ATTACK_TARGET_SWITCH;
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         thing.td = new TargetDesc(tgt);
         line = "";
     }
@@ -4015,7 +4209,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 // "n" is set but not really used. effectloop needs to
                 // "target" everything we trash, so we can respond to
                 // specific things being trashed
-                td: new TargetDesc("trash"), choose: count, n: count,
+                td: new TargetDesc("trash"), choose: new DynamicNumber(count), n: count,
                 td2: new TargetDesc("their deck"),
                 immune: false,
                 cause: EventCause.EFFECT,
@@ -4077,7 +4271,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         }
         let total = parseInt(m[3]);
         thing.n = total;
-        thing.choose = total;
+        thing.choose = new DynamicNumber(total);
         let what = m[2].match(/DP/i) ? "DP" : "play cost";
         thing.n_mod += `upto total ${what}; `;
         // only show things that fit in the cap
@@ -4096,7 +4290,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             let a: any = null; a.choose_sum();
         }
         thing.n = total;
-        thing.choose = total;
+        thing.choose = new DynamicNumber(total);
         let what = "playcost";
         thing.n_mod += "upto total play cost; ";
         // only show things that fit in the cap
@@ -4136,7 +4330,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             } else if (m = line.match(/^\w+( up to)? (\d|all)(?: of)? (.*?)$/i)) {
                 // delete 2 of your opponent's monster
                 if (m[1]) thing.n_mod = "upto";
-                thing.choose = parse_number(m[2]);
+                thing.choose = new DynamicNumber(parse_number(m[2]));
                 thing.td = new TargetDesc(m[3]);
                 /*
                 if (m[3]) {
@@ -4144,13 +4338,13 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     thing.n_target = new TargetDesc(m[4]);
                 }*/
             } else {
-                thing.choose = 1;
+                thing.choose = new DynamicNumber(1);
                 let target = line.after(key);
                 if (target.startsWith("ing")) target = target.after("ing").trim();
                 logger.warn(`line is ${line} key is ${key} target is ${target}`);
                 thing.td = new TargetDesc(target);
             }
-            if (key == "HATCH") thing.choose = 0; // nothing to target
+            if (key == "HATCH") thing.choose = new DynamicNumber(0); // nothing to target
             line = "";
         }
 
@@ -4160,7 +4354,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         if (m = line.match(regexp)) {
             logger.warn("found declarative " + key + " " + regexp + "::" + line);
             thing.game_event = strToEvent(key);
-            thing.choose = 1; // the thing that can "verb"
+            thing.choose = new DynamicNumber(1); // the thing that can "verb"
             thing.td = new TargetDesc(m[1]);
             atomic.optional = !!m[2];
             line = "";
@@ -4204,7 +4398,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.match(/\s*add this card (.{2,20}) hand\.?\s*/i)) {
         //       if (parserdebug) logger.debug("play match");
         thing.game_event = GameEvent.TRASH_TO_HAND; // "reveal" isn't right but it's generic enough that it adds from anywhere. Maybe all *_TO_HAND should be merged.
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         thing.td = new TargetDesc("this card");
         line = "";
     }
@@ -4218,7 +4412,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.match(/(play|use)\s*(.*?)\s*(without paying (the|its) (play |memory )?cost)/i)) {
         if (parserdebug) logger.debug("play match");
         thing.game_event = strToEvent(m[1]);
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         thing.td = new MultiTargetDesc(m[2]);
         line = "";
         thing.n_mod = "free";
@@ -4228,7 +4422,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.match(/play\s*(.*)\s*with the (play |use |memory )?cost reduced by (\d)/i)) {
         if (parserdebug) logger.debug("play match");
         thing.game_event = GameEvent.PLAY;
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         thing.td = new TargetDesc(m[1]);
         line = "";
         thing.n = parseInt(m[3]);
@@ -4243,7 +4437,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.match(/trash(ing)?\s*(up to\s*)?(\d+)\s*(.* card. (in|from) your hand)/i)) {
         thing.game_event = GameEvent.TRASH_FROM_HAND;
         thing.n = 0; // really??? parseInt(m[3]);
-        thing.choose = parseInt(m[3]);
+        thing.choose = new DynamicNumber(parseInt(m[3]));
         //thing.td = new TargetDesc("1 card in your hand");
         thing.td = new TargetDesc(m[4]);
         if (m[2]) thing.n_mod = "upto";
@@ -4252,7 +4446,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
     if (m = line.match(/trash(ing)? (\d) (.* (in|from) your hand)(.*)/i)) {
         thing.game_event = GameEvent.TRASH_FROM_HAND;
-        thing.choose = parseInt(m[2]);
+        thing.choose = new DynamicNumber(parseInt(m[2]));
         thing.td = new TargetDesc(m[3]);
         line = m[5]; // maybe too aggressive to just assume we eat everything    
     }
@@ -4267,11 +4461,11 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         let s1 = parse_give_status(m[2], card!);
         let s2 = parse_give_status(m[3], card!);
         if (s1 && s2) {
-            if (!thing.choose) thing.choose = 1; //?
+            if (!thing.choose.value()) thing.choose = new DynamicNumber(1); //?
             s1.exp_description = expiration;
-            stat_cond = s1;
+            stat_conds.push(s1);
             s2.exp_description = expiration;
-            stat_cond2 = s2;
+            stat_conds.push(s2);
             thing.td = new TargetDesc(m[1]);
             thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
             line = ""; // ignore m[4]!
@@ -4283,12 +4477,12 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         //        console.error(3072, m);
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
         // if editing this check blocker-dp-boost
-        if (!thing.choose) thing.choose = 1;
+        if (!thing.choose.value()) thing.choose = new DynamicNumber(1);
         let x = parse_give_status(`${m[2]} ${m[3]}`, card!);
         if (x) {
 
             x.exp_description = expiration;
-            stat_cond = x;
+            stat_conds.push(x);
             //  line = ""; I re-parse "line" below
             //        if (and = text.match(/(1 .*) and ((1|all) .*)/i)) {
             let split;
@@ -4307,11 +4501,11 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             if (false) {
                 if (split = target.toLowerCase().match(/^(\d|all) (of )?(.*)/)) {
                     if (split[1] == "all") {
-                        thing.choose = 0;
+                        thing.choose = new DynamicNumber(0);
                         target = "blanket " + split[3];
                         // we aren't consuming the split[3] atm
                     } else {
-                        thing.choose = parse_number(split[1]);
+                        thing.choose = new DynamicNumber(parse_number(split[1]));
                         target = split[3];
                     }
                 }
@@ -4324,14 +4518,15 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 let target1 = split[1] ? split[2] : "your monster with [XXX] in its name";
                 let target2 = split[3]
                 thing.td = new TargetDesc(target2);
-                thing.choose = 0;
+                thing.choose = new DynamicNumber(0);
                 // prep target2. If we have target 1, push target 2 and then make target 1
                 proper_thing = thing;
-                proper_thing.status_condition = [stat_cond];
+                proper_thing.status_condition = [...stat_conds]; stat_conds.length = 0;
+
                 // can't use array here, because different targets
                 atomic.subs.push(proper_thing);
 
-                stat_cond = {
+                stat_conds.push({
                     s: {
                         game_event: GameEvent.DP_CHANGE,
                         n: parseInt(m[3]),
@@ -4339,10 +4534,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                         cause: EventCause.EFFECT
                     },
                     exp_description: expiration
-                }
+                })
                 thing = {
                     game_event: GameEvent.GIVE_STATUS_CONDITION,
-                    td: new TargetDesc(target1), choose: 1, n: 1,
+                    td: new TargetDesc(target1), choose: new DynamicNumber(1), n: 1,
                     immune: false,
                     cause: EventCause.EFFECT,
                     n_mod: "", n_max: 0
@@ -4362,7 +4557,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         // this moved north by ~500 lines
 
         if (line.toLowerCase().startsWith("all of")) {
-            thing.choose = ALL_OF;
+            thing.choose = new DynamicNumber(ALL_OF);
             line = line.after("all of").trim();
             blanket = "blanket ";
         }
@@ -4393,10 +4588,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
     if (m = line.match(/^(.*)cannot be deleted in battle/i)) {
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        if (!thing.choose) thing.choose = 1;
-        thing.choose = 0;
+        if (!thing.choose.value()) thing.choose = new DynamicNumber(1);
+        thing.choose = new DynamicNumber(0);
         thing.td = new TargetDesc(blanket + m[1]),
-            stat_cond = {
+            stat_conds.push({
                 s: {
                     immune: true,
                     game_event: GameEvent.DELETE,
@@ -4404,24 +4599,23 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     cause: EventCause.NORMAL_BATTLE || EventCause.SECURITY_BATTLE
                 },
                 exp_description: expiration
-            };
-
+            });
         line = "";
     }
 
 
     if (m = line.match(/This monster is unblockable/i)) {
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        thing.choose = 1;
+        thing.choose = new DynamicNumber(1);
         thing.td = new TargetDesc("self"),
-            stat_cond = {
+            stat_conds.push({
                 s: {
                     game_event: GameEvent.UNBLOCKABLE,
                     td: new TargetDesc("dummy"),
                     cause: EventCause.EFFECT,
                 },
                 exp_description: expiration
-            };
+            });
         line = "";
     }
 
@@ -4430,10 +4624,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
     if (m = line.match(/(.*) can.t attack( players)?/i)) {
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        thing.choose = 0;
+        thing.choose = new DynamicNumber(0);
         thing.td = new TargetDesc(m[1]);
         let safe = m[2] ? "player" : "";
-        stat_cond = {
+        stat_conds.push({
             s: {
                 game_event: GameEvent.ATTACK_DECLARE,
                 td: new TargetDesc(safe),
@@ -4441,7 +4635,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 immune: true,
             },
             exp_description: expiration
-        };
+        });
         line = "";
     }
 
@@ -4456,11 +4650,11 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (m = line.match(/(.*)\s+(get|gain).?\s*(＜.*＞)\s*(.*)/i)) {
         if (parserdebug) logger.info(`effect gain: ${m[1]} gets ${m[3]}`);
         thing.game_event = GameEvent.GIVE_STATUS_CONDITION;
-        if (!thing.choose) thing.choose = 1;
+        if (!thing.choose.value()) thing.choose = new DynamicNumber(1);
         let x = parse_give_status(`${m[2]} ${m[3]}`, card!);
         if (x) {
             x.exp_description = expiration;
-            stat_cond = x;
+            stat_conds.push(x);
         }
         thing.td = new TargetDesc(m[1]);
         line = m[4];
@@ -4478,19 +4672,15 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 logger.info("generic descriptive: " + key);
                 thing.game_event = strToEvent(key);
                 thing.td = new TargetDesc(m[1]);
-                thing.choose = 1; // how did we lose the number?
+                thing.choose = new DynamicNumber(1); // how did we lose the number?
                 line = "";
             }
         }
     }
 
     proper_thing = thing;
-    if (stat_cond) {
-        if (stat_cond2) {
-            proper_thing.status_condition = [stat_cond, stat_cond2];
-        } else {
-            proper_thing.status_condition = [stat_cond];
-        }
+    if (stat_conds.length > 0) {
+        proper_thing.status_condition = stat_conds;
     }
 
     atomic.subs.push(proper_thing);
@@ -4519,7 +4709,7 @@ function make_alliance(solid: SolidEffect2): void {
     // cost: suspend 1 of my unsuspended monster
     let suspend_other: SubEffect = {
         game_event: GameEvent.SUSPEND,
-        choose: 1,
+        choose: new DynamicNumber(1),
         cause: EventCause.EFFECT | EventCause.ALLIANCE,
         label: "alliance", td: new TargetDesc("your unsuspended monster")
     };
@@ -4528,12 +4718,11 @@ function make_alliance(solid: SolidEffect2): void {
     cost.optional = true;
     cost.events = [suspend_other];
     cost.weirdo = suspend_other;
-    cost.is_cost = true;
+    cost.is_cost = 1;
 
     solid.effects = [cost];
     let t = new AtomicEffect2();
     t.raw_text = "Alliance Boost";
-    // let stat_cond = null;
 
     // the first effect targets a monster
     // the second effect needs to get that monster's stats
@@ -4544,7 +4733,7 @@ function make_alliance(solid: SolidEffect2): void {
     let alliance_dp: SubEffect = {
         game_event: GameEvent.GIVE_STATUS_CONDITION,
         td: new TargetDesc("self"),
-        choose: 1,
+        choose: new DynamicNumber(1),
         status_condition: [{
             s: {
                 cause: EventCause.EFFECT | EventCause.ALLIANCE,
@@ -4570,7 +4759,7 @@ function make_alliance(solid: SolidEffect2): void {
         cause: EventCause.EFFECT | EventCause.ALLIANCE,
         game_event: GameEvent.GIVE_STATUS_CONDITION,
         td: new TargetDesc("self"),
-        choose: 1,
+        choose: new DynamicNumber(1),
         status_condition: [{
             s: {
                 cause: EventCause.EFFECT | EventCause.ALLIANCE,

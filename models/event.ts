@@ -5,7 +5,7 @@ import { Player } from './player';
 import { Instance } from './instance';
 import { Game } from './game';
 
-import { StatusCondition, SubEffect } from './effect';
+import { status_cond_to_gerund, StatusCondition, SubEffect } from './effect';
 import { TargetDesc } from './target';
 
 //	expires
@@ -26,9 +26,10 @@ export enum EventCause {
 	NO_DP = 64,
 	DNA = 128,
 	APP_FUSE = 256,
-
 	ALL = 0xfffff,
 }
+
+
 
 // whatever structure has GameEvent should 
 // probably also capture what caused it,
@@ -44,10 +45,14 @@ export function strToEvent(str: string): GameEvent {
 	if (str.toUpperCase() === "PLACECARD") return GameEvent.TARGETED_CARD_MOVE;
 	if (str.toUpperCase() === "LINK") return GameEvent.PLUG;
 	if (str.toUpperCase() === "ATTACK") return GameEvent.MUST_ATTACK;
+	if (str.toUpperCase() === "MOVETOSECURITY") return GameEvent.FIELD_TO_SECURITY;
+	if (str.toUpperCase() === "EVOSOURCEDOUBLEREMOVE") return GameEvent.EVOSOURCE_DOUBLE_REMOVE;
+	if (str.toUpperCase() === "ENTITYSTRIP") return GameEvent.EVOSOURCE_REMOVE_FROM;
 	str = str.toUpperCase();
 	if (isGameEvent(str)) {
 		return GameEvent[str];
 	} else {
+		console.error(`Unknown GameEvent: ${str}`);
 		return GameEvent.NIL;
 	}
 }
@@ -55,11 +60,15 @@ export function strToEvent(str: string): GameEvent {
 // present tense verb
 export function present(ge: GameEvent): string {
 	switch (ge) {
+		case GameEvent.EVOSOURCE_DOUBLE_REMOVE: 
+		case GameEvent.EVOSOURCE_REMOVE: return "source strip";
+		case GameEvent.EVOSOURCE_REMOVE_FROM: return "source strip";
 		case GameEvent.ATTACK_TARGET_SWITCH: return "switching attack";
 		case GameEvent.ATTACK_DECLARE: return "attack";
 		case GameEvent.DEVOLVE_FORCE: return "remove top card";
 		case GameEvent.MUST_ATTACK: return "attack";
 		case GameEvent.FIELD_TO_HAND: return "bounce";
+		case GameEvent.FIELD_TO_SECURITY: return "security-bounce";
 		case GameEvent.TO_BOTTOM_DECK: return "bottom-deck";
 		case GameEvent.PLACE_IN_FIELD: return "place";
 		case GameEvent.OPTION_USED: return "use";
@@ -79,15 +88,19 @@ export function present(ge: GameEvent): string {
 	}
 }
 
-export function gerund(ge: GameEvent): string {
+export function gerund(ge: GameEvent, s?: StatusCondition[]): string {
 	switch (ge) {
-		case GameEvent.GIVE_STATUS_CONDITION: return "(de)buffing";
-		//case GameEvent.DELETE: return "deleting";
+
+		case GameEvent.EVOSOURCE_DOUBLE_REMOVE: 
+		case GameEvent.EVOSOURCE_REMOVE: return "source stripping";
+		case GameEvent.EVOSOURCE_REMOVE_FROM: return "source stripping";
+		case GameEvent.GIVE_STATUS_CONDITION: return status_cond_to_gerund(s);
 		case GameEvent.ATTACK_TARGET_SWITCH: return "switching attacking target";
 		case GameEvent.ATTACK_DECLARE: return "attacking";
 		case GameEvent.DEVOLVE_FORCE: return "removing top card";
 		case GameEvent.MUST_ATTACK: return "attacking";
 		case GameEvent.FIELD_TO_HAND: return "bouncing";
+		case GameEvent.FIELD_TO_SECURITY: return "security-bouncing";
 		case GameEvent.TO_BOTTOM_DECK: return "bottom-decking";
 		case GameEvent.PLACE_IN_FIELD: return "placing";
 		case GameEvent.OPTION_USED: return "using";
@@ -130,9 +143,13 @@ export enum GameEvent {
 	//	MON_DELETED_BY_BATTLE,
 	//	MON_DELETED_BY_EFFECT,
 	//	MON_DELETED_BY_RULES,
+	BLOCK,
 	ATTACK_TARGET_SWITCH, // do I need to distinguish "blocked"? 
+
 	ATTACK_DECLARE,
-	MUST_ATTACK,
+	MUST_ATTACK,  // TODO: eliminiate this one 
+
+
 	DEVOLVE, // 11
 	DEVOLVE_FORCE,
 	SUSPEND, // 13 could be mon or tamer
@@ -146,7 +163,9 @@ export enum GameEvent {
 	TARGETED_CARD_MOVE,
 	//CARD_TRASH_FROM_SECURITY,
 	EVOSOURCE_ADD,
-	EVOSOURCE_REMOVE, // targets CL?
+	EVOSOURCE_REMOVE, // targets cards
+	EVOSOURCE_DOUBLE_REMOVE, // t1 targets instance, t2 targets cards
+	EVOSOURCE_REMOVE_FROM, // targets entity
 	EVOSOURCE_MOVE,
 	TUCK, // put instance (not card) under monster
 	//TAKE_fALLIANCE_BOOST, // I could probably get away with two events here but I like to cheat
@@ -155,7 +174,7 @@ export enum GameEvent {
 	DP_EFFECT_CHANGE, // change maximum DP effect
 	FIELD_TO_HAND,
 	TO_BOTTOM_DECK, // from field, but also from hand??
-	MON_TO_SECURITY_FFFJFJ1,
+	FIELD_TO_SECURITY,
 	OPTION_USED,
 	PLACE_IN_FIELD, // memory boost
 	DRAW,
@@ -191,6 +210,8 @@ export enum GameEvent {
 	SHUFFLE,
 	PLUG, 
 	TRASH_LINK,
+	CHOOSE, // does nothing by itself
+
 };
 
 

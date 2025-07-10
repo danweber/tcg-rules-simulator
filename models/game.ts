@@ -11,15 +11,16 @@ import Mastergame = require('./mastergame');
 
 import { SolidEffect, SubEffect } from './effect.js';
 import { EventCause, GameEvent } from './event';
-import { Conjunction, SpecialCard, SpecialInstance, SubTargetDesc, TargetDesc, TargetSource, fSpecialPlayer } from './target';
+import { Conjunction, DynamicNumber, SpecialCard, SpecialInstance, SubTargetDesc, TargetDesc, TargetSource, fSpecialPlayer } from './target';
 
 import seedrandom from 'seedrandom';
 
 
 import { createLogger } from "./logger";
 import { FancyLog } from './fancylog';
-import { EffectAndTarget } from './util';
+import { EffectAndTarget, verify_special_evo } from './util';
 import { new_parse_line } from './newparser';
+
 const logger = createLogger('game');
 
 var fs = require('fs');
@@ -116,9 +117,9 @@ export class Game {
         this.seed = seed;
         this.rng = seedrandom(seed);
 
-        let unused = function() {
+        let unused = function () {
             let x = 1;
-//              seedrandom(seed);
+            //              seedrandom(seed);
             return x;
         }
         this.memory = 0;
@@ -447,14 +448,14 @@ export class Game {
             fs.writeSync(this.control_log, `_QUESTION: ${this.get_question()}\n`);
             fs.writeSync(this.control_log, `_ANSWERS:\n`);
             let n = Math.floor(this.rng() * (this.wait_choices.length - 1) + 1);
-            logger.info("RNG" +  n);
+            logger.info("RNG" + n);
             let count = 0;
             let opt = "!!!";
             for (let play of this.wait_choices) {
                 fs.writeSync(this.control_log, `_\t${play.command.padEnd(20, " ")} ${play.text}\n`);
                 if (count++ == n) opt = play.command;
             }
-            
+
             /*
             fs.writeSync(this.control_log, `_WOULD MAKE RANDOM CHOICE: ${n} ${opt} \n`);
             if (c == autorun) {
@@ -543,8 +544,11 @@ export class Game {
         logger.debug("SETTING PLAYERS!");
 
 
-        this.Player1.shuffle();
-        this.Player2.shuffle();
+        this.Player1.shuffle("deck");
+        this.Player2.shuffle("deck");
+        this.Player1.shuffle("eggs");
+        this.Player2.shuffle("eggs");
+
         this.Player1.start_game();
         this.Player2.start_game();
         // ignore mulligan
@@ -779,7 +783,7 @@ export class Game {
         this._card_instance_id = 0;
     }
 
-    private _set_up_board(blob: string): string {
+    private async _set_up_board(blob: string): Promise<string> {
         if (!blob || blob.length < 3)
             return "";
         // logger.debug("board is:\n" + blob + "\n");                                                                           
@@ -787,9 +791,20 @@ export class Game {
             return "";
         this.wipe_field();
         this.start();
-        return this._continue_board(blob);
+        let output = "err";
+        try {
+            output = await this._continue_board(blob);
+        } catch (error) {
+            if (error instanceof Error) {
+                console.log(error.stack);
+            } else {
+                console.log("Caught an unknown error:", error);
+            }
+            output = 'err ' + error;
+        }
+        return output;
     }
-    private _continue_board(blob: string): string {
+    private async _continue_board(blob: string): Promise<string> {
         //   logger.debug("999999999");
         let _lines = blob.split("\n");
         let output = "";
@@ -866,6 +881,11 @@ export class Game {
                 this.n_turn = parseInt(value);
             } else if (key == 'MEMORY') {
                 this.memory = parseInt(value);
+            } else if (key == "UPDATE") {
+                this.process_game_flow();
+                this.ui_card_move();
+            } else if (key == "SLEEP") {
+                await this.sleep(800);
             } else if (key == "STEP") {
                 let to = (value == "TO"); // untested
                 let autoanswer = value == "AUTOANSWER";
@@ -1189,18 +1209,18 @@ export class Game {
                 }
             }
         }
-            if (rules_subs.length > 0) return rules_subs;
-            return false;
-            // for now DP deletion is just happening on its own
+        if (rules_subs.length > 0) return rules_subs;
+        return false;
+        // for now DP deletion is just happening on its own
 
 
-        }
+    }
 
 
-        // kick off the game, or move forward
-        go(): void {
-            logger.debug("GAME GO");
-            if(this.n_turn == 0) {
+    // kick off the game, or move forward
+    go(): void {
+        logger.debug("GAME GO");
+        if (this.n_turn == 0) {
             this.n_turn += 1;
             if (this.gid.includes("flip"))
                 this.turn_player = (this.rng() > 0.5) ? 1 : 2;
@@ -1353,7 +1373,7 @@ export class Game {
                 game_event: GameEvent.TARGETED_CARD_MOVE,
                 chosen_target: onto2, // move plugged card...
                 n_mod: "top",
-                chosen_target2: onto, // ... to top of stack
+                chosen_target2: [onto], // ... to top of stack
                 spec_source: onto,
                 td: td,
                 n_player: p.player_num,
@@ -1367,7 +1387,7 @@ export class Game {
                 cause: EventCause.GAME_FLOW,
                 game_event: GameEvent.EVOLVE,
                 chosen_target: cl, // Should be this 
-                chosen_target2: onto,
+                chosen_target2: [onto],
                 spec_source: onto, // this "causes" the evolve, but is distinct from what we evo onto
                 td: td,
                 n_player: p.player_num, // speifically for counter
@@ -1392,7 +1412,7 @@ export class Game {
                 cause: EventCause.GAME_FLOW,
                 game_event: GameEvent.CREATE_PENDING_EFFECT,
                 delayed_effect: pend,
-                choose: 1,
+                choose: new DynamicNumber(1),
                 delayed_phase_trigger: trigger,
                 chosen_target: onto,
                 spec_source: onto, // by the time this runs, this will be the source
@@ -1417,7 +1437,7 @@ export class Game {
                 game_event: GameEvent.EVOLVE,
                 // chosen_target: card,
                 chosen_target: cl, // Should be this 
-                chosen_target2: onto,
+                chosen_target2: [onto],
                 spec_source: onto, // this "causes" the evolve, but is distinct from what we digi onto
                 chosen_target3: onto2,
                 td: td,
@@ -1463,7 +1483,7 @@ export class Game {
             game_event: GameEvent.PLUG,
             label: "plug",
             chosen_target: source,
-            chosen_target2: recipient,
+            chosen_target2: [recipient],
             chosen_target3: source_card,
             td: new TargetDesc(""),
             n_player: p.player_num,
@@ -1549,7 +1569,48 @@ export class Game {
         return new CardLocation(this, player_num, location, index);
     }
 
-    static get_last_thing_from_sel(sel: SolidEffectLoop | false, s: TargetSource): (Instance | CardLocation)[] {
+    static get_target_number(sel: SolidEffectLoop | undefined, n: number): CardLocation | Instance | false {
+        if (!sel) return false;
+        return sel.chosen_targets![0];
+
+    }
+
+    // common tests to see if this last_thing is one we can return
+    static verify_last_thing(chosen_target: any, parse_matches: any, s: TargetSource) {
+        // is instance is a function but just its existence is checked
+        if (chosen_target && chosen_target.kind === "Instance"
+            && chosen_target.in_play() // if the instance isn't there any more, no match: should this end the search, or do we keep searching for something else?
+            && chosen_target.top()) {
+            logger.info("PROIPR LOCATION IS " + chosen_target.location_to_string);
+            logger.info("PRIOR TARGET FOUND! prior thing was " + chosen_target.get_name() + " or " + chosen_target.id + " and " + chosen_target.kind);
+            // does s.get_name() ever return a *function*? 
+            logger.info("i am " + s.get_name(true) + " " + s.id());
+            // how do we compare for equality??
+            if (chosen_target.id == s.id()) {
+                // "THAT" will never be self... right? Maybe what we should be skipping is *costs*
+                // "when a monster is played, by suspending a monster, that monster may evolve into..."
+                return false;
+            }
+            logger.warn("returing prior thing");
+            logger.warn("prior thing is " + chosen_target.get_name());
+
+            let x = [chosen_target];
+            // make sure this target is of the kind we want, like "that green monster"
+            // we're not chasing this cat all the way up the tree below, just here for now
+            // TODO: chase the cat all the way (but we need test cases)
+            if (parse_matches) {
+                x = x.filter((x: any) => verify_special_evo(x, parse_matches, s));
+            }
+            if (x.length > 0) {
+                return x;
+            } else {
+                // fall thru
+            }
+        }
+    }               
+
+
+    static get_last_thing_from_sel(sel: SolidEffectLoop | false, s: TargetSource, parse_matches?: any): (Instance | CardLocation)[] {
 
 
         if (!sel) {
@@ -1564,9 +1625,16 @@ export class Game {
             // the targets of both of those in turn
             let _solid = sel.effect;
 
+            // short-circuit, if we are in td2, td1 could be a match
+            if (sel.chosen_targets && sel.chosen_targets.length > 0) {                
+                let first = sel.chosen_targets[0];
+                let test = Game.verify_last_thing(first, parse_matches, s);
+                if (test) return test;
+             }
+
+
             for (let solid of [_solid, _solid.solid_starter]) {
                 if (!solid) continue;
-
                 let n = solid.effects.length;
                 // work backwards, looking for prior target
                 // if looking for "THAT MONSTER" we shouldn't match on self
@@ -1574,24 +1642,9 @@ export class Game {
                     n--;
                     let atomic = solid.effects[n];
                     let eff = atomic.events[0];
-                    // is instance is a function but just its existence is checked
-                    if (eff.chosen_target && eff.chosen_target.kind === "Instance"
-                        && eff.chosen_target.in_play() // if the instance isn't there any more, no match: should this end the search, or do we keep searching for something else?
-                        && eff.chosen_target.top()) {
-                        logger.info("PROIPR LOCATION IS " + eff.chosen_target.location_to_string);
-                        logger.info("PRIOR TARGET FOUND! prior thing was " + eff.chosen_target.get_name() + " or " + eff.chosen_target.id + " and " + eff.chosen_target.kind);
-                        // does s.get_name() ever return a *function*? 
-                        logger.info("i am " + s.get_name(true) + " " + s.id());
-                        // how do we compare for equality??
-                        if (eff.chosen_target.id == s.id()) {
-                            // "THAT" will never be self... right? Maybe what we should be skipping is *costs*
-                            // "when a monster is played, by suspending a monster, that monster may evolve into..."
-                            continue;
-                        }
-                        logger.warn("returing prior thing");
-                        logger.warn("prior thing is " + eff.chosen_target.get_name());
-                        return [eff.chosen_target];
-                    }
+                    let test = Game.verify_last_thing(eff.chosen_target, parse_matches, s);
+                    if (test) return test;
+
                 }
 
                 // if this was a set pending effect, look back in the effect that started us
@@ -1611,9 +1664,15 @@ export class Game {
                         ti.map(e => e.spec_source) :
                         ti.map(e => e.chosen_target);
                     logger.info("returning " + ret.length + " pronouns");
+                    if (ti[0].game_event === GameEvent.EVOLVE) {
+                        ret = ti[0].chosen_target2 as (Instance | CardLocation)[];
+                    }
 
                     logger.info(ret.map(x => x.get_name()).join(":::"));
 
+                    //        if (parse_matches) {
+                    //          ret = ret.filter((x: any) => verify_special_evo(x, parse_matches, s));
+                    //    }
                     return ret;
                 }
             }
@@ -1634,7 +1693,7 @@ export class Game {
             logger.warn("no prior thing in effect");
         }
 
-        return []; 
+        return [];
         /*
         if (!this.last_thing || 5 > 4) {
             console.error("nothing found " + GameEvent[ge]);
@@ -1674,7 +1733,6 @@ export class Game {
         let o_p = p?.other_player;
         if (t.conjunction == Conjunction.SELF) {
             let id = s.id();
-
         }
 
         // things that 'target' the player
@@ -1699,7 +1757,7 @@ export class Game {
                     ret.unshift(new CardLocation(game, instance.n_me_player, Location.BATTLE, Number(index), instance.id));
                 }
                 for (let index in instance.plugged) {
-                    ret.unshift(new CardLocation(game, instance.n_me_player, Location.BATTLE, Number(index), instance.id, "plug")) ;
+                    ret.unshift(new CardLocation(game, instance.n_me_player, Location.BATTLE, Number(index), instance.id, "plug"));
                 }
             }
 
@@ -1732,9 +1790,9 @@ export class Game {
             GameEvent.EVOSOURCE_MOVE,
             GameEvent.TRASH_LINK,
             GameEvent.PLUG, // can be both card and instance
-        ].includes(ge) 
-        || t.raw_text.match("security")
-    ) {
+        ].includes(ge)
+            || t.raw_text.match("security")
+        ) {
 
             let to_search: CardLocation[] = [];
             if (t.raw_text.match(/token/i)) {
@@ -1752,7 +1810,13 @@ export class Game {
                 }
             }
             to_search.push(...p.reveal.map((c, i) => new CardLocation(this, p.player_num, Location.REVEAL, i)));
-            if (ge == GameEvent.EVOSOURCE_REMOVE || ge == GameEvent.EVOSOURCE_MOVE || t.raw_text.includes("evolution cards") ||
+
+            // do we need to target cards under other cards?
+            if (ge == GameEvent.EVOSOURCE_REMOVE ||
+                ge == GameEvent.EVOSOURCE_DOUBLE_REMOVE ||
+                ge == GameEvent.EVOSOURCE_MOVE ||
+                t.raw_text.includes("evolution cards") ||
+                t.raw_text.includes("from under") ||
                 ge == GameEvent.TRASH_LINK) {
                 //to_search.length = 0;
                 to_search.push(...all_sources(this));
@@ -1782,6 +1846,7 @@ export class Game {
             logger.info(`t is ${t.raw_text} or ${t.toString()} or ${t.toPlainText()}`);
             // we don't have a "biggest level" or anything for CardLocations
             ret.push(...to_search.filter(x => t.matches(x, s, this, undefined, sel)));
+            ret = t.sort(ret);
             logger.info(`ret length is ${ret.length}`);
             // play-self-from-trash, or for anything else that requires targeting a specific card in trash
             if (t.conjunction == Conjunction.SELF) {
@@ -1810,7 +1875,11 @@ export class Game {
         // call with FIELD: both battle and eggzone
         // call with EGGZONE: just eggzone
         let locus = Location.BATTLE;
+        // if this is an [on deletion] we can reference ourselves in the trash
+        let i = s.get_instance();
         if (search_loc === Location.EGGZONE || search_loc === Location.FIELD) locus = search_loc;
+        // if we are searching for "this (green) monster" add trash.
+        if (t.raw_text.match(/^this.{1,10}monster/i)) locus |= Location.ALLTRASH;
         let bb = this.instances.filter(x => (x.location & locus) && t.matches(x, s, this, prior_target, sel));
 
         let ss = t.sort(bb); // for when we need "biggest level" or something
@@ -1945,6 +2014,7 @@ export class Game {
         // later we will need to query other things
         let ret: SolidEffect[] = [];
 
+        logger.info("preflight actions " + e.length + " events: " + e.map(x => GameEvent[x.game_event]).join(","));;
         // remove effects that are in an egg zone... I'm not sure this is right,
         // I ended up needing to do it inside Instance::check_preflight() so maybe
         // I can completely delete this.
@@ -1953,6 +2023,7 @@ export class Game {
             if (s.chosen_target && s.chosen_target.location == Location.EGGZONE) {
                 e.splice(i, 0);
             } else {
+                logger.info("game event " + GameEvent[s.game_event] + " chosen target " + s.chosen_target?.get_name());
                 // "when you would play this" instance doesn't exist yet!
                 if (s.game_event == GameEvent.PLAY || s.game_event == GameEvent.USE || s.game_event == GameEvent.EVOLVE) {
                     // get card from card/cardlocation
@@ -2121,6 +2192,8 @@ export class Game {
         logger.info(`executing2 ${msg} last_id ${last_id} command_id ${this.command_id}`);
         if (last_id != this.command_id) {
             this.la(`UI out of sync 2: ${this.command_id} expected, got ${last_id} `);
+            // do nothing, I hope we can recover
+            return;
         }
 
         // This declaration conflicts!
@@ -2140,6 +2213,7 @@ export class Game {
         logger.info(`executing1 ${msg} last_id ${last_id} command_id ${this.command_id}`);
         if (last_id != this.command_id) {
             this.la(`UI out of sync 1: ${this.command_id} expected, got ${last_id} `);
+            return;
         }
         let c: GameCommand = {
             id: ++this.command_id,
@@ -2745,16 +2819,18 @@ export class Game {
             let p2_cards = [...new Set(public_card_ids.concat(p2_private_ids))];
             let p1_card_data = this.JSON_card_data(p1_cards);
             let p2_card_data = this.JSON_card_data(p2_cards);
-            p1.card_data = p1_card_data;
-            p2.card_data = p2_card_data;
+            if (n_player !== 2) p1.card_data = p1_card_data;
+            if (n_player !== 1) p2.card_data = p2_card_data;
         }
 
-        // we don't really need to report all instances
-        let instances = this.instances.map(x => x.JSON_instance()).filter(x => x);
+        // nothing ever used this; it's potentially valuable for deep queries, but
+        // maybe we make the UI query individually. Don't forget, each player's
+        // blob will have their current instances already
+        // let instances = this.instances.map(x => x.JSON_instance()).filter(x => x);
 
         let game = {
             status: status,
-            instances: instances,
+            //instances: instances,
             p1: p1,
             p2: p2,
             temp_zones: temp_zones

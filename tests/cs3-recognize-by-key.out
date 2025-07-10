@@ -1,13 +1,20 @@
 FIELD1:
-FIELD2:One,CS2-17,NaNDP Two,CS2-02,2000DP Three,CS2-03,1500DP Four,CS2-03,1500DP Five,CS2-05,5500DP Six,CS2-06,5500DP Seven,CS2-17,NaNDP
+FIELD2:One,CS2-Aggressiveamy,NaNDP Two,CS2-Sharpblade,2000DP Three,CS2-Longsword,1500DP Four,CS2-Longsword,1500DP Five,CS2-Greatsword,5500DP Six,CS2-Lazysword,5500DP Seven,CS2-Aggressiveamy,NaNDP
 GAME:P1 T2 MAIN 10
 ECHO: ------ use tag
+CAPTURE:Target Aggressive Amy 2
+CAPTURE:Target Sharp Blade 3
+CAPTURE:Target Long Sword 4
+CAPTURE:Target Long Sword 5
+CAPTURE:Target Great Sword 6
+CAPTURE:Target Lazy Sword 7
+CAPTURE:Target Aggressive Amy 8
 FIELD1:
-FIELD2:One,CS2-17,NaNDP,TAG Two,CS2-02,2000DP,TAG Three,CS2-03,1500DP,TAG Four,CS2-03,1500DP,TAG Five,CS2-05,5500DP,TAG Six,CS2-06,5500DP Seven,CS2-17,NaNDP
+FIELD2:One,CS2-Aggressiveamy,NaNDP,TAG Two,CS2-Sharpblade,2000DP,TAG Three,CS2-Longsword,1500DP,TAG Four,CS2-Longsword,1500DP,TAG Five,CS2-Greatsword,5500DP,TAG Six,CS2-Lazysword,5500DP Seven,CS2-Aggressiveamy,NaNDP
 GAME:P1 T2 MAIN 7
 ECHO: ------ on play, target DP
 FIELD1:Yyy,CS3-Chirpflare,2000DP,DODGE
-FIELD2:One,CS2-17,NaNDP,TAG Three,CS2-03,1500DP,TAG Four,CS2-03,1500DP,TAG Five,CS2-05,5500DP,TAG Six,CS2-06,5500DP Seven,CS2-17,NaNDP
+FIELD2:One,CS2-Aggressiveamy,NaNDP,TAG Three,CS2-Longsword,1500DP,TAG Four,CS2-Longsword,1500DP,TAG Five,CS2-Greatsword,5500DP,TAG Six,CS2-Lazysword,5500DP Seven,CS2-Aggressiveamy,NaNDP
 GAME:P1 T2 MAIN 3
 ECHO: ------ snashtral -=-------
 EFFECT-TREE:DSE DEPTH 1 DONE:use Snastral Trash
@@ -18,15 +25,15 @@ GET-CHOICES:Target Long Sword 4
 GET-CHOICES:Target Long Sword 5
 GET-CHOICES:Target Great Sword 6
 FIELD1:Yyy,CS3-Chirpflare
-FIELD2:One,CS2-17 Three,CS2-03 Four,CS2-03 Five,CS2-05 Six,CS2-06 Seven,CS2-17
+FIELD2:One,CS2-Aggressiveamy Three,CS2-Longsword Four,CS2-Longsword Five,CS2-Greatsword Six,CS2-Lazysword Seven,CS2-Aggressiveamy
 GAME:P1 T2 MAIN 0
 ECHO: -- choose first target, great sword
 EFFECT-TREE:DSE DEPTH 1 DONE:use Snastral Trash
 EFFECT-TREE:RES DEPTH 2 PROCESSING:Snastral Trash
-GET-CHOICES:Choose 2nd target for tucking
+GET-CHOICES:Choose 1 for 2nd part of tucking
 GET-CHOICES:Target Long Sword 4
 GET-CHOICES:Target Long Sword 5
 GET-CHOICES:Target Lazy Sword 7
 FIELD1:Yyy,CS3-Chirpflare
-FIELD2:One,CS2-17 Three,CS2-03 Four,CS2-03 Five,CS2-05 Six,CS2-06 Seven,CS2-17
+FIELD2:One,CS2-Aggressiveamy Three,CS2-Longsword Four,CS2-Longsword Five,CS2-Greatsword Six,CS2-Lazysword Seven,CS2-Aggressiveamy
 GAME:P1 T2 MAIN 0

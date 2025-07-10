@@ -1,9 +1,9 @@
-FIELD1:Four1,CS1-06,PLUG,CS3-Fairyfeatherlink Four2,CS1-06,PLUG,CS3-Fairyfeatherlink Four3,CS1-07,PLUG,CS3-Fairyfeatherlink Five1,CS1-08
+FIELD1:Four1,CS1-Sneakycat,PLUG,CS3-Fairyfeatherlink Four2,CS1-Sneakycat,PLUG,CS3-Fairyfeatherlink Four3,CS1-Slipperyshield,PLUG,CS3-Fairyfeatherlink Five1,CS1-Phoenixdefender
 FIELD2:
 TRASH1:
 TRASH2:
 EGGZONE1:
-EGGZONE2:Xxx,CS2-01
+EGGZONE2:Xxx,CS2-Doggiedagger
 GAME:P2 T3 MAIN 9
 ECHO: -- Use first quick slash, kill the level 4s
 CAPTURE:FairyFeatherlink When this Monster would leave the battle area, you may suspend it to prevent that r…
@@ -17,8 +17,8 @@ CAPTURE:Activate FairyFeatherlink suspending
 CAPTURE:Don't pay/activate
 CAPTURE:Activate FairyFeatherlink suspending
 CAPTURE:Don't pay/activate
-FIELD1:Four1,CS1-06,REST,PLUG,CS3-Fairyfeatherlink Four2,CS1-06,REST,PLUG,CS3-Fairyfeatherlink Four3,CS1-07,REST,PLUG,CS3-Fairyfeatherlink Five1,CS1-08
+FIELD1:Four1,CS1-Sneakycat,REST,PLUG,CS3-Fairyfeatherlink Four2,CS1-Sneakycat,REST,PLUG,CS3-Fairyfeatherlink Four3,CS1-Slipperyshield,REST,PLUG,CS3-Fairyfeatherlink Five1,CS1-Phoenixdefender
 FIELD2:
 TRASH1:
-TRASH2:CS2-13
+TRASH2:CS2-Quickslash
 GAME:P2 T3 MAIN 3

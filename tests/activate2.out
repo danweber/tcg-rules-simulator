@@ -1,5 +1,5 @@
 FIELD1:Green,CS3-Fairyfeatherlink,1000DP
-FIELD2:Van,DW1-Vanillamon,5000DP Big,DW1-Bigmon,12000DP Paper,CS1-02,500DP
+FIELD2:Van,DW1-Vanillamon,5000DP Big,DW1-Bigmon,12000DP Paper,CS1-Papershield,500DP
 GAME:P1 T3 MAIN 6
 GET-X-PLAYS: json REFRESH
 GET-X-PLAYS: EVOLVE 0 4 3 0 Evolve Lv.3 ArcaneTweet onto FairyFeatherlink (3)
@@ -18,5 +18,5 @@ CAPTURE:Target VanillaMon 1
 CAPTURE:Target BigMon 2
 CAPTURE:Target Paper Shield 3
 FIELD1:Green,CS3-Fairyfeatherlink,3000DP Yyy,CS3-Arcanetweet,4000DP
-FIELD2:Van,DW1-Vanillamon,4000DP Big,DW1-Bigmon,11000DP Paper,CS1-02,500DP
+FIELD2:Van,DW1-Vanillamon,4000DP Big,DW1-Bigmon,11000DP Paper,CS1-Papershield,500DP
 GAME:P1 T3 MAIN 1

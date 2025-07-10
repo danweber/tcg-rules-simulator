@@ -3,7 +3,7 @@ import { Game } from './game';
 import { Instance } from './instance'
 import { Location } from './location';
 
-import { ForEachTarget, GameTest, MultiTargetDesc, TargetDesc, TargetSource } from './target';
+import { DynamicNumber, ForEachTarget, GameTest, MultiTargetDesc, TargetDesc, TargetSource } from './target';
 import { GameEvent, EventCause, gerund, present } from './event';
 
 import { Phase, PhaseTrigger, GameStep } from './phase';
@@ -200,10 +200,6 @@ export function Solid_is_triggered(solid?: SolidEffect) {
 
 //     * for reduced cost 
 
-export interface SubSearcher {
-	n_choose: number;
-	target: TargetDesc;
-}
 
 // interrupt condition should be a tuple of GameEvent and TargetDesc. 
 // Or, like, a SubEffect 
@@ -211,7 +207,7 @@ export interface SubSearcher {
 export class AtomicEffect {
 	optional: boolean;
 	ask_other?: boolean;
-	is_cost?: boolean; // if true, must succeed to proceed
+	is_cost: number = 0; // if true, must succeed to proceed
 
 	events_to_do?: SubEffect[]; // we don't consume this, it's used later for checking what we did
 	flags?: any; // catch-all, everything here  shuld be reviewed
@@ -228,10 +224,6 @@ export class AtomicEffect {
 	per_unit_test?: TargetDesc;
 	// I worked out a list of AtomicEffects but I think this is the easiest way to do it
 
-	search_n?: number; // how many cards to reveal for search
-	search_multitarget?: MultiTargetDesc;
-	unused_search_choose?: SubSearcher[]; // one or more things to pull
-	search_final?: Location; // where they go at the end
 	raw_text: string;
 	keywords: string[] = [];
 	weirdo: SubEffect;
@@ -250,7 +242,7 @@ export class AtomicEffect {
 		this.test_condition = undefined;
 		let thing = {
 			optional: false, game_event: GameEvent.NIL,
-			td: new TargetDesc(""), choose: 0, n: 0,
+			td: new TargetDesc(""), choose: new DynamicNumber(0), n: 0,
 			immune: false, cause: EventCause.EFFECT
 		};
 		let proper_thing: SubEffect = thing;
@@ -267,7 +259,7 @@ export class AtomicEffect {
 		if (this.test_condition)
 			ret += `If <${this.test_condition.toString()}/${this.test_condition.raw_text} > `;
 		ret += `Target <${this.weirdo.td.toString()}/${this.weirdo.td.raw_text}> `;
-		if (this.weirdo.choose == 1) ret += "Choose 1. ";
+		if (this.weirdo.choose?.value() == 1) ret += "Choose 1. ";
 		if (this.weirdo.game_event) ret += "Then " + GameEvent[this.weirdo.game_event];
 		return ret;
 	}
@@ -369,14 +361,14 @@ export interface SubEffect {
 	game_event: GameEvent;
 	n_player?: number;
 	n_function?: (s: SolidEffect) => number;
-	choose?: number;
+	choose?: DynamicNumber;
 
 	td: TargetDesc; // april 23 tried to make this nullable
 	chosen_target?: any; //     TODO: make this Instance | CardLocation; // selected target
 
 	td2?: TargetDesc;  // in general, this is what somethiing is coming "from"
 	td3?: TargetDesc;  // 3rd target, right now just for fusion evolves
-	chosen_target2?: any
+	chosen_target2?: any[];
 	chosen_target3?: any // at what point do we just use an array? chosen_target itself could be an array
 
 	play_label?: string; // if we play out an instance, the label we give it
@@ -428,6 +420,8 @@ export interface StatusCondition {
 	n?: number,
 	p?: Phase
 }
+
+
 
 // "tgt" is the actual targeted mon
 //let tgt = new TargetDesc(""); // empty td
@@ -551,6 +545,34 @@ export function subeffect_to_string(sub: SubEffect): string {
 	if (sub.game_event == GameEvent.NIL) str = "?"
 	ret += str.toUpperCase();
 	//	ret += show number / string / whatever.
+	return ret;
+}
+
+
+export function status_cond_to_gerund(sc?: StatusCondition[]) {
+	if (!sc) return "effect";
+	if (sc.length > 1) return "getting conditions " + sc.map(x => present(x.s.game_event)).join(",");
+	let s = sc[0];
+	if (s.s.immune) {
+		if (s.s.game_event == GameEvent.ALL) {
+			return "gaining immunity";
+		}
+		return "can't " + present(s.s.game_event);
+	}
+	let str = s.keywords ? Object.keys(s.keywords).join(",") : "KEYWORD?";
+
+	switch (s.s.game_event) {
+		case GameEvent.DP_CHANGE: return (s.s.n && s.s.n > 0 ? "getting" : "losing") + " DP";
+		case GameEvent.KEYWORD: return "gaining " + str;
+		case GameEvent.ADD_INFORMATION: return "adding info";	
+		case GameEvent.CHANGE_INFORMATION: return "changing info";	
+	}
+	if (s.solid && s.solid.length > 0) {
+	//	console.log(561, s);
+			return "gaining nested effect";
+	}
+	let ret = "getting status condition " + GameEvent[s.s.game_event];
+	console.info(569, ret, sc);
 	return ret;
 }
 

@@ -1,14 +1,14 @@
-FIELD1:Attacker,DW1-Vanillamon,CS1-03,5000DP Green,DW1-Birder,3000DP
-FIELD2:Vic0,CS1-02,500DP Vic1,CS1-02,REST,500DP Vic2,DW1-Vanillamon,REST,5000DP
+FIELD1:Attacker,DW1-Vanillamon,CS1-Garbagecanlid,5000DP Green,DW1-Birder,3000DP
+FIELD2:Vic0,CS1-Papershield,500DP Vic1,CS1-Papershield,REST,500DP Vic2,DW1-Vanillamon,REST,5000DP
 GAME:P1 T2 MAIN 5
 ECHO: -- Attack once with Attacker, kill Vic0 with effect and Vic1 with attack
 CAPTURE:Target Paper Shield 3
 CAPTURE:Target Paper Shield 4
 CAPTURE:Target VanillaMon 5
-FIELD1:Attacker,DW1-Vanillamon,CS1-03,REST,5000DP Green,DW1-Birder,3000DP
+FIELD1:Attacker,DW1-Vanillamon,CS1-Garbagecanlid,REST,5000DP Green,DW1-Birder,3000DP
 FIELD2:Vic2,DW1-Vanillamon,REST,5000DP
 GAME:P1 T2 MAIN 5
 ECHO: -- This isn't once per turn! Restand and do it again. I only survive into Vic2 because it gets its DP reduced.
-FIELD1:Attacker,DW1-Vanillamon,CS1-03,REST,5000DP Green,DW1-Birder,3000DP
+FIELD1:Attacker,DW1-Vanillamon,CS1-Garbagecanlid,REST,5000DP Green,DW1-Birder,3000DP
 FIELD2:
 GAME:P1 T2 MAIN 1

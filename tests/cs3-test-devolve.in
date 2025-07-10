@@ -1,0 +1,30 @@
+VERSION:2
+
+
+# if this Monster is suspended, \uff1cDe-Evolve 2\uff1e 1 of your opponent's Monster.
+
+FIELD2:One,CS1-08,CS1-08,CS1-08 Two,CS2-08,CS2-08,CS2-08
+FIELD1:Stand,CS3-03 Lie,CS3-03,REST Other,CS3-03
+HAND1:CS3-Wizard CS3-Wizard
+GAME:P1 T3 MAIN 10
+DUMP
+
+ECHO: -- evo, not suspended so nothing happens
+CMD:EVO CS3-Wizard Stand
+STEP:AUTOANSWER:CAPTURE
+DUMP
+
+ECHO: -- evo, suspended, so I can choose an upto and a target
+CMD:EVO CS3-Wizard Lie
+EFFECT-TREE
+GET-CHOICES
+DUMP:TRASH
+
+ECHO: -- choose 1, then the second target
+STEP:TO:1
+STEP:TO:1
+GET-CHOICES
+DUMP:TRASH
+
+EXIT
+

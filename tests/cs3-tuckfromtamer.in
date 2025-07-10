@@ -1,0 +1,53 @@
+VERSION:2
+
+# [Your Turn] When one of your green Monster would be played, by placing 1 card from under one of your Tamers as the bottom digivolution card of that Monster, reduce the play cost by 1.
+
+FIELD1:mon,CS3-Sorcery Tamer,CS3-Birdwatcher,CS3-02,CS3-03 evo,CS3-02
+
+HAND1:CS3-06
+GAME:P1 T3 MAIN 6
+DUMP
+
+ECHO: ------ play,  should interrupt
+CMD:EVO CS3-06 evo
+EFFECT-TREE
+GET-CHOICES
+DUMP
+
+ECHO: -- choose to tuck
+STEP:TO:0
+EFFECT-TREE
+GET-CHOICES
+DUMP
+
+ECHO: -- choose chirp, and we evo for 4-1 or 3
+STEP:TO:1
+EFFECT-TREE
+GET-CHOICES
+DUMP
+
+EXIT
+
+
+
+
+ECHO: ------ pass turn
+CMD:PASS
+CMD:MAIN
+DUMP:DP,KEYWORDS
+
+#EXIT
+
+ECHO: ------ pass turn
+CMD:PASS
+DUMP:DP,KEYWORDS
+
+EXIT
+
+ECHO: go
+CMD:ATTACK Res Tank
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP,KEYWORDS,TRASH
+
+
+

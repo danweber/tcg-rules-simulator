@@ -219,7 +219,7 @@
     "rarity": "Special",
     "securityEffect": "[Security] Play this card without paying its cost.",
     "specialEvolve": "-",
-    "type": "Shield",
+    "type": "Shield/Bird",
     "version": "Normal"
   },
   {
@@ -1129,7 +1129,7 @@
     "form": "Junior",
     "id": "CS3-04",
     "linkRequirement": "[Link] Lv. 4 Green: Cost 1",
-    "linkDP": "<< +500DP",
+    "linkDP": "+500DP",
     "linkEffect": "[When Linking] Suspend 1 Monster",
      "name": {
      "english": "ArcaneTweet"
@@ -1200,6 +1200,60 @@
     "attribute": "Bird",
     "block": ["01"],
     "burstEvolve": "-",
+    "cardLv": "Lv.4",
+    "cardNumber": "CS3-07",
+    "cardType": "Monster",
+    "color": "Green/White",
+    "digiXros": "-",
+    "evolveCondition": [{ "color": "Green", "cost": "3", "level": "3" } ],
+    "evolveEffect": "",
+    "dnaEvolve": "-",
+    "dp": "5500",
+    "effect": "\uff1cLink +1\uff1e \n[On Play] For the turn, 1 of your Monster gains ＜Security Attack +1＞ and gets +2000 DP.\n[When Evolving] If this Monster is suspended, \uff1cDe-Evolve 2\uff1e 1 of your opponent's Monster.",
+    "form": "Over The Hill",
+    "id": "CS3-07",
+    "name": {
+      "english": "Wizard Hawk"
+    },
+    "playCost": "6",
+    "rarity": "Suspicious",
+    "securityEffect": "-",
+    "specialEvolve": "",
+    "type": "Spellcaster/Sword",
+    "version": "Normal"
+  },
+  {
+    "aceEffect": "-",
+    "attribute": "Bird",
+    "block": ["01"],
+    "burstEvolve": "-",
+    "cardLv": "Lv.4",
+    "cardNumber": "CS3-08",
+    "cardType": "Monster",
+    "color": "Green",
+    "digiXros": "-",
+    "evolveCondition": [{ "color": "Green", "cost": "2", "level": "3" } ],
+    "evolveEffect": "",
+    "dnaEvolve": "-",
+    "dp": "5000",
+    "effect": "[Your Turn] When one of your Monster would evolve into a level 4 green Monster card, by placing 1 card from under one of your Tamers as the bottom evolution card of that Monster, reduce the evolution cost by 1.\n",
+    "form": "Fancy",
+    "id": "CS3-08",
+    "name": {
+      "english": "SorcerySwan"
+    },
+    "playCost": "6",
+    "rarity": "For Life",
+    "securityEffect": "-",
+    "specialEvolve": "",
+    "type": "Spellcaster",
+    "version": "Normal"
+  },
+  {
+    "aceEffect": "-",
+    "attribute": "Bird",
+    "block": ["01"],
+    "burstEvolve": "-",
     "cardLv": "Lv.5",
     "cardNumber": "CS3-11",
     "cardType": "Monster",
@@ -1223,7 +1277,35 @@
     "type": "Spellcaster/Sword",
     "version": "Normal"
   },
-     {
+  {
+    "aceEffect": "-",
+    "attribute": "Bird",
+    "block": ["01"],
+    "burstEvolve": "-",
+    "cardLv": "Lv.6",
+    "cardNumber": "CS3-12",
+    "cardType": "Monster",
+    "color": "Green/Yellow",
+    "digiXros": "-",
+    "effect": "[Opponent's Turn] Your opponent's effects can't delete this Monster or return this Monster to the hand or deck",
+    "evolveCondition": [{ "color": "Green", "cost": "3", "level": "5" } ],
+    "evolveEffect": "",
+    "dnaEvolve": "-",
+    "dp": "14000",
+    "effect": "",
+    "form": "Ancient",
+    "id": "CS3-12",
+    "name": {
+      "english": "GlamourPhoenix"
+    },
+    "playCost": "9",
+    "rarity": "Mysterious",
+    "securityEffect": "[Security] Play this card without paying its cost.",
+    "specialEvolve": "",
+    "type": "Spellcaster",
+    "version": "Normal"
+  },
+  {
     "aceEffect": "-",
     "attribute": "Rock",
     "block": ["01"],
@@ -1249,6 +1331,39 @@
     "specialEvolve": "-",
     "type": "Option",
     "version": "Normal"
+  },
+  {
+    "aceEffect": "-",
+    "attribute": "Rock",
+    "block": [
+      "01"
+    ],
+    "burstEvolve": "-",
+    "cardLv": "-",
+    "cardNumber": "CS3-15",
+    "cardType": "Option",
+    "color": "Green",
+    "digiXros": "-",
+    "evolveCondition": [],
+    "evolveEffect": "-",
+    "dnaEvolve": "-",
+    "dp": "-",
+    "effect": "[Main] Link 1 card in your trash to one of your Monster without paying the cost.",
+    "form": "-",
+    "id": "CS3-15",
+    "name": {
+        "english": "Plug It In, Plug It In!"
+    },
+    "playCost": "2",
+    "rarity": "Rare",
+    "securityEffect": "[Security] Return 1 green Monster card from your trash to your hand. Then, add this card to your hand.",
+    "specialEvolve": "-",
+    "type": "Option",
+    "version": "Normal",
+    "linkDP": "",
+    "linkRequirement": "",
+    "linkEffect": "",
+    "rule": ""
   },
   {
     "aceEffect": "-",
@@ -1290,7 +1405,7 @@
     "evolveCondition": [],
     "evolveEffect": "",
     "dp": "-",
-    "effect": "[Start of Your Turn] If you have 1 memory or less, set your memory to 4.\n",
+    "effect": "[Start of Your Turn] If you have 1 memory or less, set your memory to 4.\n[All Turns] When one of your Monster would evolve into a level 5 green Monster card, by suspending this Tamer and placing 1 card from under one of your Tamers as the bottom evolution card of that Monster, reduce the evolution cost by 1.\n",
     "form": "-",
     "id": "CS3-17",
     "name": {

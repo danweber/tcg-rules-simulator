@@ -1,6 +1,6 @@
-FIELD1:Blue,CS2-10,CS2-01,12000DP Yellow1,CS1-10,CS1-01,13000DP Yellow2,CS1-12,REST,8000DP Yellow3,CS1-12,CS1-01,REST,8000DP
-FIELD2:Attacker,CS2-11,9000DP
-HAND1:CS2-Rampager CS2-12 DW1-Vanillamon CS1-11
+FIELD1:Blue,CS2-Animesword,CS2-Doggiedagger,12000DP Yellow1,CS1-Obsidianshield,CS1-Tinyshield,13000DP Yellow2,CS1-Onyxshield,REST,8000DP Yellow3,CS1-Onyxshield,CS1-Tinyshield,REST,8000DP
+FIELD2:Attacker,CS2-Shieldsmasher,9000DP
+HAND1:CS2-Rampager CS2-Colossalsword DW1-Vanillamon CS1-Adamantiumshield
 HAND2:
 GAME:P2 T3 MAIN 3
 ECHO: -- attack into Yellow3, get dp boost, trigger blast
@@ -11,17 +11,17 @@ GET-CHOICES:Evolve Lv.7 Rampager onto Adamantium Shield in HAND and Anime Sword 
 GET-CHOICES:Evolve Lv.7 Rampager onto Obsidian Shield and Colossal Sword in HAND (0)
 GET-CHOICES:Evolve Lv.7 Rampager onto Onyx Shield and Colossal Sword in HAND (0)
 GET-CHOICES:Evolve Lv.7 Rampager onto Onyx Shield and Colossal Sword in HAND (0)
-FIELD1:Blue,CS2-10,CS2-01,12000DP Yellow1,CS1-10,CS1-01,13000DP Yellow2,CS1-12,REST,8000DP Yellow3,CS1-12,CS1-01,REST,8000DP
-FIELD2:Attacker,CS2-11,REST,14000DP
-HAND1:CS2-Rampager CS2-12 DW1-Vanillamon CS1-11
+FIELD1:Blue,CS2-Animesword,CS2-Doggiedagger,12000DP Yellow1,CS1-Obsidianshield,CS1-Tinyshield,13000DP Yellow2,CS1-Onyxshield,REST,8000DP Yellow3,CS1-Onyxshield,CS1-Tinyshield,REST,8000DP
+FIELD2:Attacker,CS2-Shieldsmasher,REST,14000DP
+HAND1:CS2-Rampager CS2-Colossalsword DW1-Vanillamon CS1-Adamantiumshield
 HAND2:
 GAME:P2 T3 MAIN 3
 ECHO: -- choose first non-nothing
 EFFECT-TREE:NOTHING
 GET-CHOICES:Choose:
-FIELD1:Yellow1,CS1-10,CS1-01,13000DP Yellow2,CS1-12,REST,8000DP Yellow3,CS1-12,CS1-01,REST,8000DP I6,CS2-Rampager,CS1-11,CS2-10,CS2-01,14000DP
+FIELD1:Yellow1,CS1-Obsidianshield,CS1-Tinyshield,13000DP Yellow2,CS1-Onyxshield,REST,8000DP Yellow3,CS1-Onyxshield,CS1-Tinyshield,REST,8000DP I6,CS2-Rampager,CS1-Adamantiumshield,CS2-Animesword,CS2-Doggiedagger,14000DP
 FIELD2:
-HAND1:CS2-12 DW1-Vanillamon
+HAND1:CS2-Colossalsword DW1-Vanillamon
 HAND2:
 GAME:P2 T3 MAIN 3
 ECHO: -- the attacker was removed (oops, I didn't mean to test this). I shouldn't get the choice to block

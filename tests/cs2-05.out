@@ -1,10 +1,10 @@
-FIELD1:First,CS1-02,500DP Second,CS1-02,500DP Third,DW1-Vanillamon,5000DP
-FIELD2:WhenAtt,DW1-Vanillamon,CS2-05,5000DP
+FIELD1:First,CS1-Papershield,500DP Second,CS1-Papershield,500DP Third,DW1-Vanillamon,5000DP
+FIELD2:WhenAtt,DW1-Vanillamon,CS2-Greatsword,5000DP
 GAME:P2 T3 MAIN 6
 CAPTURE:Target Paper Shield 1
 CAPTURE:Target Paper Shield 2
-FIELD1:Second,CS1-02,500DP Third,DW1-Vanillamon,5000DP
+FIELD1:Second,CS1-Papershield,500DP Third,DW1-Vanillamon,5000DP
 FIELD2:
-TRASH1:CS1-02 DW1-Vanillamon
-TRASH2:CS2-05 DW1-Vanillamon
+TRASH1:CS1-Papershield DW1-Vanillamon
+TRASH2:CS2-Greatsword DW1-Vanillamon
 GAME:P2 T3 MAIN 6

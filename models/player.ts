@@ -21,6 +21,7 @@ type PlaceList = { [key: string]: string; };
 import { createLogger } from "./logger";
 import { EffectAndTarget } from './util';
 import { plugin } from 'mongoose';
+import { flatMapDepth } from 'lodash';
 const logger = createLogger('player');
 
 interface Hash {
@@ -37,6 +38,8 @@ export interface Command {
     link_source?: any,
     link_target?: any,
     link_trash?: any,
+    attack_source?: any,
+    attack_dest?: any,
     cost?: string;
     evo_target?: string;
     evo_card?: any;
@@ -103,6 +106,7 @@ export class Player {
     tokendeck: Card[];
     tokentrash: Card[];
     reveal: Card[];
+    stack: Card[] = []; 
     optzone: Card[] = [];
     history: string[];
     hand: Card[];
@@ -201,11 +205,9 @@ export class Player {
     is_player() { return true; }
 
 
-    shuffle(security: number = 0) {
-        let pile = security ? this.security : this.deck;
-        if (!security) {
-            // I'd warn about a wrong deck size here, but some tests have non-50 decks
-        }
+    shuffle(deck: "deck" | "security" | "eggs") {
+        
+        let pile = (deck === "security") ? this.security : (deck === "eggs") ? this.eggs : this.deck;
 
         let n = pile.length, random;
         while (n > 0) {
@@ -469,7 +471,10 @@ export class Player {
                     let v_key = `ATTACK ${att.id} ${target}`;
                     let s_target = target ? this.get_instance(target).get_name() : "player";
                     let v_value = `Attack ${att.get_name()} into ${s_target}`;
-                    verbose_attack.push({ command: v_key, text: v_value, ver: uuidv4() });
+                    let attack_source = att.id;
+                    let attack_dest = target;
+                    verbose_attack.push({ command: v_key, text: v_value, ver: uuidv4(), 
+                        attack_source: attack_source, attack_dest: attack_dest });
                 }
             }
 
@@ -1163,7 +1168,7 @@ export class Player {
         if (cmd == "PLAY") {
             let arg1 = this.get_hand_index(word1);
             let card = this.hand[arg1];
-            if (!card) return "invalid card";
+            if (!card) return "invalid card " + word1;
             if (card.is_option()) {
                 msg += `USE ` + card.name.toUpperCase();
             } else {
@@ -1213,7 +1218,7 @@ export class Player {
             msg += `ATTACK ${attacker_str} INTO ${target_str}`;
             g.la(msg);
             this.game.no_control();
-            this.attack(arg1, arg2);
+            this.attack_new(1, arg1, arg2);
             this.game.step();
 
             // the above may not return, we have to get back 
@@ -1286,7 +1291,7 @@ export class Player {
 
     // "original" target cannot block
     get_blockers(target?: Instance): Instance[] {
-        return this.field.filter(i => i && (i != target) && i.in_play() && !i.suspended && i.has_blocker());
+        return this.field.filter(i => i && i.can_block() && i !== target);
     }
 
     // returns IDs of all public cards
@@ -1712,7 +1717,7 @@ export class Player {
     }
 
     has_mem_floodgate(): boolean {
-        if (this.all_effects().find(e => e.raw_text.match(/gain memory.*Tamer effects/i)))
+        if (this.all_effects().find(e => e.raw_text.match(/gain memory.*Tamer effects?/i)))
             return true;
         return false;
     }
@@ -1753,6 +1758,7 @@ export class Player {
             case Location.TOKENTRASH: return this.tokentrash
             case Location.EGGZONE: return this.egg_zone ? this.egg_zone.pile : []
             case Location.BATTLE: return i ? this.get_instance(i).pile : []
+            case Location.STACK: return this.stack
             default:
                 logger.error(Location[l]);
                 let a: any = null; a.bad_locus();
@@ -1902,8 +1908,9 @@ export class Player {
         return this.my_name;
     }
 
+    // we are using this *only* formanual attack, not attack-by-effect, and maybe we should
     // target "0" is the other player.
-    attack(source: number, target: number, force = false) {
+    attack_new(depth: number, source: number, target: number, force = false) {
         logger.silly(`attack clause ${source} ${target} ${force}`);
         let g = this.game;
         let original_n_attacker = source;
@@ -1940,7 +1947,8 @@ export class Player {
         }
 
         logger.info("original_n_target is " + original_n_target);
-
+        this.game.fancy.add_string(depth, attacker.name() + " attacks " +
+            (defender_i ? defender_i.name() : "other player"));
         // This is importing so many things that it suggests this should not be here. Probably move to combat.ts?
         if (original_n_target > 0) defender_any = defender_i;
         let e: SubEffect[] = attacking_events(this.game, attacker, defender_any)

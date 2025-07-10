@@ -83,7 +83,12 @@ class Mastergame {
         let set = id.split("-")[0];
         let identifier = set + "-" + name;
         logger.silly(`putting ${id} ${identifier} in index`);
-        this.prefixes[identifier] = id;
+        if (this.prefixes[identifier]) {
+            logger.debug(`duplicate identifier ${identifier} for ${id} and ${this.prefixes[identifier]}`);
+            this.prefixes[identifier] += "," + id;
+        } else { 
+            this.prefixes[identifier] = id;
+        }
     }
 
     // loads card
@@ -175,6 +180,14 @@ class Mastergame {
         read_text(this, "customs.txt");
 
         this.prefix_keys = Object.keys(this.prefixes).sort();
+/*        logger.info("XX " + this.prefix_keys.length + " yy " + this.prefixes.length);
+        console.log(JSON.stringify(this.prefixes, null, 2));
+        for (let i = 0; i < this.prefix_keys.length; i++) {
+            logger.warn(`PK ${i} ${this.prefix_keys[i]}`);
+         }   
+        for (let i = 0; i < this.prefixes.length; i++) {
+            logger.warn(`P ${i} ${this.prefixes[i]}`);
+         } */  
         let counter = 0;
         for (let key in this.cards) {
             let msg = `list ${counter++} ${this.cards[key].id} ${this.cards[key].summary.substring(0, 100)}`;

@@ -1,4 +1,4 @@
-FIELD1:V1,DW1-Vanillamon,5000DP I2,CS3-Fairyfeatherlink,1000DP I3,CS3-Fairyfeatherlink,1000DP Tamer,CS3-17,NaNDP
+FIELD1:V1,DW1-Vanillamon,5000DP I2,CS3-Fairyfeatherlink,1000DP I3,CS3-Fairyfeatherlink,1000DP Tamer,CS3-Birdwatcherbill,NaNDP
 FIELD2:
 GAME:P1 T3 MAIN 5
 GET-X-PLAYS: json REFRESH

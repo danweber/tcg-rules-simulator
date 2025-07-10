@@ -1,9 +1,9 @@
-FIELD1:SuspendMe,CS1-02 AttackMe,CS1-02,REST
-FIELD2:Lazy,DW1-Vanillamon,CS2-06
+FIELD1:SuspendMe,CS1-Papershield AttackMe,CS1-Papershield,REST
+FIELD2:Lazy,DW1-Vanillamon,CS2-Lazysword
 GAME:P2 T1 MAIN 9
 ECHO: -- attack and suspend
 CAPTURE:Target Paper Shield 1
 CAPTURE:Target Paper Shield 2
-FIELD1:SuspendMe,CS1-02,REST
-FIELD2:Lazy,DW1-Vanillamon,CS2-06,REST
+FIELD1:SuspendMe,CS1-Papershield,REST
+FIELD2:Lazy,DW1-Vanillamon,CS2-Lazysword,REST
 GAME:P2 T1 MAIN 9

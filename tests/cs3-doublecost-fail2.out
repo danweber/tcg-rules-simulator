@@ -1,0 +1,9 @@
+FIELD1:FalseHit,CS3-Sorceryswan Tamer,CS3-Birdwatcherbill Evo1,CS3-Shieldwing Evo2,CS3-Shieldwing
+FIELD2:
+GAME:P1 T3 MAIN 10
+ECHO: ------ evo,  bill can't tuck so no offer
+EFFECT-TREE:NOTHING
+GET-CHOICES:User option:
+FIELD1:FalseHit,CS3-Sorceryswan Tamer,CS3-Birdwatcherbill Evo1,CS3-Illumifalcon,CS3-Shieldwing Evo2,CS3-Shieldwing
+FIELD2:
+GAME:P1 T3 MAIN 6

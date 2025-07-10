@@ -1,7 +1,8 @@
 import { GameEvent } from "./event";
-import { MultiTargetDesc, TargetDesc } from "./target";
+import { DynamicNumber, MultiTargetDesc, TargetDesc } from "./target";
 
 
+// this was the last gasp for regexp before giving up and moving to grammars
 
 // when detaching a material or a card tucked under this one
 export function parse_detach(line: string): any {
@@ -59,20 +60,25 @@ function parse_detach_action(line: string): any {
         line = m[1];
     }
     if (m = line.match(/^return(?:ing)? (.*) (?:to|on) (.*)$/)) { // to deck or hand
+        console.error(63, m);
         let place = parse_placement(m[2]);
         if (!place || place.startsWith("security")) {
             console.error("unknown place " + m[2]);
             return false;
         }
         temp.game_event = GameEvent.EVOSOURCE_REMOVE;
-        temp.td = new TargetDesc(m[1] + in_evo);
+        let t = m[1] + " from" + in_evo;
+        temp.td = new MultiTargetDesc(t);
+        if (!temp.td) return false;
         temp.td2 = new TargetDesc(place);
+        temp.choose = temp.td.count();
+        console.debug(92, "count missed??\b", temp.choose);
         return temp;
     }
     if (m = line.match(/^play(?:ing)? (.*)( without paying .{1,10}costs?)?$/)) {
         temp.game_event = GameEvent.PLAY;
         let to_play = m[1];
-        temp.choose = 1;
+        temp.choose = new DynamicNumber(1);
         let for_free: boolean = !!m[2];
         // this isn't a great phrase in english, but the parser can handle it
         temp.td = new TargetDesc(to_play + in_evo); // for free?
@@ -87,9 +93,9 @@ function parse_detach_action(line: string): any {
             return false;
         }
         temp.game_event = GameEvent.EVOSOURCE_REMOVE;
-        temp.td = new MultiTargetDesc(target); //  + in_evo); why no in_evo??
+        temp.td = new MultiTargetDesc(target + in_evo);// why no in_evo??
         temp.choose = temp.td.count();
-
+        console.debug(92, "count missed??\b", temp.choose);
         temp.td2 = new TargetDesc(place);
         return temp;
     }
@@ -100,6 +106,8 @@ function parse_detach_action(line: string): any {
         temp.game_event = GameEvent.EVOSOURCE_MOVE;
         temp.td = new MultiTargetDesc(target1 + in_evo);
         temp.choose = temp.td.count();
+        console.debug(92.1, "count missed\b", temp.choose);
+
         temp.td2 = new TargetDesc(target2);
         return temp;
     }
@@ -108,6 +116,9 @@ function parse_detach_action(line: string): any {
         temp.game_event = GameEvent.EVOSOURCE_REMOVE;
         temp.td = new TargetDesc("m1");
         temp.td2 = new TargetDesc("trash");
+        temp.choose = 1; // temp.td.count;
+        console.debug(92.2, "count missed\b", temp.choose);
+
         return temp;
         //        if (parse_placement(m[1])) return true;
     }

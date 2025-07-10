@@ -24,6 +24,8 @@ export function string_to_location(s: string): Location {
         case "security": return Location.SECURITY;
         case "battle": return Location.BATTLE;
         case "field": return Location.BATTLE | Location.EGGZONE;
+       
+        case "reveal": return Location.REVEAL;
     }
     return Location.UNKNOWN;
 }
@@ -46,7 +48,9 @@ export enum Location {
     OPTZONE = 2048, // for displayed options
     TOKENDECK = 4096,
     TOKENTRASH = 8192,
-    SHADOWREALM = 16834,
-    END = 32768
+    ALLTRASH = TRASH | TOKENTRASH,
+    STACK = 16834,
+    SHADOWREALM = 32768,
+    END = 65536
 };
 

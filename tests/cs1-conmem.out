@@ -1,17 +1,17 @@
-FIELD1:Yellow,CS1-02
+FIELD1:Yellow,CS1-Papershield
 FIELD2:Suspend1,DW1-Vanillamon Suspend2,DW1-Vanillamon Safe,DW1-Vanillamon
-HAND1:CS1-14 CS1-14
+HAND1:CS1-Confusingmemory CS1-Confusingmemory
 HAND2:
 GAME:P1 T3 MAIN 4
 ECHO: -- Use option. End up at 4 - 12 + 9 = 1  and draw
-FIELD1:Yellow,CS1-02
+FIELD1:Yellow,CS1-Papershield
 FIELD2:Suspend1,DW1-Vanillamon Suspend2,DW1-Vanillamon Safe,DW1-Vanillamon
-HAND1:CS1-02 CS1-14
+HAND1:CS1-Papershield CS1-Confusingmemory
 HAND2:
 GAME:P1 T3 MAIN 1
 ECHO: -- Try to use again. Can't, not enough memory.
-FIELD1:Yellow,CS1-02
+FIELD1:Yellow,CS1-Papershield
 FIELD2:Suspend1,DW1-Vanillamon Suspend2,DW1-Vanillamon Safe,DW1-Vanillamon
-HAND1:CS1-02 CS1-14
+HAND1:CS1-Papershield CS1-Confusingmemory
 HAND2:
 GAME:P1 T3 MAIN 1

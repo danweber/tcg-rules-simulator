@@ -1,15 +1,15 @@
 FIELD1:
-FIELD2:Attacker,CS2-10
-SECURITY1:CS1-02 CS1-02
+FIELD2:Attacker,CS2-Animesword
+SECURITY1:CS1-Papershield CS1-Papershield
 SECURITY2:
 TRASH1:
 TRASH2:
 GAME:P2 T1 MAIN 7
 ECHO: -- attack into defender and pierce through
 FIELD1:
-FIELD2:Attacker,CS2-10,REST
-SECURITY1:CS1-02
+FIELD2:Attacker,CS2-Animesword,REST
+SECURITY1:CS1-Papershield
 SECURITY2:
-TRASH1:CS1-02
+TRASH1:CS1-Papershield
 TRASH2:
 GAME:P2 T1 MAIN 7

@@ -5,7 +5,7 @@ import { Card, CardLocation } from './card';
 import { Location } from './location';
 import { Instance } from './instance';
 import { GameStep, Phase, PhaseTrigger } from './phase';
-import { ALL_OF, Conjunction, fSpecialPlayer, SpecialCard, SpecialInstance, SubTargetDesc, TargetDesc, TargetSource } from './target';
+import { ALL_OF, Conjunction, DynamicNumber, ForEachTarget, fSpecialPlayer, MultiTargetDesc, SpecialCard, SpecialInstance, SubTargetDesc, TargetDesc, TargetSource } from './target';
 import { CombatLoop } from './combat';
 import { Player } from './player';
 import { v4 as uuidv4 } from 'uuid';
@@ -159,7 +159,7 @@ function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: Solid
         let ge = w.game_event;
         //logger.info("w.ge is " + GameEvent[ge]);
         //logger.info("target is " + w.td.raw_text);
-        let needed_targets = Number(w.choose);
+        let needed_targets = Number(w.choose?.value());
         if (w.n_mod?.includes("upto")) needed_targets = 1;
 
 
@@ -169,6 +169,7 @@ function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: Solid
                 let a: any = null; a.crash_no_source();
             }
             let tgts = game.find_target(w.td, w.game_event, source, sel, Location.SECURITY);
+            // so we don't give the player the choice to pay things they can't
             if (eff.is_cost) tgts = tgts.filter(t => can_pay_material(t, w)[0]);
 
             // there must be some target for each event
@@ -667,7 +668,7 @@ export class SolidEffectLoop {
                 if (this.effect.respond_to) resp = this.effect.respond_to.map(x => GameEvent[x.ge]).join(",");
 
                 if (!still_have) {
-                    this.game.la("Effect has disappeared, it fails");
+                    this.game.log("Effect has disappeared or already triggered, it fails: " + this.effect.label + " " + this.effect.raw_text);
                     this.s = FakeStep.DONE;
                     return false;
                 }
@@ -803,7 +804,6 @@ export class SolidEffectLoop {
             // gall through
         }
 
-
         if (this.s == FakeStep.CHECK_IF_CAN) {
             // Does "immunity" go here? I don't think so,
             // I think that's part of the 5-step.
@@ -831,7 +831,7 @@ export class SolidEffectLoop {
                         game_event: GameEvent.ACTIVATE,
                         label: "activate",
                         td: new TargetDesc(""),
-                        choose: 0,
+                        choose: new DynamicNumber(0),
                         n_player: current_atomic.events[0].n_player,
                         play_label: "activate"
                     });
@@ -863,6 +863,7 @@ export class SolidEffectLoop {
             }
             let eff = this.effect.effects[this.n_effect];
 
+            this.game.log("Sub effect: " + eff.raw_text);
 
 
             logger.info(this.rand + "ATOMIC LENGTH2 IS " + eff.events.length +
@@ -872,6 +873,8 @@ export class SolidEffectLoop {
             logger.info(this.rand + "atomic effect is ");
             logger.info(eff.toString());
 
+            // the dfferenve between the is_cost and optional test is that if we fail is_cost we 
+            // terminate the entire effect
             if (eff.is_cost) {
                 if (!can_pay(eff, this.game, this.effect.source, this)) {
                     this.game.log("Cost can't be paid; ending effect");
@@ -888,6 +891,32 @@ export class SolidEffectLoop {
                     this.s = FakeStep.FINISH_REPEAT_LOOP;
                     return false;
                 }
+                // look at future effects if rolled into this one as a unit
+                for (let i = 1; i < eff.is_cost; i++) {
+                    let future_eff = this.effect.effects[this.n_effect + i];
+                    if (!can_pay(future_eff, this.game, this.effect.source, this)) {
+                        this.game.log("Compound action can't be performed, not offering choice and moving to next");
+                        logger.info("can't do compound action, moving to next");
+                        this.s = FakeStep.FINISH_REPEAT_LOOP;
+                        return false;
+                    }
+
+                }
+            }
+            // if we accepted the previous cost, we auto-commit to selecting this one
+            let auto_commit = false;
+            let auto_deny = false;
+            if (eff.flags && eff.flags.previous_may) {
+                let prev = this.effect.effects[this.n_effect - 1].cost_paid;
+                logger.info("previous may!, prev is " + prev);
+                if (prev == -1) {
+                    auto_deny = true;
+                    logger.info("we chose not to do previous test");
+                    this.s = FakeStep.FINISH_REPEAT_LOOP;
+                    eff.cost_paid = -1;
+                    return false;
+                }
+
             }
 
             if (this.n_effect > 0) {
@@ -933,6 +962,7 @@ export class SolidEffectLoop {
             }
             let special_test = eff.can_activate;
             if (eff.flags && eff.flags.previous_if) {
+                // we shouldn't be rechecking the if! we should cache the previous result
                 special_test = (this.effect.effects[this.n_effect - 1].can_activate);
                 let prev = this.effect.effects[this.n_effect - 1].cost_paid;
                 logger.info("previous if!, prev is " + prev);
@@ -953,6 +983,19 @@ export class SolidEffectLoop {
                 }
             }
 
+            /* DELETE ME after june 10
+            // duped from previous_if above  
+            if (eff.flags && eff.flags.previous_may) {
+                let prev = this.effect.effects[this.n_effect - 1].cost_paid;
+                logger.info("previous if!, prev is " + prev);
+                if (prev == -1) {
+                    logger.info("we fail");
+                    this.s = FakeStep.FINISH_REPEAT_LOOP;
+                    eff.cost_paid = -1;
+                    return false;
+                }
+            }
+*/
             this.s = FakeStep.ASK_ACTIVATE_ACTUALLY;
             // fall through
         }
@@ -974,10 +1017,25 @@ export class SolidEffectLoop {
             logger.info(this.rand + "WEOIRD LABEL");
             logger.info(this.effect.effects[this.n_effect].events[this.weirdo_count].toString());
             logger.info("Atomic effect optional is " + atomic_effect.optional);
-            //if (atomic_effect.optional || atomic_effect.is_cost) {
-            if (atomic_ask_to_activate(atomic_effect)) {
+
+            let force_yes = false;
+            if (atomic_effect.flags && atomic_effect.flags.previous_may) {
+                logger.info("previous may, do what we did last time");
+                let prev_atomic = this.effect.effects[this.n_effect - 1];
+                if (!prev_atomic.cost_paid) {
+                    // we didn't say yes last time, end this effectr
+                    this.s = FakeStep.FINISH_REPEAT_LOOP;
+                    atomic_effect.cost_paid = 0;
+                    return false;
+                }
+                force_yes = true;
+            }
+
+            // don't ask if we already know the answer 
+            if (!force_yes && atomic_ask_to_activate(atomic_effect)) {
                 let backup = this.effect.source!.get_n_player();
 
+                let cost_count = atomic_effect.is_cost;
                 let p = atomic_effect.weirdo.n_player;
                 if (p !== 1 && p !== 2) {
                     logger.debug(`p was ${p} using backup of ${backup}`);
@@ -989,12 +1047,17 @@ export class SolidEffectLoop {
                     text += ` for ${w.label}`;
                     logger.info(text);
                 }
-                let verb = w.game_event ? " " + gerund(w.game_event) : "";
+                let verb = w.game_event ? " " + gerund(w.game_event, w.status_condition) : "";
                 this.game.log(`Asking player ${p} if they want to activate ${text}${verb}`);
+                let fulltexts: string[] = [];
+                for (let i = 0; i < cost_count; i++) {
+                    let atom = this.effect.effects[this.n_effect + i];
+                    fulltexts.push(atom.raw_text);
+                }
                 let answers = [{
                     command: "1", text: `Activate ${text}${verb}`, ver: uuidv4(),
                     card: this.effect.card_label, instance_id: this.effect.source.id(),
-                    fulltext: atomic_effect.raw_text,
+                    fulltext: fulltexts.join(" and "),
                     alltext: this.effect.raw_text
                 },
                 {
@@ -1072,20 +1135,6 @@ export class SolidEffectLoop {
             // set the turn regardless
             this.effect.n_last_used_turn = this.game.n_turn;
 
-
-            // special case for searchers. I bet ultimately this should be 
-            // a string of atomic effects but see if this works
-            let atomic = this.effect.effects[this.n_effect];
-            if (atomic.search_n) {
-
-                let backup = this.effect.source!.get_n_player();
-                this.game.la(`Revealing ${atomic.search_n} cards`);
-                this.game.get_n_player(backup).reveal_cards(atomic.search_n);
-
-            }
-
-
-
             this.s = FakeStep.ASK_RESPONDING_TO;
             // fall through
         }
@@ -1129,11 +1178,11 @@ export class SolidEffectLoop {
 
             /*
             this code was disabled when interrupt turned into an array
-
+ 
             let trigger = this.effect.interrupt;
-
+ 
             // debug
-
+ 
             logger.info(this.rand + "WHAT TRIGGERED US?  " + GameEvent[trigger.ge]);
             for (let i = 0; i < this.reacted_to.length; i++) {
                 logger.info(this.rand + `${i} reacted_to ${GameEvent[this.reacted_to[i].game_event]} `);
@@ -1261,7 +1310,7 @@ export class SolidEffectLoop {
             let m;
             logger.info(`w.n_mod is ${w.n_mod}`);
             //        if (m = w.n_mod?.match(/counter,td2,(\d+),(\d+); /)) {
-            if (m = w.n_mod?.match(/counter,(td2|test|unit),(\d+),([-0-9]+)/)) {
+            if (m = w.n_mod?.match(/counter,(n_count_tgt|td2|test|unit),(\d+),([-0-9]+)/)) {
                 logger.info("modifying n in target");
                 logger.info(w.td.raw_text);
                 logger.info(w.td.toString());
@@ -1285,6 +1334,11 @@ export class SolidEffectLoop {
                         this,
                         Location.SECURITY
                     ).length;
+                } else if (m[1] === "n_count_tgt") {
+                    let nct: ForEachTarget = (w.td3 as any as ForEachTarget);
+                    count = nct?.get_count(this.game, this.effect.source);
+                    if (!count) count = 0;
+                    logger.info("n count for max adjust is " + count);
                 } else if (m[1] === "unit") {
                     let previous_atomic = this.effect.effects[this.n_effect - 1];
                     count = previous_atomic.cost_paid || 0;
@@ -1298,15 +1352,16 @@ export class SolidEffectLoop {
                 logger.info(`count ${count} per ${per} mod ${mod} n is ${w.n} choose is ${w.choose}`);
                 if (w.n) w.n += mod;
                 // We set both "n" and "choose" for both "choose up to total of X value"
-                if (w.choose && w.choose > 1) w.choose += mod;
+                console.warn("old style n mod");
+                if (w.choose && w.choose.value() > 1) w.choose.n += mod;
                 logger.info(`count ${count} per ${per} mod ${mod} n is ${w.n} choose is ${w.choose}`);
                 if (w.game_event == GameEvent.GIVE_STATUS_CONDITION && w.status_condition && w.status_condition[0].s) {
+
                     // assume just 1
                     logger.info("status condition is " + GameEvent[w.status_condition[0].s.game_event]);
                     w.status_condition[0].s.n! += mod;
                     logger.info("status condition, n now " + w.status_condition[0].n);
                 }
-                // choosing [1] is definitely a cheat here
                 let r = w.td.mod_max(mod);
                 logger.info("max now is " + r);
 
@@ -1346,8 +1401,12 @@ export class SolidEffectLoop {
             // draw 1 for each color
             let c1;
             if (c1 = w.n_count_tgt) {
+                logger.info("n_count_tgt " + c1);
                 // we modify one of our arguments, ad-hoc guessing right now
-                if (!for_each_count_target(w, this.game, this.effect.source, p)) {
+                let count = for_each_count_target(w, this.game, this.effect.source, p);
+                logger.info("count is " + count);
+                if (!count) {
+                    logger.info("count is 0");
                     this.s = FakeStep.FINISH_REPEAT_LOOP;
                     return false;
                 }
@@ -1395,7 +1454,7 @@ export class SolidEffectLoop {
                 }
             }
 
-            if (w.n_mod == "previous sub") {
+            if (w.n_mod?.includes("previous sub")) {
                 // re-use prior targets
                 logger.info("using targets from previous weirdo " + this.weirdo_count);
                 let w_prev = this.effect.effects[this.n_effect].events[this.weirdo_count - 1];
@@ -1415,7 +1474,7 @@ export class SolidEffectLoop {
 
             if (w.game_event == GameEvent.CANCEL) {
                 logger.info("cancel, no target needed");
-                w.choose = 0;
+                w.choose = new DynamicNumber(0);
                 this.cancel_target // um, did someone forget a verb here?
             } else if (w.td && w.td.conjunction == Conjunction.SOURCE) {
                 logger.info(this.rand + "RETALIATION SPECIAL CASE");
@@ -1447,7 +1506,7 @@ export class SolidEffectLoop {
                         if (available_links) {
                             let [source, recipient, cost, trash] = available_links[0]!;
                             this.chosen_targets = [source];
-                            w.chosen_target2 = recipient;
+                            w.chosen_target2 = [recipient];
                             w.chosen_target3 = source; // cheat
                             w.n = cost;
                         }
@@ -1493,7 +1552,7 @@ export class SolidEffectLoop {
                         if (available_evos) {
                             let [cl, left, right, type, cost] = available_evos[0]!;
                             this.chosen_targets = [cl];
-                            w.chosen_target2 = left;
+                            w.chosen_target2 = [left];
                             w.chosen_target3 = right;
                             w.n = cost;
                         }
@@ -1612,7 +1671,7 @@ export class SolidEffectLoop {
                     this.potential_targets = w.td && this.game.find_target(w.td, w.game_event, this.effect.source!, this, Location.SECURITY);
                     logger.info("is cost? " + atomic.is_cost);
                     if (atomic.is_cost) this.potential_targets = this.potential_targets.filter(t => can_pay_material(t, w)[0])
-                    if (w.game_event == GameEvent.PLAY && w.td.raw_text.match(/token/i)) this.potential_targets.length = Math.min(w.choose!, this.potential_targets.length);
+                    if (w.game_event == GameEvent.PLAY && w.td.raw_text.match(/token/i)) this.potential_targets.length = Math.min(w.choose!.value(), this.potential_targets.length);
                     logger.info("length is " + this.potential_targets.length);
                     logger.info("potential targets " + GameEvent[w.game_event] + " is " + this.potential_targets.map(x => `${x.get_name()}-${x.id}`).join(","))
                     logger.info(this.rand + "");
@@ -1626,8 +1685,7 @@ export class SolidEffectLoop {
             // we need to distinguish "choose a target" from "suspend this thing" for UI simplicity
 
             // that's all we need for now. We will need "choose 2" or "up to 3" or "all"
-
-            if (w.choose == 0 || w.td.raw_text.includes("blanket")) {
+            if (!w.choose || w.choose.value() == 0 || w.td.raw_text.includes("blanket")) {
                 logger.info(this.rand + "choose is 0, no targets needed");
 
                 let dupe2: SubEffect = Object.assign(w);
@@ -1665,7 +1723,7 @@ export class SolidEffectLoop {
             // properly use it, for now just say if it's reactive it has a cost
             let is_cost = (this.reacted_to.length > 0);
             //            logger.info(this.rand+"is cost ois " + is_cost);
-            if (is_cost != this.effect.effects[this.n_effect].is_cost) {
+            if (is_cost != (this.effect.effects[this.n_effect].is_cost > 0)) {
                 // warn that costs are different
             }
 
@@ -1683,10 +1741,6 @@ export class SolidEffectLoop {
 
             let w = this.effect.effects[this.n_effect].events[this.weirdo_count];
 
-            //            let w = this.effect.effects[this.n_effect].events[this.weirdo_count];
-            //            let w = this.effect.effects[this.n_effect].weirdo;
-
-
             // Where do I assign the source of an effect? 
             let backup = this.effect.source!.get_n_player();
 
@@ -1700,7 +1754,7 @@ export class SolidEffectLoop {
                 return false;
             }
 
-            logger.debug(`tgts ${this.potential_targets.length} ${w.choose} ${w.n_mod}`);
+            logger.info(`tgts ${this.potential_targets.length} ${w.choose?.value()} ${w.n_mod}`);
             if (this.potential_targets.length > 1 && !w.choose) {
                 console.error(this.potential_targets.length, w.choose);
                 console.error("ge: " + GameEvent[w.game_event]);
@@ -1709,9 +1763,9 @@ export class SolidEffectLoop {
                 let a: any = null; a.choose_undefined();
             }
 
-            if (w.choose == ALL_OF) { logger.warn("EEEW" + w.n_mod || "?"); }
+            if (w.choose?.value() == ALL_OF) { logger.warn("EEEW" + w.n_mod || "?"); }
             // need at least 1 choice to be in here
-            if (this.potential_targets.length > 1 && (this.potential_targets.length > (w.choose ? w.choose : 1) || w.n_mod?.includes("upto"))) {
+            if (this.potential_targets.length > 1 && (this.potential_targets.length > (w.choose ? w.choose.value() : 1) || w.n_mod?.includes("upto"))) {
                 let answers = [];
                 // I need a library for this
 
@@ -1749,7 +1803,7 @@ export class SolidEffectLoop {
                     secret = true;
                 }
                 let msg1 = "Targets are: " + this.potential_targets.map(x => x.get_name()).join(",") +
-                    "\n" + `Player ${p} to choose ${w.choose}`;
+                    "\n" + `Player ${p} to choose ${w.choose?.value()}`;
 
                 if (!secret) {
                     this.game.la(msg1);
@@ -1763,8 +1817,8 @@ export class SolidEffectLoop {
                 let upto = (w.n_mod && w.n_mod.includes("upto")); //  && w.choose != ALL_OF);
                 if (upto) { mod = "upto"; }
                 logger.info(this.rand + `PLAYEREFFECT: w.nplayer is ${w.n_player}, backup is ${backup}`);
-                let msg = `Choose ${upto ? 'up to ' : ''}${w.choose} target${(w.choose! > 1 ? 's' : '')}`;
-                msg += " for " + gerund(w.game_event) + ":";
+                let msg = `Choose ${upto ? 'up to ' : ''}${w.choose?.value()} target${(w.choose!.value() > 1 ? 's' : '')}`;
+                msg += " for " + gerund(w.game_event, w.status_condition) + ":";
                 if (w.n_mod?.match(/upto total/)) {
                     msg = `Choose any number that add up to ${w.n} DP:`;
                     mod = "upto total"; // where do I store DP?
@@ -1772,12 +1826,12 @@ export class SolidEffectLoop {
                 let m;
                 if (m = w.n_mod?.match(/upto different (level|name|number)/)) {
                     let count = "any number";
-                    if (w.choose && w.choose >= 1 && w.choose != 99) count = `up to ${w.choose}`;
+                    if (w.choose && w.choose.value() >= 1 && w.choose.value() != 99) count = `up to ${w.choose.value()}`;
                     let d = m[1];
                     msg = `Choose ${count} with different ${d}s:`;
                     mod = `upto different ${d}`;
                 }
-                this.game.wait(p, answers, msg, w.choose, mod);
+                this.game.wait(p, answers, msg, w.choose?.value(), mod);
                 this.s = FakeStep.GET_TARGET;
                 return false;
             } else { // choose all that are here
@@ -1838,10 +1892,10 @@ export class SolidEffectLoop {
                 logger.info(this.link_choices.map(e => `${e[0].id} -> ${e[1].id}`).join(","));
                 for (let x of this.link_choices) { }
                 this.chosen_targets = [this.game.find_by_key(p, parseInt(s_l), parseInt(s_i), parseInt(s_id))];
-                weirdo.chosen_target2 = this.game.find_by_key(p, parseInt(r_l), parseInt(r_i));
+                weirdo.chosen_target2 = [this.game.find_by_key(p, parseInt(r_l), parseInt(r_i))];
                 weirdo.chosen_target3 = this.chosen_targets[0]; // cheat
                 logger.info(`source is ${this.chosen_targets[0].get_field_name()}`);
-                logger.info(`recipient is ${weirdo.chosen_target2?.get_field_name()}`);
+                logger.info(`recipient is ${weirdo.chosen_target2}`); // ?.map((x: any) => x.get_field_name().join(","))}`);
                 if (totrash) { // "0" won't hit thyis
                     let cl_to_trash = new CardLocation(this.game, p, Location.BATTLE, parseInt(totrash), parseInt(r_i), "plug");
                     this.extra_subeffects.push({
@@ -1886,11 +1940,11 @@ export class SolidEffectLoop {
                 }
                 // this has better be a cardlocation!
                 this.chosen_targets = [this.game.find_by_key(p, parseInt(c_l), parseInt(c_i))];
-                weirdo.chosen_target2 = this.game.find_by_key(p, parseInt(l_l), parseInt(l_i));
+                weirdo.chosen_target2 = [this.game.find_by_key(p, parseInt(l_l), parseInt(l_i))];
                 weirdo.chosen_target3 = this.game.find_by_key(p, parseInt(r_l), parseInt(r_i));
 
                 logger.info(`into is ${this.chosen_targets[0].get_field_name()}`);
-                logger.info(`left is ${weirdo.chosen_target2?.get_field_name()}`);
+                logger.info(`left is ${weirdo.chosen_target2?.[0].get_field_name()}`);
                 logger.info(`right is ${weirdo.chosen_target3?.get_field_name()}`);
 
                 //                weirdo.chosen_target = cl;    
@@ -1937,12 +1991,18 @@ export class SolidEffectLoop {
 
             // only some events need to ask about the second target
             if (!w.td2 ||
-                !([GameEvent.EVOSOURCE_MOVE, GameEvent.TUCK, GameEvent.TARGETED_CARD_MOVE].includes(w.game_event))) {
+                !([GameEvent.EVOSOURCE_MOVE,
+                GameEvent.TUCK,
+                GameEvent.EVOSOURCE_DOUBLE_REMOVE,  // 
+                GameEvent.TARGETED_CARD_MOVE].includes(w.game_event))) {
                 this.s = FakeStep.ASSIGN_TARGET_SUBS;
                 return false;
             }
 
-            if (w.td2.raw_text.includes("security")) {
+            // if our second target is a generic thing like "hand" or "Security" we don't need to 
+            // target it
+
+            if (w.td2.raw_text.includes("security") || w.td2.raw_text.includes("hand")) {
                 // no need to find a target if we're targeting card move to security
                 this.s = FakeStep.ASSIGN_TARGET_SUBS;
                 return false;
@@ -1952,6 +2012,9 @@ export class SolidEffectLoop {
             if (game_event2 === GameEvent.TARGETED_CARD_MOVE) {
                 game_event2 = GameEvent.DELETE; // 2nd target is an instance?
             }
+            if (game_event2 === GameEvent.EVOSOURCE_DOUBLE_REMOVE) {
+                game_event2 = GameEvent.EVOSOURCE_REMOVE; // 2nd target is cards?
+            }
             // target2 is really simple, we took care of all the complex cases,
             // this is just when a specific generic effect needs a second target
             // can we re-use potential targets??? may-be...
@@ -1959,12 +2022,24 @@ export class SolidEffectLoop {
             let prior: Instance = this.chosen_targets![0] as Instance;
             let special_previous = new SpecialInstance(prior);
             logger.info(`special_previous is ${!!special_previous}`);
-            let potential_targets = this.game.find_target(w.td2, game_event2, this.effect.source!, this, Location.SECURITY, special_previous);
+            console.error(2022, w.td2);
+            let potential_targets = this.game.find_target(w.td2, game_event2, this.effect.source, this, Location.SECURITY, special_previous);
             logger.info(this.rand + "Searched for targerts2 for " + GameEvent[w.game_event] + " in " + w.td2.raw_text + " AKA " + w.td2.toPlainText());
-
-            logger.warn("hard code second target to choose 1");
             let choose2 = 1;
-            logger.info("target 2 length is " + potential_targets.length);
+            try {
+                console.info(1978, "w w w", w.td2);
+                console.dir(w.td2, { depth: 9 });
+                let mtd = (w.td2 as any as MultiTargetDesc);
+                choose2 = mtd.count().value(this.game, this.effect.source);
+                logger.info("Choose 2 is " + choose2);
+                this.game.log("For second target, can choose " + choose2 + " things.");
+                if (choose2 == 0) {
+                    this.effect.effects[this.n_effect].cost_paid = 0;
+                    this.s = FakeStep.FINISH_REPEAT_LOOP; // back to top
+                    return false;
+                }
+            } catch { }
+            logger.info("target 2 length is " + potential_targets.length + ", pick " + choose2);
             if (potential_targets.length == 0) {
                 // target required,
                 this.game.log("No valid secondary target");
@@ -1989,13 +2064,13 @@ export class SolidEffectLoop {
                     // what uses this comand path?
                     answers.push({ command: (i + 1).toString(), text: txt, target_id: target, name: t.get_name() });
                 }
-                let msg = "Choose 2nd target for " + gerund(w.game_event);
-                this.game.wait(p, answers, msg, 1);
+                let msg = `Choose ${choose2} for 2nd part of ${gerund(w.game_event, w.status_condition)}`;
+                this.game.wait(p, answers, msg, choose2);
                 this.s = FakeStep.GET_TARGET2;
 
             } else {
-                w.chosen_target2 = potential_targets[0];
-                this.game.log("auto-selecting 2nd target " + w.chosen_target2.name());
+                w.chosen_target2 = potential_targets;
+                this.game.log("auto-selecting 2nd target " + potential_targets.map(x => x.get_name()).join(","));
                 this.s = FakeStep.ASSIGN_TARGET_SUBS;
                 // fall through
             }
@@ -2014,9 +2089,6 @@ export class SolidEffectLoop {
             let answers = this.game.get_multi_answer();
             logger.info("chosen td2 answers is " + answers?.join(","));
             w.chosen_target2 = this.potential_targets2?.filter((x, y) => answers?.includes(((y) + 1).toString()));
-            // chosen_target2 ought to be an array, but for now a single item
-            w.chosen_target2 = w.chosen_target2[0]
-
 
             this.s = FakeStep.ASSIGN_TARGET_SUBS;
         }
@@ -2036,7 +2108,7 @@ export class SolidEffectLoop {
                 let tgts = this.game.find_target(d.td2, GameEvent.DELETE, this.effect.source, this, Location.SECURITY);
                 // having "find_target" in this file 10 times sucks
                 if (atomic.is_cost) logger.error("not filtering costs on td2");
-                if (tgts && tgts.length > 0 && !!tgts[0]) d.chosen_target2 = tgts[0];
+                if (tgts && tgts.length > 0 && !!tgts[0]) d.chosen_target2 = tgts; // all tgts?
                 //                console.error(1636, tgts[0]);
                 //               logger.info("auto assign td2 to " + d.chosen_target2.get_name());
             }
@@ -2094,12 +2166,6 @@ export class SolidEffectLoop {
             logger.info(this.rand + `ATOMIC ${this.n_effect} AND SUB ${this.weirdo_count} TODO LEN IS ${this.events_to_do.length} TARGETCOUNT IS ${this.target_count}`);
             //     this.effect.effects[this.n_effect].events[0] = this.effect.effects[this.n_effect].weirdo; //? unneeded
             this.target_count += 1;
-
-            if (false)
-                if (this.target_count < 2 && atomic.events[this.weirdo_count].td2) { // we have another target to pick!
-                    this.s = FakeStep.ASK_TARGET1;
-                    return false;
-                }
 
             this.weirdo_count += 1;
             logger.info(this.rand + `weirdo count is ${this.weirdo_count} and length is ${atomic.events.length}`);
@@ -2407,17 +2473,6 @@ export class SolidEffectLoop {
             // delete this next line
             logger.info(this.rand + " reveal length is " + p.reveal.length);
 
-            // code to flush reveal to trash used to be here
-            // is this pushing things to trash too soon?
-            if (false)
-                if (p.reveal.length > 0) {
-                    if (atomic && atomic.search_final) {
-                        this.game.log(`${p.reveal.length} cards still left in reveal for player ${p.player_num}`);
-                        logger.info(this.rand + `n_effet is ${this.n_effect} of ${this.effect.effects.length} and atomic is ${atomic}`);
-                        //      logger.info(this.rand + "cleaning up reveal to " + Location[atomic.search_final]);
-                        //    p.put_reveal(atomic.search_final);
-                    }
-                }
 
             logger.info(this.rand + "solideffectloop returning " + this.collected_events.length + " events " + this.collected_events.map(e => GameEvent[e.game_event]).join("/"));
             logger.info("1996, set last thing in collected_events");
@@ -2451,8 +2506,10 @@ export class XX {
         if (!p) {
             let aa: any = null; aa.player_not_set();
         }
+        // chosen_target is an array, so why isn't this line crashing all the time?
         let s_target1 = (weirdo.chosen_target ? weirdo.chosen_target.get_name() : "nul");
-        let s_target2 = (weirdo.chosen_target2 ? weirdo.chosen_target2.get_name() : "nul");
+        // ... oooohhh, I think I should've made multiple terminus effects instead of this array
+        let s_target2 = (weirdo.chosen_target2?.[0]?.get_name() || "nul");
         logger.info("Terminus effect " + GameEvent[weirdo.game_event]);
         //console.dir(weirdo, { depth: 0 });
         logger.info("Target td is " + (weirdo.td ? weirdo.td.toString() : "nul") + " for '" + weirdo.td.raw_text + "'");
@@ -2574,6 +2631,7 @@ export class XX {
             } else {
                 console.log("no status condition");
                 console.error("MISSING STATUS!");
+                console.dir(weirdo, { depth: 2 });
             }
         } else if (weirdo.game_event == GameEvent.SEARCH) {
             let pl = game.get_n_player(p);
@@ -2584,7 +2642,7 @@ export class XX {
             return true;
         } else if (weirdo.game_event == GameEvent.SHUFFLE) {
             let pl = game.get_n_player(p);
-            pl.shuffle(1);
+            pl.shuffle("security");
             return true;
         } else if (weirdo.game_event == GameEvent.DEVOLVE_FORCE) {
             game.log("Removing top card from " + name);
@@ -2648,6 +2706,9 @@ export class XX {
         } else if (weirdo.game_event == GameEvent.TO_BOTTOM_DECK) {
             game.log("Bottom decking " + target.get_name());
             target.do_bottom_deck("effect"); // pass in my structure!
+        } else if (weirdo.game_event == GameEvent.FIELD_TO_SECURITY) {
+            game.log("Putting " + target.get_name() + " to security");
+            target.do_move_to_security("effect"); // pass in my structure!
         } else if (weirdo.game_event == GameEvent.MUST_ATTACK) {
             // log handled elsewhere
         } else if (weirdo.game_event == GameEvent.MEMORY_SET) {
@@ -2669,7 +2730,7 @@ export class XX {
             let player = game.get_n_player(p);
             let o_player = game.get_n_player(3 - p);
             //if (!("top" in weirdo.spec_source!)) return false; // make sure we're an instance
-            let instance: Instance | CardLocation = weirdo.chosen_target2;
+            let instance: Instance | CardLocation = weirdo.chosen_target2![0];
             logger.info("evolving, trying " + instance.get_field_name(Location.END));
             // are we evolving before checking cost! :( :(
             if (weirdo.chosen_target3) {
@@ -2717,6 +2778,9 @@ export class XX {
             // TODO: check for memory failure; need a test case, though
             game.pay_memory(cost);
             game.log(`Evolve into ${instance.get_name()} ${msg}`); // no need to announce, we did that at start
+            // todo: show the old name, including for fusion
+            game.fancy.add_string(depth, `Evo into ${instance.get_name()}`);
+
             game.log("Draw for Evolve");
             player.draw();
             return true;
@@ -2730,7 +2794,7 @@ export class XX {
             let o_player = game.get_n_player(3 - p);
             logger.info("PPPP player " + player.player_num + " " + o_player.player_num);
             let c: Card;
-            let played;
+            let played; 
             //            console.error(target);
             if ("cardloc" in target) {
                 //console.error("playing cardloc " + target.name);
@@ -2738,7 +2802,7 @@ export class XX {
                 let cl: CardLocation = target;
                 c = target.card;
                 c.save_prior_location(cl);
-                c = cl.extract();
+                //c = cl.extract(); // we will extract within Instance.play()
                 played = Instance.play(c, game, player, o_player);
                 played.set_label(weirdo.play_label)
                 player.field.push(played);
@@ -2756,17 +2820,18 @@ export class XX {
                 logger.error("not a card!");
                 return false;
             }
-            let reveal = player.reveal;
+            let stack = player.stack;
             let top;
-            while (top = reveal[0]) {
-                top.extract().move_to(Location.BATTLE, played, "BOTTOM");
-                if (weirdo.n_mod != "free") {
-                    weirdo.n_mod = "reduced";
-                    weirdo.n ||= 0;
-                    weirdo.n! += c.stack_summon_n;
-                };
-                logger.info(`nmod is ${weirdo.n_mod} and n is ${weirdo.n} per is ${c.stack_summon_n}`);
-            }
+            // only if stack summoning, put all cards in stack under monster. this cheat will stop working if we ever play from reveal a stack summoner 
+            while (top = stack[0]) {
+                    top.extract().move_to(Location.BATTLE, played, "BOTTOM");
+                    if (weirdo.n_mod != "free") {
+                        weirdo.n_mod = "reduced";
+                        weirdo.n ||= 0;
+                        weirdo.n! += c.stack_summon_n;
+                    };
+                    logger.info(`nmod is ${weirdo.n_mod} and n is ${weirdo.n} per is ${c.stack_summon_n}`);
+                }
             // if no play cost, can't play -- unless it's a token
             if (c.p_cost == undefined && !c.is_token()) { return false; }
             let origcost = Number(c.p_cost);
@@ -2783,6 +2848,7 @@ export class XX {
                 return false;
             } else {
                 game.la(`Play ${played.name()} ${cost_msg}`);
+                game.fancy.add_string(depth, `Play ${played.name()}`);
                 game.pay_memory(cost);
                 return true;
             }
@@ -2818,13 +2884,14 @@ export class XX {
                 return false;
             } else {
                 game.la(`Use ${card.name} ${cost_msg}`);
+                game.fancy.add_string(depth, `Use ${card.name}`);
                 player.set_pending_effect(fx, game.n_turn, Phase.ASAP, game, fx.source, false, solid_starter);
                 game.pay_memory(cost);
                 return true;
             }
 
         } else if (weirdo.game_event == GameEvent.STACK_ADD) {
-            // Slide them into reveal, and PLAY will grab them from there.
+            // Slide them into location.stack, and PLAY will grab them from there.
             // There's no instance yet.
             // This won't work when playing multiple things at once
 
@@ -2832,7 +2899,7 @@ export class XX {
             if ("kind" in target && target.kind == "Instance") {
                 let i: Instance = target;
                 let c = i.top();
-                c.extract().move_to(Location.REVEAL);
+                c.extract().move_to(Location.STACK);
                 //                while (c = i.top()) {
                 //                  c.extract().move_to(Location.TRASH);
                 //            }
@@ -2841,12 +2908,12 @@ export class XX {
                 i.do_removal("trash", "stacksummon");
                 // theory: rename the GAME_EVENT here
             } else {
-                cl.extract().move_to(Location.REVEAL);
+                cl.extract().move_to(Location.STACK);
             }
             return true; // assume success
         } else if (weirdo.game_event == GameEvent.PLUG) {
             // move an instance under something, counts for removal
-            let recipient: Instance = weirdo.chosen_target2;
+            let recipient: Instance = weirdo.chosen_target2![0];
             if (target.kind == "Instance") {
                 let i: Instance = target;
                 let c = i.top();
@@ -2877,7 +2944,7 @@ export class XX {
             // move an instance under something, counts for removal
             console.error("this is removal");
             // check ordering
-            let recipient: Instance = weirdo.chosen_target2;
+            let recipient: Instance = weirdo.chosen_target2![0];
             let i: Instance = target;
             let c = i.top();
 
@@ -2959,12 +3026,33 @@ export class XX {
         } else if (weirdo.game_event == GameEvent.MODIFY_COST) {
             // nothing, we did this inside the interrupter loop 
         } else if (weirdo.game_event == GameEvent.EVOSOURCE_REMOVE) {
+            // couldn't this be multiple?
             let cl: CardLocation = target;
             let c: Card = cl.extract();
             let to: Location = Location.TRASH;
             if (weirdo.td2?.raw_text?.includes("hand")) to = Location.HAND;
             if (weirdo.td2?.raw_text?.includes("security")) to = Location.SECURITY;
+            game.log("moving source card " + c.name + " to " + Location[to]);
             c.move_to(to);
+            return true;
+        } else if (weirdo.game_event == GameEvent.EVOSOURCE_REMOVE_FROM) {
+            let i: Instance = target;
+            let count: number = Number(weirdo.n);
+            for (count; count >= 0; count--) {
+                //                i.strip_source(weirdo.n_mod);
+            }
+            return true; // always succeed??
+        } else if (weirdo.game_event == GameEvent.EVOSOURCE_DOUBLE_REMOVE) {
+            if (weirdo.chosen_target2)
+                for (let cl of weirdo.chosen_target2) {
+                    let c: Card = cl.extract();
+                    let to: Location = Location.TRASH;
+                    // we're already using td2 here for something else!
+                    if (weirdo.td2?.raw_text?.includes("hand")) to = Location.HAND;
+                    if (weirdo.td2?.raw_text?.includes("security")) to = Location.SECURITY;
+                    game.log("moving source card " + c.name + " to " + Location[to]);
+                    c.move_to(to);
+                }
             return true;
         } else if (weirdo.game_event == GameEvent.TRASH_LINK) {
             let cl: CardLocation = target;
@@ -2980,7 +3068,7 @@ export class XX {
             // move from one instnace to another
             let cl: CardLocation = target;
             let c: Card = cl.extract();
-            let to: Instance = weirdo.chosen_target2;
+            let to: Instance = weirdo.chosen_target2![0];
             console.error(2612, s_target1);
             console.error(2613, s_target2);
             c.move_to(Location.BATTLE, to, "bottom");
@@ -2997,10 +3085,10 @@ export class XX {
             // we might need different actions if the targeted_card_move is
             // an instnce, because that will trigger removal
         } else if (weirdo.game_event == GameEvent.TARGETED_CARD_MOVE) {
-            // "target" is what we move
+            // "target" is what we move -- and i think it can be either an instance or a cardloc
             // "target2" is where we move
             // TODO merge this in with MOVE_CARD below
-            let target2: Instance = weirdo.chosen_target2;
+            let target2: Instance = weirdo.chosen_target2 && weirdo.chosen_target2[0];
             let target_instance = undefined;
             let location = Location.SECURITY;
             logger.debug("adding?");
@@ -3022,11 +3110,12 @@ export class XX {
                 return true;
             } else {
                 if (weirdo.n_mod?.match(/deck/)) location = Location.DECK;
+                if (weirdo.td2?.raw_text.match(/hand/i)) location = Location.HAND;
                 let order = weirdo.n_mod?.match(/bottom/i) ? "BOTTOM" : "TOP";
                 let face = weirdo.n_mod?.match(/face.up/i) ? "UP" : "DOWN";
                 // handle instance
                 logger.info(`order ${order}  face ${face}`);
-
+                //console.error(3115, weirdo.td2?.raw_text, location);
                 if (target.kind == "Instance") {
                     let i: Instance = target;
                     let c = i.top();
@@ -3043,7 +3132,7 @@ export class XX {
                     i.do_removal("nul", "removed");
                 } else {
                     let cl: CardLocation = target;
-                    // console.error(2596, "moving cl to " + location, target_instance, order);
+                    //console.error(2596, "moving cl to " + location, target_instance?.id, order);
                     cl.extract().move_to(location, target_instance, order);
                     if (face == "UP") cl.card.face_up = true; // 
                 }
@@ -3319,7 +3408,7 @@ export class InterrupterLoop {
                     cant_do = !x;
                 }
                 if (cant_do) {
-                    this.game.fancy.add_string(this.depth, `P${sub.n_player} ${gerund(sub.game_event)} ${txt} but can't`);
+                    this.game.fancy.add_string(this.depth, `P${sub.n_player} ${gerund(sub.game_event, sub.status_condition)} ${txt} but can't`);
                     this.game.log(txt + " tried but can't " + effect.toLowerCase());
                 } else {
                     this.effects_to_process.push(sub);
@@ -3479,7 +3568,7 @@ export class InterrupterLoop {
                 let s_target = (target?.get_name()) || "";
                 let paid = XX.do_terminus_effect(this.depth, se, target, this.game, this.solid_starter);
                 if (se.game_event != GameEvent.NIL) {
-                    this.game.fancy.add_string(this.depth, `P${se.n_player} ${paid ? "" : "NOT "}${gerund(se.game_event)} ${s_target}`);
+                    this.game.fancy.add_string(this.depth, `P${se.n_player} ${paid ? "" : "NOT "}${gerund(se.game_event, se.status_condition)} ${s_target}`);
                 } else {
                     logger.warn("nil game event");
                 }
@@ -3704,7 +3793,7 @@ function get_modified_cost(origcost: number, weirdo: SubEffect, game: Game, type
             logger.info("submod: " + submod.n_mod + " " + submod.n);
             if (submod.n_mod == "reduced")
                 floodgated = check_reduction_floodgate(type, me);
-                delta -= submod.n;
+            delta -= submod.n;
         }
     }
     logger.info(`origcost ${origcost} xxx`);

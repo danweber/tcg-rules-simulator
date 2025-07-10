@@ -1,7 +1,7 @@
 FIELD1:
-FIELD2:Normal,CS2-02,2000DP Egg1,CS2-02,CS2-01,2000DP Egg2,CS2-02,CS2-01,2000DP
+FIELD2:Normal,CS2-Sharpblade,2000DP Egg1,CS2-Sharpblade,CS2-Doggiedagger,2000DP Egg2,CS2-Sharpblade,CS2-Doggiedagger,2000DP
 GAME:P2 T1 MAIN 8
 ECHO: -- Play red mon, get +2000
 FIELD1:
-FIELD2:Normal,CS2-02,4000DP Egg1,CS2-02,CS2-01,4000DP Egg2,CS2-02,CS2-01,4000DP Redrum,CS2-05,7500DP
+FIELD2:Normal,CS2-Sharpblade,4000DP Egg1,CS2-Sharpblade,CS2-Doggiedagger,4000DP Egg2,CS2-Sharpblade,CS2-Doggiedagger,4000DP Redrum,CS2-Greatsword,7500DP
 GAME:P2 T1 MAIN 3

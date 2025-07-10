@@ -1,5 +1,5 @@
 FIELD1:Bird,CS3-Chirpflare,CS3-Fairyfeatherlink,CS3-Fairyfeatherlink,CS3-Beaklet,2000DP
-FIELD2:Shield,CS1-04,REST,4500DP
+FIELD2:Shield,CS1-Stoneshield,REST,4500DP
 HAND1:
 HAND2:
 GAME:P1 T3 MAIN 8
@@ -10,7 +10,7 @@ CAPTURE:ChirpFlare When this Monster would leave the battle area, you may suspen
 CAPTURE:Target FairyFeatherlink BATTLE-CS3-02
 CAPTURE:Target FairyFeatherlink BATTLE-CS3-02
 FIELD1:I3,CS3-Fairyfeatherlink,1000DP
-FIELD2:Shield,CS1-04,REST,4500DP
+FIELD2:Shield,CS1-Stoneshield,REST,4500DP
 HAND1:
 HAND2:
 GAME:P1 T3 MAIN 5

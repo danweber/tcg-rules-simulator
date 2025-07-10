@@ -1,65 +1,65 @@
-FIELD1:Tauntee,CS1-10,CS1-08,CS1-03
-FIELD2:Amy1,CS2-17 Mon,CS2-02
+FIELD1:Tauntee,CS1-Obsidianshield,CS1-Phoenixdefender,CS1-Garbagecanlid
+FIELD2:Amy1,CS2-Aggressiveamy Mon,CS2-Sharpblade
 EGGS1:
 EGGS2:
-EGGZONE1:Other,CS1-05,CS1-04
+EGGZONE1:Other,CS1-Iceshield,CS1-Stoneshield
 EGGZONE2:
 GAME:P2 T2 HATCHING 9
-FIELD1:Tauntee,CS1-10,CS1-08,CS1-03
-FIELD2:Amy1,CS2-17 Mon,CS2-02
+FIELD1:Tauntee,CS1-Obsidianshield,CS1-Phoenixdefender,CS1-Garbagecanlid
+FIELD2:Amy1,CS2-Aggressiveamy Mon,CS2-Sharpblade
 EGGS1:
 EGGS2:
-EGGZONE1:Other,CS1-05,CS1-04
+EGGZONE1:Other,CS1-Iceshield,CS1-Stoneshield
 EGGZONE2:
 GAME:P2 T2 MAIN 10
 EFFECT-TREE:NOTHING
 GET-CHOICES:User option:
-FIELD1:Tauntee,CS1-10,CS1-08,CS1-03
-FIELD2:Amy1,CS2-17 Mon,CS2-02 Amy2,CS2-17
+FIELD1:Tauntee,CS1-Obsidianshield,CS1-Phoenixdefender,CS1-Garbagecanlid
+FIELD2:Amy1,CS2-Aggressiveamy Mon,CS2-Sharpblade Amy2,CS2-Aggressiveamy
 GAME:P2 T2 MAIN 7
 ECHO: -- activate amy we just played
 EFFECT-TREE:RES DEPTH 1 PROCESSING:Aggressive Amy
 GET-CHOICES:Choose:
 GET-CHOICES:Activate Aggressive Amy suspending
 GET-CHOICES:Don't pay/activate
-FIELD1:Tauntee,CS1-10,CS1-08,CS1-03
-FIELD2:Amy1,CS2-17 Mon,CS2-02 Amy2,CS2-17
+FIELD1:Tauntee,CS1-Obsidianshield,CS1-Phoenixdefender,CS1-Garbagecanlid
+FIELD2:Amy1,CS2-Aggressiveamy Mon,CS2-Sharpblade Amy2,CS2-Aggressiveamy
 GAME:P2 T2 MAIN 7
 EFFECT-TREE:NOTHING
 GET-CHOICES:Choose:
-FIELD1:Tauntee,CS1-10,CS1-08,CS1-03
-FIELD2:Amy1,CS2-17 Mon,CS2-02 Amy2,CS2-17,REST
+FIELD1:Tauntee,CS1-Obsidianshield,CS1-Phoenixdefender,CS1-Garbagecanlid
+FIELD2:Amy1,CS2-Aggressiveamy Mon,CS2-Sharpblade Amy2,CS2-Aggressiveamy,REST
 GAME:P2 T2 MAIN 7
 ECHO: -- activate the other
 EFFECT-TREE:RES DEPTH 1 PROCESSING:Aggressive Amy
 GET-CHOICES:Choose:
 GET-CHOICES:Activate Aggressive Amy suspending
 GET-CHOICES:Don't pay/activate
-FIELD1:Tauntee,CS1-10,CS1-08,CS1-03
-FIELD2:Amy1,CS2-17 Mon,CS2-02 Amy2,CS2-17,REST
+FIELD1:Tauntee,CS1-Obsidianshield,CS1-Phoenixdefender,CS1-Garbagecanlid
+FIELD2:Amy1,CS2-Aggressiveamy Mon,CS2-Sharpblade Amy2,CS2-Aggressiveamy,REST
 GAME:P2 T2 MAIN 7
 EFFECT-TREE:NOTHING
 GET-CHOICES:Choose:
-FIELD1:Tauntee,CS1-10,CS1-08,CS1-03
-FIELD2:Amy1,CS2-17,REST Mon,CS2-02 Amy2,CS2-17,REST
+FIELD1:Tauntee,CS1-Obsidianshield,CS1-Phoenixdefender,CS1-Garbagecanlid
+FIELD2:Amy1,CS2-Aggressiveamy,REST Mon,CS2-Sharpblade Amy2,CS2-Aggressiveamy,REST
 GAME:P2 T2 MAIN 7
-FIELD1:Tauntee,CS1-10,CS1-08,CS1-03
-FIELD2:Amy1,CS2-17,REST Mon,CS2-02 Amy2,CS2-17,REST
+FIELD1:Tauntee,CS1-Obsidianshield,CS1-Phoenixdefender,CS1-Garbagecanlid
+FIELD2:Amy1,CS2-Aggressiveamy,REST Mon,CS2-Sharpblade Amy2,CS2-Aggressiveamy,REST
 GAME:P1 T3 HATCHING 3
 EFFECT-TREE:RES DEPTH 1 Aggressive Amy, Aggressive Amy
 GET-CHOICES:Choose effect to process:
 GET-CHOICES:Aggressive Amy [Start of Your Main Phase] Attack with this Monster
 GET-CHOICES:Aggressive Amy [Start of Your Main Phase] Attack with this Monster
-FIELD1:Tauntee,CS1-10,CS1-08,CS1-03,13000DP Other,CS1-05,CS1-04,6500DP
-FIELD2:Amy1,CS2-17,REST,NaNDP Mon,CS2-02,2000DP Amy2,CS2-17,REST,NaNDP
+FIELD1:Tauntee,CS1-Obsidianshield,CS1-Phoenixdefender,CS1-Garbagecanlid,13000DP Other,CS1-Iceshield,CS1-Stoneshield,6500DP
+FIELD2:Amy1,CS2-Aggressiveamy,REST,NaNDP Mon,CS2-Sharpblade,2000DP Amy2,CS2-Aggressiveamy,REST,NaNDP
 SECURITY1:
-SECURITY2:CS2-02
+SECURITY2:CS2-Sharpblade
 GAME:P1 T3 START_OF_MAIN 3
 ECHO: -- choose either amy forced effect
 EFFECT-TREE:NOTHING
 GET-CHOICES:Choose effect to process:
-FIELD1:Tauntee,CS1-10,CS1-08,CS1-03,REST,13000DP Other,CS1-05,CS1-04,6500DP
-FIELD2:Amy1,CS2-17,REST,NaNDP Amy2,CS2-17,REST,NaNDP
+FIELD1:Tauntee,CS1-Obsidianshield,CS1-Phoenixdefender,CS1-Garbagecanlid,REST,13000DP Other,CS1-Iceshield,CS1-Stoneshield,6500DP
+FIELD2:Amy1,CS2-Aggressiveamy,REST,NaNDP Amy2,CS2-Aggressiveamy,REST,NaNDP
 SECURITY1:
 SECURITY2:
 GAME:P1 T3 MAIN 3

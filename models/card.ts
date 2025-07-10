@@ -751,9 +751,6 @@ export class Card {
                 this.play_interrupt = stack_effect;
             }
 
-
-
-
             this.security_text = blob.secufityEffect;
             maineffects = this.string_array(eff).reverse();
             if (blob.rule && blob.rule != "-") {
@@ -977,15 +974,19 @@ export class Card {
         return [0, 0, []];
     }
 
+    // return CS-Fred is "Fred" if a unique prefix match for "Fred"
+    // return CS-03-Fred otherwise
+    // TODO: should allow for "CS-Fred" even if "CS-FredFlintstoneMode" exists as long as CS-Fred matches exactly
     testname(testmode: number): string {
         if (testmode == 1) return this.id;
         let [set, _] = this.id.split("-");
-        let outname = this.name.charAt(0).toUpperCase() + this.name.slice(1).toLowerCase();
+        let outname = this.name.replace(/[^＜＞a-zA-Z0-9]/g, '');
+        outname = outname.charAt(0).toUpperCase() + outname.slice(1).toLowerCase();
         let ret = `${set}-${outname}`;
         let up = this.face_up ? ",FACEUP" : "";
         if (!this.game?.get_card(ret)) {
-            // no hit, we need to fall back to it
-            return this.id + up;
+            // no hit, we need to fall back to it 
+            return this.id + "-" + outname  + up;
         }
         return ret + up;
     }
@@ -1046,7 +1047,7 @@ export class Card {
     }
 
     static hidden: Location[] = [Location.NEW, Location.DECK, Location.EGGDECK, Location.HAND];
-    static visible: Location[] = [Location.BATTLE, Location.EGGZONE, Location.TRASH, Location.REVEAL, Location.TOKENDECK, Location.TOKENTRASH, Location.NULLZONE, Location.OPTZONE];
+    static visible: Location[] = [Location.BATTLE, Location.EGGZONE, Location.TRASH, Location.REVEAL, Location.TOKENDECK, Location.TOKENTRASH, Location.NULLZONE, Location.OPTZONE, Location.STACK];
     static maybe: Location[] = [Location.SECURITY];
 
     // finds the card in the place it was at, in case we need it
@@ -1170,7 +1171,7 @@ export class Card {
 
         // we need to know the instance and index, too
         this.location = l;
-        if (instance) {
+        if (instance && this.location !== Location.HAND) {
             // we will need to specify *where* in the instance eventually
             instance._add_card(this, order);
             this.mon_instance = instance.id;
@@ -1223,14 +1224,9 @@ export class Card {
         return !!this.dp;
     }
 
-    // remove non-alphanumberics from start and end
-    trim_non_an(str: string): string {
-        return str.replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, '');
-    }
-
     static normalize(str: string | undefined): string {
         if (!str) return "";
-        return str.toUpperCase().replace(/[^a-zA-Z0-9]/g, '');
+        return str.toUpperCase().replace(/[^＜＞a-zA-Z0-9]/g, '');
     }
     public name_is(str: string): boolean {
         str = Card.normalize(str);
@@ -1259,7 +1255,6 @@ export class Card {
     }
     public text_contains(str: string): boolean {
         str = Card.normalize(str);
-
         return Card.normalize(this.name).includes(str) ||
             Card.normalize(this.name_rule).includes(str) ||
             Card.normalize(this.trait_rule).includes(str) ||
@@ -1321,6 +1316,10 @@ export class Card {
             case "option": return this.is_option();
             case "tamer": return this.is_tamer();
             case "egg": return this.is_egg();
+            case "token": return this.is_token() || this.is_monster(); // TODO:
+            // is "token" appropriate at this level?   
+            // technically a token also matches true for "is_monster"         
+
             default: return false;
         }
     }
@@ -1592,6 +1591,8 @@ export class CardLocation {
         return false;
     }
 
+    colors(): Color[] { return this.card.colors; }
+
     // extract should mark this struct as invalid somehow
     extract(): Card {
         let i = this.index;
@@ -1637,6 +1638,7 @@ export class CardLocation {
     has_trait(s: string) {
         return this.card.has_trait(s);
     }
+    
     get_link_requirements(): LinkCondition[] { return this.card.link_requirements };
     has_stack_add(): boolean { return !!this.card.has_stack_add(); }
     color_count(): number { return this.card.colors.length; }

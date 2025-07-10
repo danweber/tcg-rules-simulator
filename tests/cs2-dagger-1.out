@@ -1,15 +1,15 @@
 FIELD1:
-FIELD2:Normal,CS2-02,2000DP Egged,CS2-02,CS2-01,2000DP
+FIELD2:Normal,CS2-Sharpblade,2000DP Egged,CS2-Sharpblade,CS2-Doggiedagger,2000DP
 GAME:P2 T1 MAIN 10
 ECHO: -- Play yellow Taamer, nothing should change
 FIELD1:
-FIELD2:Normal,CS2-02,2000DP Egged,CS2-02,CS2-01,2000DP Gideon,CS1-17,NaNDP
+FIELD2:Normal,CS2-Sharpblade,2000DP Egged,CS2-Sharpblade,CS2-Doggiedagger,2000DP Gideon,CS1-Gideontheguardian,NaNDP
 GAME:P2 T1 MAIN 6
 ECHO: -- Play Red Tamer
 FIELD1:
-FIELD2:Normal,CS2-02,3000DP Egged,CS2-02,CS2-01,3000DP Gideon,CS1-17,NaNDP Amy,CS2-17,NaNDP
+FIELD2:Normal,CS2-Sharpblade,3000DP Egged,CS2-Sharpblade,CS2-Doggiedagger,3000DP Gideon,CS1-Gideontheguardian,NaNDP Amy,CS2-Aggressiveamy,NaNDP
 GAME:P2 T1 MAIN 3
 ECHO: -- Play Red Tamer #2, nothing should change
 FIELD1:
-FIELD2:Normal,CS2-02,3000DP Egged,CS2-02,CS2-01,3000DP Gideon,CS1-17,NaNDP Amy,CS2-17,NaNDP Amy,CS2-17,NaNDP
+FIELD2:Normal,CS2-Sharpblade,3000DP Egged,CS2-Sharpblade,CS2-Doggiedagger,3000DP Gideon,CS1-Gideontheguardian,NaNDP Amy,CS2-Aggressiveamy,NaNDP Amy,CS2-Aggressiveamy,NaNDP
 GAME:P2 T1 MAIN 0

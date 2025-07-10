@@ -1,11 +1,11 @@
-FIELD1:Yellow,CS1-06,REST,7000DP Blue,CS2-12,REST,7500DP
+FIELD1:Yellow,CS1-Sneakycat,REST,7000DP Blue,CS2-Colossalsword,REST,7500DP
 FIELD2:Excal1,CS2-Excalibur,6500DP Excal2,CS2-Excalibur,6500DP
 GAME:P2 T1 MAIN 9
 ECHO: -- attack yellow, get boost to defeat where we'd otherwise lose
-FIELD1:Blue,CS2-12,REST,7500DP
+FIELD1:Blue,CS2-Colossalsword,REST,7500DP
 FIELD2:Excal1,CS2-Excalibur,REST,9000DP Excal2,CS2-Excalibur,6500DP
 GAME:P2 T1 MAIN 9
 ECHO: -- attack blue, no boost so die
-FIELD1:Blue,CS2-12,REST,7500DP
+FIELD1:Blue,CS2-Colossalsword,REST,7500DP
 FIELD2:Excal1,CS2-Excalibur,REST,9000DP
 GAME:P2 T1 MAIN 9

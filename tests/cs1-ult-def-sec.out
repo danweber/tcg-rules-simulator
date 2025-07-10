@@ -1,34 +1,34 @@
-FIELD1:Tiny1,CS1-02,REST Tiny2,CS1-02,REST
+FIELD1:Tiny1,CS1-Papershield,REST Tiny2,CS1-Papershield,REST
 FIELD2:Attack1,DW1-Vanillamon Attack2,DW1-Vanillamon Attack3,DW1-Vanillamon Attack4,DW1-Vanillamon
-SECURITY1:CS1-04 CS1-15
+SECURITY1:CS1-Stoneshield CS1-Ultimatedefense
 SECURITY2:
 GAME:P2 T3 MAIN 8
 ECHO: -- P2 attacks, reveals security a thing
-FIELD1:Tiny1,CS1-02,REST,500DP Tiny2,CS1-02,REST,500DP
+FIELD1:Tiny1,CS1-Papershield,REST,500DP Tiny2,CS1-Papershield,REST,500DP
 FIELD2:Attack1,DW1-Vanillamon,REST,5000DP Attack2,DW1-Vanillamon,5000DP Attack3,DW1-Vanillamon,5000DP Attack4,DW1-Vanillamon,5000DP
-SECURITY1:CS1-04
+SECURITY1:CS1-Stoneshield
 SECURITY2:
 GAME:P2 T3 MAIN 8
 ECHO: -- P2 attacks, can't kill a thing
-FIELD1:Tiny1,CS1-02,REST,500DP Tiny2,CS1-02,REST,500DP
+FIELD1:Tiny1,CS1-Papershield,REST,500DP Tiny2,CS1-Papershield,REST,500DP
 FIELD2:Attack1,DW1-Vanillamon,REST,5000DP Attack2,DW1-Vanillamon,REST,5000DP Attack3,DW1-Vanillamon,5000DP Attack4,DW1-Vanillamon,5000DP
-SECURITY1:CS1-04
+SECURITY1:CS1-Stoneshield
 SECURITY2:
 GAME:P2 T3 MAIN 8
 ECHO: -- P2 attacks, reveals CS1-04
-FIELD1:Tiny1,CS1-02,REST,500DP Tiny2,CS1-02,REST,500DP I7,CS1-04,4500DP
+FIELD1:Tiny1,CS1-Papershield,REST,500DP Tiny2,CS1-Papershield,REST,500DP I7,CS1-Stoneshield,4500DP
 FIELD2:Attack1,DW1-Vanillamon,REST,5000DP Attack2,DW1-Vanillamon,REST,5000DP Attack3,DW1-Vanillamon,REST,5000DP Attack4,DW1-Vanillamon,5000DP
 SECURITY1:
 SECURITY2:
 GAME:P2 T3 MAIN 8
 ECHO: -- sit it down...
-FIELD1:Tiny1,CS1-02,REST,500DP Tiny2,CS1-02,REST,500DP I7,CS1-04,REST,4500DP
+FIELD1:Tiny1,CS1-Papershield,REST,500DP Tiny2,CS1-Papershield,REST,500DP I7,CS1-Stoneshield,REST,4500DP
 FIELD2:Attack1,DW1-Vanillamon,REST,5000DP Attack2,DW1-Vanillamon,REST,5000DP Attack3,DW1-Vanillamon,REST,5000DP Attack4,DW1-Vanillamon,5000DP
 SECURITY1:
 SECURITY2:
 GAME:P2 T3 MAIN 4
 ECHO: -- and attack into it, with nothing happening
-FIELD1:Tiny1,CS1-02,REST,500DP Tiny2,CS1-02,REST,500DP I7,CS1-04,REST,4500DP
+FIELD1:Tiny1,CS1-Papershield,REST,500DP Tiny2,CS1-Papershield,REST,500DP I7,CS1-Stoneshield,REST,4500DP
 FIELD2:Attack1,DW1-Vanillamon,REST,5000DP Attack2,DW1-Vanillamon,REST,5000DP Attack3,DW1-Vanillamon,REST,5000DP Attack4,DW1-Vanillamon,REST,5000DP
 SECURITY1:
 SECURITY2:
