@@ -1,0 +1,22 @@
+VERSION:2
+FIELD1:Victim,CS1-02
+FIELD2:
+HAND2:CS2-Lazy
+GAME:P2 T1 MAIN 9
+DUMP
+
+ECHO: -- play, get suspended immediately
+CMD:PLAY CS2-Lazy Lazy
+DUMP
+
+ECHO: -- try to attack, fail
+CMD:ATTACK Lazy Player
+DUMP
+
+
+
+
+
+
+
+

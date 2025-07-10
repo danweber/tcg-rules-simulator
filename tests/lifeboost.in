@@ -1,0 +1,19 @@
+VERSION:2
+# [Main] Place this card face-up on the bottom of your security stack.
+#[Security] All of your Monsters gain +500 DP.
+#Security Effect
+#[Security] Add this card to your hand.
+FIELD1:Tamer,CS1-Gideon Mon,CS1-02
+FIELD2:Enemy,CS2-02
+EGGZONE1:Here,CS1-02,CS1-01
+HAND1:DW1-Lifeboost
+SECURITY1:CS1-02 CS1-05 CS1-05 DW1-Lifeboost CS1-06 CS1-06
+GAME:P1 T3 MAIN 9
+DECK1:CS2-02 CS2-03
+DUMP:DP,SECURITY,EGGZONE
+
+ECHO: -- activate the card
+CMD:PLAY DW1-Lifeboost
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP,SECURITY,EGGZONE
+EXIT

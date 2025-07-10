@@ -1,0 +1,26 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** YellowVaxDude (DW1-05) *****
+[DW1-05]
+Card Info
+Name                YellowVaxDude
+Colour              Yellow
+Card Type           Monster
+Play Cost           10
+DP                  10000 DP
+Level               5
+Form                Master
+Attribute           WIND
+Type                Rodent
+Rarity              Kind_of_Unusual
+Evolution Requirements
+Colour         Yellow
+Level          4
+Evolve Cost 6
+Alt. Evolution Requirements
+[Evolve] Lv.4 w/[Vaccine] trait: Cost 2
+Card Effect(s)
+Inherited Effect
+[Your Turn] [Once Per Turn] When a card is added to your security stack, gain 1 memory.
+Card Restriction

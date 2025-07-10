@@ -1,0 +1,15 @@
+VERSION:2
+# do a normal evolve even when fusion is available
+FIELD1:Blue,CS2-Colossal,CS2-01 Yellow,CS1-Obsidian,CS1-01
+HAND1:CS2-Rampager
+DECK1:DW1-01 DW1-01
+GAME:P1 T4 MAIN 7
+DUMP:HAND,TRASH
+
+ECHO: --- FUZOR ---
+
+#EXIT
+
+#  card, left, cost, [right, newlabel (new label not used yet)]
+CMD:EVO CS2-Rampage Blue
+DUMP:HAND,TRASH

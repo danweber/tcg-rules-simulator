@@ -1,0 +1,13 @@
+VERSION:2
+# [Your Turn] When this Monster attacks your opponent's Monster, suspend one of your opponent's Blue Monsters.
+FIELD1:Sneaky,DW1-Van,CS1-06
+FIELD2:White,DW1-Van Blue,CS2-02 Victim,CS2-03,REST
+SECURITY2:CS2-03
+GAME:P1 T2 MAIN 7
+DUMP
+ECHO: -- Attack 
+
+CMD:ATTACK Sneaky Victim
+STEP:AUTOANSWER:CAPTURE
+DUMP
+EXIT

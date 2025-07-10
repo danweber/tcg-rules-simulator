@@ -1,0 +1,55 @@
+VERSION:2
+# "[Main] Until the end of your turn, all of your Monsters gain \"[When Attacking] Delete your opponent's Monster with the lowest DP.\""
+FIELD2:BlueRed,CS2-11 Two,CS2-02 Three,CS2-02 Four,CS2-02 Five,CS2-02
+FIELD1:CS1-02 CS1-03 CS1-04 DW1-Van CS1-04
+HAND2:CS2-Ultimate CS2-02 DW1-Rusher
+SECURITY1:CS1-02 CS1-02 CS1-02 CS1-02 CS1-02 CS1-02 CS1-02
+GAME:P2 T3 MAIN 9
+DUMP:DP,SECURITY
+
+CMD:PLAY CS2-Ultimate
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP,SECURITY
+
+ECHO: -- swing in
+CMD:ATTACK BlueRed Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP,SECURITY
+
+
+ECHO: -- swing again
+CMD:ATTACK Two Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP,SECURITY
+
+ECHO: -- swing again
+CMD:ATTACK Three Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP,SECURITY
+
+ECHO: -- play out a new guy
+CMD:PLAY DW1-Rusher Rush
+DUMP:DP,SECURITY
+
+ECHO: -- swing again, new guy still has it
+CMD:ATTACK Rush Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP,SECURITY
+
+ECHO: -- last one
+CMD:ATTACK Four Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP,SECURITY
+
+ECHO: -- nothing should happen this time
+CMD:ATTACK Five Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP,SECURITY
+
+
+EXIT
+
+ECHO: -- goes away on one more turn pass
+CMD:PASS
+DUMP:DP
+EXIT

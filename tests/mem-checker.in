@@ -1,0 +1,63 @@
+VERSION:2
+
+
+#[Your Turn] While you have 0 or more memory, this Monster gets +80 DP.
+#[Your Turn] While your opponent has 1 or more memory, this Monster gets +40 DP.
+# etc
+
+# I think this is right but I'm 
+
+FIELD1:DW1-MemWatcher
+FIELD2:DW1-MemWatcher
+GAME:P1 T4 MAIN -6
+DUMP:DP
+ECHO: ---
+GAME:P1 T4 MAIN -5
+DUMP:DP
+ECHO: ---
+GAME:P1 T4 MAIN -4
+DUMP:DP
+ECHO: ---
+GAME:P1 T4 MAIN -3
+DUMP:DP
+ECHO: -- huh
+GAME:P1 T4 MAIN -2
+DUMP:DP
+ECHO: -----zzzz
+GAME:P1 T4 MAIN -1
+DUMP:DP
+GAME:P1 T4 MAIN -0
+DUMP:DP
+GAME:P1 T4 MAIN 0
+DUMP:DP
+GAME:P1 T4 MAIN 1
+DUMP:DP
+GAME:P1 T4 MAIN 2
+DUMP:DP
+ECHO: --- 
+GAME:P1 T4 MAIN 3
+DUMP:DP
+GAME:P1 T4 MAIN 4
+DUMP:DP
+GAME:P1 T4 MAIN 5
+DUMP:DP
+GAME:P1 T4 MAIN 6
+DUMP:DP
+
+
+EXIT
+
+ECHO: -- play big boy --
+CMD:PLAY BT14-Fenri Mem
+
+GET-X-PLAYS
+DUMP:HAND,DP
+
+ECHO: -- use 1 cost --
+CMD:PLAY BT2-DarknessClaw
+STEP:AUTOANSWER:CAPTURE
+DUMP:HAND,DP
+
+EXIT
+
+

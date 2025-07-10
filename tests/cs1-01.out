@@ -1,0 +1,15 @@
+FIELD1:Attacker,DW1-Vanillamon,CS1-01,5000DP Other,DW1-Vanillamon,CS1-01,5000DP Green,DW1-Birder,3000DP
+FIELD2:Vic1,CS1-02,REST,500DP Vic2,CS1-02,REST,500DP
+GAME:P1 T2 MAIN 5
+ECHO: -- Attack once with Attacker, have DP boost afterwards.
+FIELD1:Attacker,DW1-Vanillamon,CS1-01,REST,6000DP Other,DW1-Vanillamon,CS1-01,5000DP Green,DW1-Birder,3000DP
+FIELD2:Vic2,CS1-02,REST,500DP
+GAME:P1 T2 MAIN 5
+ECHO: -- Stand up Attacker, attack again, no DP boost this time
+FIELD1:Attacker,DW1-Vanillamon,CS1-01,REST,6000DP Other,DW1-Vanillamon,CS1-01,5000DP Green,DW1-Birder,3000DP
+FIELD2:
+GAME:P1 T2 MAIN 1
+ECHO: -- Attack into health
+FIELD1:Attacker,DW1-Vanillamon,CS1-01,REST,6000DP Other,DW1-Vanillamon,CS1-01,REST,5000DP Green,DW1-Birder,3000DP
+FIELD2:
+GAME:P1 T2 MAIN 1

@@ -1,0 +1,27 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** Birder (DW1-07) *****
+[DW1-07]
+Card Info
+Name                Birder
+Colour              Green / Purple
+Card Type           Monster
+Play Cost           2
+DP                  3000 DP
+Level               3
+Form                Child
+Attribute           WIND
+Type                Bird
+Rarity              Uncommon
+Evolution Requirements
+Colour         Green
+Level          2
+Evolve Cost 1
+Card Effect(s)
+[All Turns] When a card is trashed from your deck, 1 of your Monsters gets +100 DP for the turn.
+[On Play] You may play 1 Monster card with [Avian]/[Bird]/[Vegetation]/[Plant] in one of its traits from your hand without paying the cost.
+[On Deletion] You may play 1 Monster card with [Avian]/[Bird]/[Vegetation]/[Plant] in one of its traits and 3000 DP or less from your hand without paying the cost.
+Inherited Effect
+[Your Turn] [Once Per Turn] When this Monster attacks your opponent's Monster, lose 2 memory.
+Card Restriction

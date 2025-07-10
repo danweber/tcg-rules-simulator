@@ -1,0 +1,10 @@
+VERSION:2
+
+# most basic link test
+
+# get +760 from DW1-01, +1500 DP boost from plugged card
+FIELD1:Linked,DW1-Van,CS3-02,PLUG,DW1-01,CS3-02,CS3-02
+GAME:P1 T3 MAIN 5
+DUMP:DP,KEYWORDS
+
+EXIT

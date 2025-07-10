@@ -1,0 +1,13 @@
+VERSION:2
+#   "evolveEffect": "\uff1cSecurity Attack +1\uff1e",
+FIELD2:Attacker,DW1-Van,CS2-09,CS2-09
+SECURITY1:CS1-02 CS1-02 CS1-02 CS1-02
+GAME:P2 T1 MAIN 7
+DUMP:SECURITY,TRASH
+
+ECHO: -- attack into sec, 3 checks
+CMD:ATTACK Attacker Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:SECURITY,TRASH
+
+EXIT

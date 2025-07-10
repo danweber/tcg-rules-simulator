@@ -1,0 +1,14 @@
+VERSION:2
+# [On Deletion] Play this card without paying its cost.
+FIELD1:Phoenix,CS1-Phoenix,REST
+FIELD2:Attack1,DW1-Van Attack2,DW1-Van Blue,CS2-02
+HAND2:CS2-Quick
+GAME:P2 T2 MAIN 7
+DUMP
+ECHO: -- Attack, Phoenix rerises
+CMD:ATTACK Attack1 Phoenix
+DUMP
+ECHO: -- delete by option, it rerises
+CMD:PLAY CS2-Quick
+STEP:AUTOANSWER:CAPTURE
+DUMP

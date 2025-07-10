@@ -1,0 +1,32 @@
+VERSION:2
+#HAND2:CS3-02
+
+# if my effect is prevented, I can still use it later
+
+FIELD2:Roger,CS3-Chirp Vic1,DW1-Van,REST Vic2,DW1-Van,REST
+FIELD1:Deleter,DW1-Big,CS2-05
+EGGZONE1:CS3-01
+HAND1:DW1-Standup
+
+
+GAME:P1 T4 MAIN 8
+GET-X-PLAYS
+DUMP:HAND,KEYWORDS
+
+ECHO: this test can fail if we haven't loaded up <Dodge> from another card
+
+CMD:ATTACK Deleter Vic1
+STEP:AUTOANSWER:CAPTURE
+
+CMD:PLAY DW1-Standup
+DUMP
+
+ECHO: ---- try again ----
+
+CMD:ATTACK Deleter Vic2
+STEP:AUTOANSWER:CAPTURE
+
+DUMP
+
+
+EXIT

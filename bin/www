@@ -1,0 +1,156 @@
+#!/usr/bin/env node
+
+var app = require('../app');
+var debug = require('debug')('myserverapp:server');
+var http = require('http');
+
+var port = normalizePort(process.env.PORT || '3001');
+app.set('port', port);
+
+var server = http.createServer(app);
+
+const Player = require('../models/player');
+const Game = require('../models/game');
+const GameUI = require('../models/gameui');
+const Instance = require('../models/instance');
+const Mastergame = require('../models/mastergame');
+
+const shared = require('../routes/shared'); // Assuming shared.js is in the same directory
+let mastergame = shared.mastergame;
+let gg = shared.gg;
+let game_list = shared.game_list;
+
+let gui = new GameUI(mastergame, game_list);
+
+const cors = require('cors');
+// Enable connections from port :3000 
+const socketIo = require('socket.io');
+const io = socketIo(server, {
+  cors: {
+    origin: ["http://localhost:3000",
+      'http://localhost:3001',
+      'http://192.168.2.133:3000',
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+}
+);
+
+io.on('connection', (socket) => {
+  let pid = -1;
+  let gid = null;
+  let game = null;
+  let socketed = false;
+
+  socket.on('chat message', (msg) => {
+    //console.log('message from client');
+    //console.log(msg);
+
+    //   console.log(msg);
+    let temp_pid = parseInt(msg.pid);
+    let temp_gid = msg.gid;
+
+    let change = false;
+    if (temp_pid == 1 || temp_pid == 2) {
+      if (temp_pid != pid) {
+        pid = temp_pid;
+        change = true;
+      }
+      if (temp_gid && temp_gid != gid) {
+        gid = temp_gid;
+        change = true;
+      }
+    }
+    ///console.log(`change ${change} pid ${pid} gid ${gid} socketed ${socketed} game ${!!game}`);
+
+
+    if (change || !game) {
+      game = game_list[gid];
+      if (!game) {
+        // we can't make a game here, it needs to be made elsewhere
+      }
+      if (game && !socketed) {
+        game.register_socket(socket, pid);
+        socketed = true;
+      }
+    }
+
+
+    console.log('came from ' + socket.id);
+    // console.log('socket', socket);
+    let resp = gui.send_command(msg);
+    let p1, p2;
+    try {
+       [p1, p2] = gui.get_master_JSON(msg);
+    } catch (e) {
+      // on error do we send out error message that clears board but allows debugging?
+      return;
+    }
+    //    console.log("broadcasting out?");
+    if (game) {
+      game.broadcast_sockets(p1, p2);
+    } else {
+      let to_reply = "error";
+      if (pid == 1)  to_reply = p1;
+      if (pid == 2)  to_reply = p2;
+      socket.emit('server-response', JSON.stringify(to_reply));
+    }
+    // the below is redundant?
+
+  });
+
+});
+
+
+app.get('/ui', (req, res) => {
+  console.log("what ever uses this?");
+  res.send("yyy");
+});
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+  if (isNaN(port)) {
+    return val;
+  }
+  if (port >= 0) {
+    return port;
+  }
+  return false;
+}
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}

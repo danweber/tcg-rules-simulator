@@ -1,0 +1,15 @@
+FIELD1:
+FIELD2:Attack1,DW1-Vanillamon Attack2,DW1-Vanillamon
+SECURITY1:CS1-14
+SECURITY2:
+HAND1:CS1-14 CS1-14
+HAND2:
+GAME:P2 T3 MAIN 3
+ECHO: -- P2 attacks, loses turn from memory bomb. (P1 still has 1 card to not deck out.)
+FIELD1:
+FIELD2:Attack1,DW1-Vanillamon,REST Attack2,DW1-Vanillamon
+SECURITY1:
+SECURITY2:
+HAND1:CS1-02 CS1-02 CS1-14 CS1-14
+HAND2:
+GAME:P1 T4 HATCHING 6

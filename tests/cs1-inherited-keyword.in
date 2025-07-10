@@ -1,0 +1,17 @@
+VERSION:2
+
+#FIELD1:Attacker,CS1-03,DW1-Van Sourceless,CS1-03
+FIELD1:Res,DW1-Van,CS1-Gideon Other,CS1-04,DW1-Van
+FIELD2:Tank,CS2-12,REST
+GAME:P1 T2 MAIN 5
+
+TITLE:Custom Keyword from inherit
+TEXT:Keyword comes from the inherit, will it be automatically applied?
+DUMP:DP,KEYWORDS
+
+ECHO: go
+CMD:ATTACK Res Tank
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP,KEYWORDS,TRASH
+
+

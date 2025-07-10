@@ -1,0 +1,89 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+.turn {
+  background: pink;
+  color: black;
+}
+
+.memory {
+  background: lightgreen;
+  color: black;
+  font-weight: bold;
+  font-size: larger;
+}
+
+.status { 
+  background: rgb(226, 239, 140);
+  color: black;
+  font-weight: bold;
+}
+
+.temp { 
+  background: rgb(158, 242, 162);
+  color: black;
+  font-weight: bold;
+}
+
+
+.keyword {
+  background: #B04010;
+  color: white;
+  font-weight: bold;
+}
+
+.eggzone {
+  border: 1;
+  border-color: blue;
+/*  mrax-width: 100px; */
+  border-color: lightcyan;
+  overflow: auto;
+  white-space: nowrap;
+}
+
+.field {
+  min-width: 600px;
+  overflow: auto;
+  white-space: nowrap;
+}
+
+
+.deck {
+  background: blue;
+  color: white;
+}
+
+.trash {
+  border: 2px;
+  background: rgb(91, 67, 91);
+  color: white;
+}
+
+.mon {
+  background: lightblue;
+  padding-left: 3px;
+  padding-right: 3px;
+  border: solid blue thin;    
+}
+
+.card {
+  background: lightblue;
+  padding-left: 3px;
+  padding-right: 3px;
+  border: solid blue thin;    
+  color: black;
+}
+
+.egg {
+  background: rgb(211, 236, 244);
+  color: black;
+  padding-left: 3px;
+  padding-right: 3px;
+  border: solid rgb(226, 226, 243) thin;    
+}

@@ -1,0 +1,18 @@
+VERSION:2
+
+# link rules check
+
+FIELD1:Multi,CS3-06,PLUG,CS3-04,CS3-02,CS3-04,CS3-02
+HAND1:CS3-11 CS3-04 CS3-02
+GAME:P1 T3 MAIN 5
+#GET-X-PLAYS
+DUMP:DP,KEYWORDS,HAND,TRASH
+
+ECHO: -- evo into thing without link +3
+ECHO: -- we should get to select the things we trash
+ECHO: -- also the order things go into trash doesn't make sense
+
+CMD:EVO CS3-11 Multi
+DUMP:DP,KEYWORDS,HAND,TRASH
+
+EXIT

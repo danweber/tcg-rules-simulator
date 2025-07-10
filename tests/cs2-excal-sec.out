@@ -1,0 +1,17 @@
+FIELD1:Attacker,DW1-Vanillamon Mon1,CS1-03 Mon2,CS1-03 Gideon4,CS1-17
+FIELD2:
+SECURITY1:
+SECURITY2:CS2-Excalibur CS2-Excalibur
+TRASH1:
+TRASH2:
+GAME:P1 T1 MAIN 7
+ECHO: -- attack into sec
+CAPTURE:Target Garbage Can Lid 2
+CAPTURE:Target Garbage Can Lid 3
+FIELD1:Mon2,CS1-03 Gideon4,CS1-17
+FIELD2:
+SECURITY1:
+SECURITY2:CS2-Excalibur
+TRASH1:CS1-03 DW1-Vanillamon
+TRASH2:CS2-Excalibur
+GAME:P1 T1 MAIN 7

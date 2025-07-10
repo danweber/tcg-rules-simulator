@@ -1,0 +1,27 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** WarpRedmonster (DW1-03) *****
+[DW1-03]
+Card Info
+Name                WarpRedmonster
+Colour              Red
+Card Type           Monster
+Play Cost           3
+DP                  2000 DP
+Level               3
+Form                Toddler
+Attribute           WATER
+Type                Electric
+Rarity              Super_Rare
+Evolution Requirements
+Colour         Red
+Level          2
+Evolve Cost 0
+Card Effect(s)
+[Your Turn] This Monster can evolve into a [Gallantmon] in your hand for a memory cost of 4, ignoring its evolution requirements.
+[Your Turn] This Monster gets +2000 DP.
+Inherited Effect
+[Your Turn] [Once Per Turn] When an opponent's Monster is deleted, ＜Draw_1＞ (Draw 1 card from your deck).
+Card Restriction
+[All Turns] While this monster is suspended, it gets +1000 DP.

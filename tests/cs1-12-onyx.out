@@ -1,0 +1,23 @@
+FIELD1:Attack1,CS1-12 Attack2,CS1-12 Attack3,CS1-12
+FIELD2:
+SECURITY1:
+SECURITY2:DW1-Vanillamon DW1-Vanillamon DW1-Vanillamon
+TRASH1:
+TRASH2:
+GAME:P1 T2 MAIN 3
+ECHO: -- Attack with first, two things end up removed
+FIELD1:Attack1,CS1-12,REST Attack2,CS1-12 Attack3,CS1-12
+FIELD2:
+SECURITY1:
+SECURITY2:DW1-Vanillamon
+TRASH1:
+TRASH2:DW1-Vanillamon DW1-Vanillamon
+GAME:P1 T2 MAIN 3
+ECHO: -- Attack with second, I win
+FIELD1:Attack1,CS1-12,REST Attack2,CS1-12,REST Attack3,CS1-12
+FIELD2:
+SECURITY1:
+SECURITY2:
+TRASH1:
+TRASH2:DW1-Vanillamon DW1-Vanillamon DW1-Vanillamon
+GAME:P1 T2 GAME_OVER 3

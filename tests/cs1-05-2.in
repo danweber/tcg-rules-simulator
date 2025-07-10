@@ -1,0 +1,19 @@
+VERSION:2
+# [Your Turn] When this Monster attacks, lose 4 memory
+# Have a green source so green option can be used
+FIELD1:Me,CS1-05 Green,DW1-Bird
+FIELD2:Victim1,DW1-Van,REST Victim2,DW1-Van,REST
+HAND1:DW1-Standup
+DECK2:DW1-Vanilla
+GAME:P1 T3 MAIN 10
+DUMP
+ECHO: -- Attack first time
+CMD:ATTACK Me Victim1
+DUMP
+ECHO: -- Stand up
+CMD:PLAY DW1-Standup
+STEP:AUTOANSWER:CAPTURE
+DUMP
+ECHO: -- not once-per-turn so attack again, losing turn
+CMD:ATTACK Me Victim2
+DUMP

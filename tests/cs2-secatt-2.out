@@ -1,0 +1,15 @@
+FIELD1:
+FIELD2:Attacker,DW1-Vanillamon,CS2-Masamune,CS2-Masamune
+SECURITY1:CS1-02 CS1-02 CS2-Excalibur CS1-02
+SECURITY2:
+TRASH1:
+TRASH2:
+GAME:P2 T1 MAIN 7
+ECHO: -- attack into sec, after second check the attacker dies
+FIELD1:
+FIELD2:
+SECURITY1:CS1-02 CS1-02
+SECURITY2:
+TRASH1:CS1-02 CS2-Excalibur
+TRASH2:CS2-Masamune CS2-Masamune DW1-Vanillamon
+GAME:P2 T1 MAIN 7

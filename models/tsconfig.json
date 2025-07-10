@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+      "target": "es2018",
+      "lib": ["es2021.String"],
+      "module": "commonjs",
+      "allowJs": true,
+      "rootDir": "./",
+      "outDir": "./dist",
+      "esModuleInterop": true,
+      "forceConsistentCasingInFileNames": true,
+      "strict": true,
+      "skipLibCheck": true
+  },
+  "include": ["./*.ts", "./types.d.ts"],
+    "exclude": ["dist", "dist/grammar.ts", "./dist/grammar.ts", "grammar.ts" ]
+}

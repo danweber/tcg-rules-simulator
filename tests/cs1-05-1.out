@@ -1,0 +1,20 @@
+FIELD1:Me,CS1-05
+FIELD2:Attack1,DW1-Vanillamon Attack2,DW1-Vanillamon Attack3,DW1-Vanillamon
+GAME:P2 T2 MAIN 5
+ECHO: -- Opponent attacks, I suspend a thing. Everything is available, even suspended things, even mine.
+CAPTURE:Activate Ice Shield suspending
+CAPTURE:Don't pay/activate
+CAPTURE:Target Ice Shield 1
+CAPTURE:Target VanillaMon 2
+CAPTURE:Target VanillaMon 3
+CAPTURE:Target VanillaMon 4
+FIELD1:Me,CS1-05,REST
+FIELD2:Attack1,DW1-Vanillamon,REST Attack2,DW1-Vanillamon Attack3,DW1-Vanillamon
+GAME:P2 T2 MAIN 5
+ECHO: -- Opponent attacks again, not once per turn. This time I suspend one of theirs.
+FIELD1:Me,CS1-05,REST
+FIELD2:Attack1,DW1-Vanillamon,REST Attack2,DW1-Vanillamon,REST Attack3,DW1-Vanillamon,REST
+GAME:P2 T2 MAIN 5
+FIELD1:Me,CS1-05,REST
+FIELD2:Attack1,DW1-Vanillamon,REST Attack2,DW1-Vanillamon,REST Attack3,DW1-Vanillamon,REST
+GAME:P2 T2 MAIN 5

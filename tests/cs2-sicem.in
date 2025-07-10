@@ -1,0 +1,31 @@
+VERSION:2
+# [Main] One of your Monsters gains +4000 DP for the turn. Then, one of your Monsters attacks.
+FIELD2:Mon1,CS2-02 Mon2,CS2-02
+FIELD1:Other,CS1-02,REST
+HAND2:CS2-Sicem
+SECURITY1:CS1-02
+DECK1:CS1-02
+GAME:P2 T3 MAIN 9
+DUMP:DP,SECURITY,HAND
+
+
+ECHO: -- use card. 
+CMD:PLAY CS2-Sicem
+EFFECT-TREE
+GET-CHOICES
+DUMP:DP
+
+ECHO: -- Give bonus to first...
+STEP:TO:0
+EFFECT-TREE
+GET-CHOICES
+DUMP:DP,SECURITY
+
+
+ECHO: -- ... and attack with second, into player.
+STEP:TO:3
+EFFECT-TREE
+GET-CHOICES
+DUMP:DP,SECURITY
+
+EXIT

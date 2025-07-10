@@ -1,0 +1,25 @@
+VERSION:2
+
+FIELD1:Yellow,CS1-06,REST Blue,CS2-12,REST
+FIELD2:Excal1,CS2-Excal Excal2,CS2-Excal
+GAME:P2 T1 MAIN 9
+DUMP:DP
+
+ECHO: -- attack yellow, get boost to defeat where we'd otherwise lose
+CMD:ATTACK Excal1 Yellow
+DUMP:DP
+
+ECHO: -- attack blue, no boost so die
+CMD:ATTACK Excal2 Blue
+DUMP:DP
+EXIT
+
+
+
+
+
+
+
+
+
+

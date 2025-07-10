@@ -1,0 +1,20 @@
+VERSION:2
+FIELD1:SuspendMe,CS1-02 AttackMe,CS1-02,REST
+FIELD2:Lazy,DW1-Van,CS2-Lazy
+GAME:P2 T1 MAIN 9
+DUMP
+
+
+ECHO: -- attack and suspend
+CMD:ATTACK Lazy AttackMe
+STEP:AUTOANSWER:CAPTURE
+DUMP
+
+
+
+
+
+
+
+
+

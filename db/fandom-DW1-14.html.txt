@@ -1,0 +1,17 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** Murder (DW1-14) *****
+[DW1-14]
+Card Info
+Name                Murder
+Colour              Blue
+Card Type           Option
+Use Cost            4
+Type                Poison
+Card Effect(s)
+[Main] Delete 1 Tamer.
+Security Effect
+[Security] Add this card to your hand.
+Card Restriction
+add an inherited effect?

@@ -1,0 +1,23 @@
+Sign in to edit
+    * View_history
+    * Talk_(0)
+***** Bigmon (DW1-01) *****
+[DW1-01]
+Card Info
+Name                BigMon
+Colour              Purple
+Card Type           Monster
+Play Cost           7
+DP                  12000 DP
+Level               6
+Form                Ultimate
+Attribute           EARTH
+Type                Beast_Man
+Rarity              Common
+Evolution Requirements
+Colour         Purple
+Level          5
+Evolve Cost 4
+Inherited Effect
+[All Turns] This Monster gains +760 DP.
+Card Restriction

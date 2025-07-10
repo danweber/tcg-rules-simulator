@@ -1,0 +1,12 @@
+VERSION:2
+# [Your Turn] While you have a red Monster or Tamer, all your Monsters gain +1000 DP
+# CS2-02 has 2K by default
+FIELD2:Normal,CS2-02 Egg1,CS2-02,CS2-01 Egg2,CS2-02,CS2-01
+HAND2:CS2-05
+GAME:P2 T1 MAIN 8
+DUMP:DP
+
+ECHO: -- Play red mon, get +2000
+CMD:Play CS2-05 Redrum
+DUMP:DP
+

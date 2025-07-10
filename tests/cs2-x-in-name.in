@@ -1,0 +1,21 @@
+VERSION:2
+# [Your Turn] When this monster attacks a Monster with [Shield] in its name, this Monster gets +5000 for the turn.
+FIELD1:Sneaky,CS1-Sneaky,REST ObsidianShield,CS1-Obsidian,REST
+FIELD2:Attacker1,CS2-ShieldSmasher Attacker2,CS2-ShieldSmasher PlayerAttacker,CS2-ShieldSmasher
+GAME:P2 T3 MAIN 6
+DUMP:DP,TRASH
+SECURITY1:CS1-02
+
+ECHO: -- attack1 doesn't get DP boost (but still wins)
+CMD:ATTACK Attacker1 Sneaky
+DUMP:DP,TRASH
+
+ECHO: -- attack2 gets boost (but would win without it)
+CMD:ATTACK Attacker2 ObsidianShield
+DUMP:DP,TRASH
+
+
+ECHO: -- attack3 does player attack 
+CMD:ATTACK PlayerAttacker Player
+DUMP:DP,TRASH
+

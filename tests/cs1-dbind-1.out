@@ -1,0 +1,15 @@
+FIELD1:Green,DW1-Birder
+FIELD2:Target,DW1-Vanillamon
+GAME:P1 T3 MAIN 10
+ECHO: -- Try to use option, can't because colors missing
+FIELD1:Green,DW1-Birder
+FIELD2:Target,DW1-Vanillamon
+GAME:P1 T3 MAIN 10
+ECHO: -- Play a yellow
+FIELD1:Green,DW1-Birder Yellow,CS1-02
+FIELD2:Target,DW1-Vanillamon
+GAME:P1 T3 MAIN 8
+ECHO: -- Now use option. Tough to see what happened, other tests will need to be more fine-grained.
+FIELD1:Green,DW1-Birder Yellow,CS1-02
+FIELD2:
+GAME:P1 T3 MAIN 1

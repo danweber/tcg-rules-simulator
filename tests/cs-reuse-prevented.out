@@ -1,0 +1,21 @@
+GET-X-PLAYS: json REFRESH
+GET-X-PLAYS: PLAY 0 Use Standup
+GET-X-PLAYS: ATTACK 4 2 Attack BigMon into VanillaMon
+GET-X-PLAYS: ATTACK 4 3 Attack BigMon into VanillaMon
+GET-X-PLAYS: ATTACK 4 0 Attack BigMon into player
+GET-X-PLAYS: NEXT PASS TURN
+FIELD1:Deleter,DW1-Bigmon,CS2-05
+FIELD2:Roger,CS3-Chirpflare,DODGE Vic1,DW1-Vanillamon,REST Vic2,DW1-Vanillamon,REST
+HAND1:DW1-Standup
+HAND2:
+GAME:P1 T4 MAIN 8
+ECHO: this test can fail if we haven't loaded up <Dodge> from another card
+CAPTURE:Activate ChirpFlare suspending
+CAPTURE:Don't pay/activate
+FIELD1:Deleter,DW1-Bigmon,CS2-05
+FIELD2:Roger,CS3-Chirpflare,REST Vic2,DW1-Vanillamon,REST
+GAME:P1 T4 MAIN 4
+ECHO: ---- try again ----
+FIELD1:Deleter,DW1-Bigmon,CS2-05,REST
+FIELD2:
+GAME:P1 T4 MAIN 4

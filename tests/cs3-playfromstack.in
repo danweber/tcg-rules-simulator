@@ -1,0 +1,34 @@
+VERSION:2
+
+
+# [All Turns] When this Monster would leave the battle area other than by one of your effects, from this Monster's evolution cards, play 1 Monster card.",
+
+FIELD1:Bird,CS3-ChirpFlare,CS3-02,CS3-02,CS3-01
+FIELD2:Shield,CS1-StoneShield,REST
+
+GAME:P1 T3 MAIN 8
+DUMP:HAND,DP
+
+ECHO: ----- this may fail if we haven't loaded <dodge>
+ECHO: ---- attack in, mon gets played out
+
+CMD:ATTACK Bird Shield
+STEP:AUTOANSWER:CAPTURE
+
+DUMP:HAND,DP
+
+EXIT
+ECHO: -- choose to evo
+STEP:TO:0
+EFFECT-TREE
+GET-CHOICES
+DUMP
+
+EXIT
+
+ECHO: -- pick growl 
+STEP:TO:0
+EFFECT-TREE
+GET-CHOICES
+DUMP
+

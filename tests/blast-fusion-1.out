@@ -1,0 +1,27 @@
+FIELD1:Blue,CS2-10,CS2-01,12000DP Yellow1,CS1-10,CS1-01,13000DP Yellow2,CS1-12,REST,8000DP Yellow3,CS1-12,CS1-01,REST,8000DP
+FIELD2:Attacker,CS2-11,9000DP
+HAND1:CS2-Rampager CS2-12 DW1-Vanillamon CS1-11
+HAND2:
+GAME:P2 T3 MAIN 3
+ECHO: -- attack into Yellow3, get dp boost, trigger blast
+EFFECT-TREE:NOTHING
+GET-CHOICES:Choose:
+GET-CHOICES:Don't Blast Evolve
+GET-CHOICES:Evolve Lv.7 Rampager onto Adamantium Shield in HAND and Anime Sword (0)
+GET-CHOICES:Evolve Lv.7 Rampager onto Obsidian Shield and Colossal Sword in HAND (0)
+GET-CHOICES:Evolve Lv.7 Rampager onto Onyx Shield and Colossal Sword in HAND (0)
+GET-CHOICES:Evolve Lv.7 Rampager onto Onyx Shield and Colossal Sword in HAND (0)
+FIELD1:Blue,CS2-10,CS2-01,12000DP Yellow1,CS1-10,CS1-01,13000DP Yellow2,CS1-12,REST,8000DP Yellow3,CS1-12,CS1-01,REST,8000DP
+FIELD2:Attacker,CS2-11,REST,14000DP
+HAND1:CS2-Rampager CS2-12 DW1-Vanillamon CS1-11
+HAND2:
+GAME:P2 T3 MAIN 3
+ECHO: -- choose first non-nothing
+EFFECT-TREE:NOTHING
+GET-CHOICES:Choose:
+FIELD1:Yellow1,CS1-10,CS1-01,13000DP Yellow2,CS1-12,REST,8000DP Yellow3,CS1-12,CS1-01,REST,8000DP I6,CS2-Rampager,CS1-11,CS2-10,CS2-01,14000DP
+FIELD2:
+HAND1:CS2-12 DW1-Vanillamon
+HAND2:
+GAME:P2 T3 MAIN 3
+ECHO: -- the attacker was removed (oops, I didn't mean to test this). I shouldn't get the choice to block

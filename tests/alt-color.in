@@ -1,0 +1,36 @@
+VERSION:2
+# yellow also meets this color requirement
+
+TITLE: Alternate use color
+TEXT: Yellow can also meet use requirement. Can't Use with no eggs, can use with yellow egg on next turn.
+
+EGGS1:CS1-01
+HAND1:CS3-Tag
+FIELD2:DW1-Van
+DECK2:DW1-Van
+DECK1:DW1-Van
+GAME:P1 T3 MAIN 3
+DUMP:EGGS,EGGZONE,TAG,HAND,KEYWORDS
+
+GET-X-PLAYS
+
+ECHO: Fail to play
+CMD:PLAY CS3-Tag
+DUMP
+CMD:PASS
+CMD:MAIN
+CMD:PASS
+ECHO: now back in my hatching
+DUMP:EGGS,EGGZONE,TAG,HAND,KEYWORDS
+GET-X-PLAYS
+
+ECHO: -- hatch --
+CMD:HATCH
+GET-X-PLAYS
+DUMP:EGGS,EGGZONE,TAG,HAND,KEYWORDS
+
+ECHO: -- use it --
+CMD:PLAY CS3-Tag
+DUMP:EGGS,EGGZONE,TAG,HAND,KEYWORDS
+
+

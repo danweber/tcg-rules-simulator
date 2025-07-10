@@ -1,0 +1,13 @@
+FIELD1:Attacker,CS1-03,DW1-Vanillamon Sourceless,CS1-03
+FIELD2:Tank,CS2-12,REST
+GAME:P1 T2 MAIN 5
+ECHO: -- Attack into Tank, die, then resurrect by mandatory effect.
+FIELD1:Sourceless,CS1-03 I4,CS1-03
+FIELD2:Tank,CS2-12,REST
+GAME:P1 T2 MAIN 5
+ECHO: -- Attack without sources, stay ded
+FIELD1:I4,CS1-03
+FIELD2:Tank,CS2-12,REST
+TRASH1:DW1-Vanillamon CS1-03
+TRASH2:
+GAME:P1 T2 MAIN 5

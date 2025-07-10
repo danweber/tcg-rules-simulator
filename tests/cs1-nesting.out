@@ -1,0 +1,30 @@
+FIELD1:WhenBeingAtt,CS1-05,6500DP WhenPlay1,CS1-06,7000DP WhenPlay2,CS1-06,7000DP Phoenix1,CS1-08,1000DP Phoenix2,CS1-08,1000DP
+FIELD2:WhenAtt,DW1-Vanillamon,CS2-05,5000DP
+GAME:P2 T3 MAIN 6
+FIELD1:WhenBeingAtt,CS1-05,6500DP WhenPlay1,CS1-06,7000DP WhenPlay2,CS1-06,7000DP Phoenix2,CS1-08,1000DP
+FIELD2:WhenAtt,DW1-Vanillamon,CS2-05,REST,5000DP
+GAME:P2 T3 MAIN 6
+ECHO: --- should be three levels deep
+EFFECT-TREE:DSE DEPTH 1 DONE:suspend to attack, DONE:attack declare
+EFFECT-TREE:RES DEPTH 2 Ice Shield, DONE:Great Sword
+EFFECT-TREE:RES DEPTH 3 PROCESSING:Phoenix Defender
+EFFECT-TREE:INT DEPTH 3 Sneaky Cat, Sneaky Cat
+ECHO: --
+FIELD1:WhenBeingAtt,CS1-05,6500DP WhenPlay1,CS1-06,REST,7000DP WhenPlay2,CS1-06,REST,7000DP Phoenix2,CS1-08,1000DP I7,CS1-08,1000DP
+FIELD2:WhenAtt,DW1-Vanillamon,CS2-05,REST,5000DP
+GAME:P2 T3 MAIN 6
+ECHO: -- one 1 effect left
+EFFECT-TREE:DSE DEPTH 1 DONE:suspend to attack, DONE:attack declare
+EFFECT-TREE:RES DEPTH 2 PROCESSING:Ice Shield
+ECHO: -- finish it off
+CAPTURE:Activate Ice Shield suspending
+CAPTURE:Don't pay/activate
+CAPTURE:Target Ice Shield 1
+CAPTURE:Target Sneaky Cat 2
+CAPTURE:Target Sneaky Cat 3
+CAPTURE:Target Phoenix Defender 5
+CAPTURE:Target VanillaMon 6
+CAPTURE:Target Phoenix Defender 7
+FIELD1:WhenBeingAtt,CS1-05,REST WhenPlay1,CS1-06,REST WhenPlay2,CS1-06,REST Phoenix2,CS1-08 I7,CS1-08
+FIELD2:
+GAME:P2 T3 MAIN 6

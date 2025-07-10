@@ -1,0 +1,25 @@
+     ʟᴠ.4 — Armored Cat — CS1-18
+[Champion | Data | Shield] [Yel.]
+Play cost: 6 | Evolution: 3 from Lv.3 [Yel.]
+     6000 DP
+
+＜Armor Purge＞
+     · Inherited Effect:
+=====
+     ʟᴠ.3 — Revenge Kitty — CS1-19
+[Rookie | Data | Shield] [Yel.][Pur.]
+Play cost: 3 | Evolution: 0 from Lv.2 [Yel.]
+     1000 DP
+
+     · Inherited Effect:
+＜Retaliation＞
+=====
+     ʟᴠ.3 — Sleepy Kitty — CS1-20
+[Rookie | Data | Shield] [Yel.][Pur.]
+Play cost: 3 | Evolution: 0 from Lv.2 [Yel.]
+     1000 DP
+
+     · Inherited Effect:
+[Your Turn] This Monster gets -800 DP.
+=====
+

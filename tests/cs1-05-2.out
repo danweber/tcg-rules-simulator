@@ -1,0 +1,17 @@
+FIELD1:Me,CS1-05 Green,DW1-Birder
+FIELD2:Victim1,DW1-Vanillamon,REST Victim2,DW1-Vanillamon,REST
+GAME:P1 T3 MAIN 10
+ECHO: -- Attack first time
+FIELD1:Me,CS1-05,REST Green,DW1-Birder
+FIELD2:Victim2,DW1-Vanillamon,REST
+GAME:P1 T3 MAIN 6
+ECHO: -- Stand up
+CAPTURE:Target Ice Shield 1
+CAPTURE:Target Birder 2
+FIELD1:Me,CS1-05 Green,DW1-Birder
+FIELD2:Victim2,DW1-Vanillamon,REST
+GAME:P1 T3 MAIN 2
+ECHO: -- not once-per-turn so attack again, losing turn
+FIELD1:Me,CS1-05,REST Green,DW1-Birder
+FIELD2:
+GAME:P2 T4 HATCHING 2

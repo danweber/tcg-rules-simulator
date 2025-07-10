@@ -1,0 +1,37 @@
+VERSION:2
+# [Your Turn] When you would play a yellow monster, by suspending this Monster, reduce the cost by 2.
+FIELD1:Mon1,CS1-09 Mon2,CS1-09 
+FIELD2:Victim,DW1-Van Attacker,DW1-Van Green,DW1-Bird
+HAND2:DW1-Standup
+SECURITY1:CS1-02 CS1-02
+SECURITY2:CS2-02 CS2-02
+GAME:P2 T2 MAIN 7
+DECK1:DW1-Van
+DECK2:DW1-Van
+DUMP:DP
+
+ECHO: -- Attacks, Victim gets penalized
+CMD:ATTACK Attacker Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP
+ECHO -- Stand up and attack again
+CMD:PLAY DW1-Standup
+#Stand up the second
+STEP:TO:1
+# I don't know why this one is needed, there are no more choices.
+STEP:TO:0
+CMD:ATTACK Attacker Player
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP
+
+CMD:PASS
+CMD:MAIN
+ECHO: -- attack again, another 800 DP lost
+CMD:ATTACK Mon1 Attacker
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP
+
+ECHO: -- pass turn, all DP losses go away
+CMD:PASS
+DUMP:DP
+EXIT

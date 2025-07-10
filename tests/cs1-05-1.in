@@ -1,0 +1,22 @@
+VERSION:2
+# [Opponent's Turn] When an opponent's Monster attacks, you may suspend one Monster
+FIELD1:Me,CS1-05 
+FIELD2:Attack1,DW1-Vanilla Attack2,DW1-Vanilla Attack3,DW1-Vanilla
+# I need one card in health so I don't die.
+SECURITY1:CS1-02 CS1-02
+GAME:P2 T2 MAIN 5
+DUMP
+ECHO: -- Opponent attacks, I suspend a thing. Everything is available, even suspended things, even mine.
+CMD:ATTACK Attack1 Player
+STEP:AUTOANSWER:CAPTURE
+DUMP
+ECHO: -- Opponent attacks again, not once per turn. This time I suspend one of theirs.
+CMD:ATTACK Attack2 Player
+#Activate the effect by picking the first one.
+STEP:TO:0
+#Now do the rest
+STEP:TO:-1
+STEP:AUTOANSWER:CAPTURE
+DUMP
+STEP:AUTOANSWER:CAPTURE
+DUMP

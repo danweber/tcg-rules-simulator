@@ -1,0 +1,20 @@
+VERSION:2
+# [Your Turn] While you have a red Monster or Tamer, all your Monsters gain +1000 DP
+# CS2-02 has 2K by default
+FIELD2:Normal,CS2-02 Egged,CS2-02,CS2-01
+HAND2:CS1-Gideon CS2-AggressiveAmy CS2-AggressiveAmy
+GAME:P2 T1 MAIN 10
+DUMP:DP
+#EXIT
+ECHO: -- Play yellow Taamer, nothing should change
+CMD:Play CS1-Gideon Gideon
+DUMP:DP
+
+ECHO: -- Play Red Tamer
+CMD:Play CS2-Aggressive Amy
+DUMP:DP
+
+ECHO: -- Play Red Tamer #2, nothing should change
+CMD:Play CS2-Aggressive Amy
+DUMP:DP
+
