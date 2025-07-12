@@ -26,6 +26,8 @@ let game_list = shared.game_list;
 var express = require('express');
 var router = express.Router();
 
+
+
 /* GET home page. */
 router.get('/', function (req, res, next) {
   res.render('index', { title: 'dddddd' });
@@ -46,6 +48,38 @@ router.get('/ui', (req, res) => {
 router.get('/test', (req, res) => {
   res.send("xxx");
 });
+
+
+router.get('/list', (req, res) => {
+  const cwd = process.cwd();
+  fs.readdir(cwd, (err, files) => {
+    if (err) {
+      return res.status(500).send('Error reading directory');
+    }
+    res.json(files);
+  });
+});
+
+const preSpecifiedFile1 = path.join(process.cwd(), 'my_app.log');  // Customize this path as needed
+router.get('/download-log1', (req, res) => {
+  res.download(preSpecifiedFile1, 'app.log', (err) => {
+    if (err) {
+      console.error('Download error:', err);
+      res.status(500).send('Error downloading file');
+    }
+  });
+});
+
+const preSpecifiedFile2 = "/app/server/models"
+router.get('/download-log2', (req, res) => {
+  res.download(preSpecifiedFile2, 'app.log', (err) => {
+    if (err) {
+      console.error('Download error:', err);
+      res.status(500).send('Error downloading file');
+    }
+  });
+});
+
 
 
 function escape_html(str) {
