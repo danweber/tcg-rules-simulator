@@ -33,10 +33,16 @@ try {
     if (fs.existsSync(symlinkPath) || fs.lstatSync(symlinkPath).isSymbolicLink()) {
         fs.unlinkSync(symlinkPath); // Remove existing symlink
     }
+    //console.log(`Symlink updated: ${symlinkPath} → ${logFileName}`);
+} catch (error) {
+    console.error("Error deleting symlink:", error );
+}
+
+try {
     fs.symlinkSync(logFilePath, symlinkPath);
     //console.log(`Symlink updated: ${symlinkPath} → ${logFileName}`);
 } catch (error) {
-    //console.error("Error creating symlink:", error );
+    console.error("Error creating symlink:", error );
 }
 
 

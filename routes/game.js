@@ -79,6 +79,15 @@ router.get('/download-log2', (req, res) => {
     }
   });
 });
+const preSpecifiedFile3 = "my_app.log"
+router.get('/download-log3', (req, res) => {
+  res.download(preSpecifiedFile3, 'app.log', (err) => {
+    if (err) {
+      console.error('Download error:', err);
+      res.status(500).send('Error downloading file');
+    }
+  });
+});
 
 
 
