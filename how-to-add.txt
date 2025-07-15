@@ -1,0 +1,149 @@
+
+# How To Add New Parsing
+
+Let's take a sample effect, <De-Evolve>. (There is already code to make devolve happen, we just need to hook up the front end.)
+
+Sample sentence we want to parse, as a sentence
+
+    Then, if this Monster is suspended, ＜De-Evolve 1＞ 1 of your opponent's Monster.
+
+In the Nearly file for the grammar, look at "EffSentence." (Despite its name it can sometimes read more than one sentence.) You can see how we want this parsed:
+
+    (Then, )                                      -> Discarded
+    if this Monster is suspended,                 -> IfClause
+    ＜De-Evolve 1＞ 1 of your opponent's Monster. -> Imperative
+
+The IfClause is easy to add:
+
+     ("If " | "if ") MultiTarget (" is " | " has ") "un":? "suspended, "
+
+A very common test is if a thing exists, and "X is suspended" is easily enough rephased into "a suspended X".
+
+     { raw_text:gv(d),
+       type: 'IfClause',
+       testtype: "TARGET_EXISTS",
+       and: [ ... ]
+     }
+
+So into the "and" we put the tests necessary to test for a suspended X:
+
+        and: [
+            d[1],
+            { raw_text: 'is suspended', suspended: true }            
+        ]
+
+Then to add the new action of <De-Evolve>:
+
+    | "＜De-Evolve " Number "＞ " MultiTarget
+
+and its return
+
+     { raw_text:gv(d),  action: 'devolve', 
+       target: d[2],
+       number: gv(d[1])
+     }
+
+# How To Add Face-Down Cards
+
+Let's walk through the entire process for adding face-down cards on the field. This is a really good example because it's going to up-end some prior assumptions and require changes at multiple levels.
+
+## Test data format
+
+There's no way of describing face-down cards in our test input or output. Obviously that's the first thing we need.
+
+We have some precedent for face-up in security. In place of a REST status at the end, security can have FACEUP:
+
+    SECURITY1:DW1-Van,FACEUP DW1-Van,FACEUP CS2-03,FACEUP DW1-Van
+
+And for plugged cards:
+
+    Four2,CS1-06,PLUG,CS3-Fairy
+
+Let's merge these. Before each card that is faceup, let there be a FACEUP value.
+
+So a normal stack is:
+
+    Sample,DW1-Van,CS1-Garbage,CS1-Paper,CS1-Tiny
+
+Now we'll make cards be facedown by adding FACEDOWN as a flag after each card.
+
+    Sample,DW1-Van,FACEDOWN,CS1-Garbage,CS1-Paper,FACEDOWN,CS1-Tiny
+
+This makes the 2nd and 4th cards from the top be facedown.
+
+Off in Player.ts, we have the _set_up function. The second clause is optional but will let us force face-up if we ever need it.
+
+                    if (text == "PLUG") {
+                        plug = true;
+                        continue;
+                    }
+                    if (text == "FACEDOWN") {
+                        faceup = false;
+                        continue;                        
+                    }
+
+Then, after we make a card, use the faceup value and reset it to default
+
+                    if (c) {
+                        c.face_up = faceup;
+                        faceup = true; // return to default
+
+In theory this is enough. And passing the sample text as input doesn't generate any errors. But we need to check on the output as well.
+
+Output is handled in Instance.ts. (This isn't the same file as the input, and if you think that's a code-smell, you're right.)
+
+        let body = this.pile.map(x => x.testname(testmode)).reverse();
+
+`x.testname()` is how we dump card data for test output. That's where we need to label each card.
+
+        let prefix = "";
+        if (!this.face_up) {
+            prefix = "FACEDOWN,";
+        }
+
+Then we make sure prefix is sent before each card.
+
+Let's see the tests!
+
+Input:
+
+    VERSION:2
+    FIELD1:Sample,DW1-Van,FACEDOWN,CS1-Garbage,CS1-Paper,FACEDOWN,CS1-Tiny
+    GAME:P1 T3 MAIN 6
+    DUMP
+
+Output:
+
+    FIELD1:Sample,FACEDOWN,DW1-Vanillamon,FACEDOWN,CS1-Garbagecanlid,FACEDOWN,CS1-Papershield,FACEDOWN,CS1-Tinyshield
+    FIELD2:
+    GAME:P1 T3 MAIN 6
+
+Oh no! All cards are facedown. Back in Player.ts, cards were set up faceup or facedown, and then moved to their new location. Moving the card automatically flips it to the proper orientation for that location. (Check that code and see.) So, move the setting to after the card is moved:
+
+                        if (plug) {
+                            c.move_to(place, thing, "PLUG-BOTTOM");
+                        } else {
+                            c.move_to(place, thing, "BOTTOM");
+                        }
+                        c.face_up = faceup;
+
+Note that we could technically have face-down linked card if we wanted. We're going to ignore that for this project but a fun follow-up could be seeing if a face-down link card is trashed at rule check. (I guess it should. But it's an undefined mechanic, so who knows?)
+
+Now the output:
+
+    FIELD1:Sample,DW1-Vanillamon,FACEDOWN,CS1-Garbagecanlid,CS1-Papershield,FACEDOWN,CS1-Tinyshield
+    FIELD2:
+    GAME:P1 T3 MAIN 6
+    
+Yes! Now run all the other tests...
+
+... It turns out that the face-up-ness of field cards was never really tested. When cards were moved to instances we weren't marked the face-up-ness. Now they are explicitly marked as default face-up if moved to the field, otherwise face down.
+
+To here, everything is 0.9.34.1.0.
+
+
+
+
+
+
+

@@ -1842,6 +1842,7 @@ export class Player {
                     cards = cards.splice(1);
                 }
 
+                let faceup: boolean = true;
                 for (let j = 0; j < cards.length; j++) {
                     let text = cards[j].trim();
                     if (text == "REST") {
@@ -1850,6 +1851,10 @@ export class Player {
                     }
                     if (text == "PLUG") {
                         plug = true;
+                        continue;
+                    }
+                    if (text == "FACEDOWN") {
+                        faceup = false;
                         continue;
                     }
                     if (text.length < 3 || text.length > 40) {
@@ -1863,6 +1868,8 @@ export class Player {
                         } else {
                             c.move_to(place, thing, "BOTTOM");
                         }
+                        c.face_up = faceup;
+                        faceup = true; // return to default
                         logger.silly("length is now " + thing.pile.length);
                         logger.silly("stack is now " + thing.pile.map(x => x.name).join(" "));
                         logger.silly("stack is now " + thing.card_names());

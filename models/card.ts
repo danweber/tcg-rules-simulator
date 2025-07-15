@@ -982,13 +982,24 @@ export class Card {
         let [set, _] = this.id.split("-");
         let outname = this.name.replace(/[^＜＞a-zA-Z0-9]/g, '');
         outname = outname.charAt(0).toUpperCase() + outname.slice(1).toLowerCase();
+
+        // on the field, we prefix FACEDOWN if a card is face-down
+        // in security, we suffix FACEUP if the card is face-up
+        let prefix = "";
+        let suffix = "";
+        if (this.face_up && this.location & Location.SECURITY) suffix = ",FACEUP";
+        if (!this.face_up && this.location & Location.FIELD) prefix = "FACEDOWN,";
+        if (this.location & Location.SECURITY) {
+            prefix = "";
+        } else if (this.location & Location.FIELD) {
+            suffix = "";
+        }
         let ret = `${set}-${outname}`;
-        let up = this.face_up ? ",FACEUP" : "";
         if (!this.game?.get_card(ret)) {
             // no hit, we need to fall back to it 
-            return this.id + "-" + outname  + up;
+            return prefix + this.id + "-" + outname  + suffix;
         }
-        return ret + up;
+        return prefix + ret + suffix;
     }
     make_summary() {
 
@@ -1167,10 +1178,11 @@ export class Card {
         }
 
         this.assign_id(l, instance, order);
-        this.face_up = false; // reset whenever it moves
-
         // we need to know the instance and index, too
+
         this.location = l;
+        this.face_up = !!(this.location & Location.FIELD); // mark as face down if any place but field
+
         if (instance && this.location !== Location.HAND) {
             // we will need to specify *where* in the instance eventually
             instance._add_card(this, order);
