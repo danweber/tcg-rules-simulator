@@ -141,6 +141,36 @@ Yes! Now run all the other tests...
 
 To here, everything is 0.9.34.1.0.
 
+## Parsing
+
+So now let's get an effect working. When working with complicated effects, break them down into pieces. So we make a new test card, or modify an existing test card, to have this effect.
+ 
+    You may place 1 card in your hand face down as this Monster's bottom evolution card.
+
+Does this parse? Run `node ./parse-evocond.js` on a file with this as its content. Once it doesn't, try several variations.
+
+    >> You may place 1 card in your hand face down as this Monster's bottom evolution card.
+    null
+    >> You may place 1 card in your hand as this Monster's bottom evolution card.
+    null
+    >> Place 1 card in your hand as this Monster's bottom evolution card.
+    found 1 results for Place 1 card in your hand as this Monster's bottom evolution card.
+
+So we needed to make sure that the specific kind of place worked, which involved added one more variation of "place" in the grammar.
+
+Then we need to make sure that "place X face down" is accepted.
+
+     | ("place " | "placing "|"Place ") MultiTarget " face down":? (" as "|" under ") MultiTarget ("'s bottom evolution card" | " as its bottom evolution card") " or under ":?  Target:?
+
+Parse that and it works! (Long output elided.) But run through all the test cases before committing.
+
+That's 0.9.34.1.1.
+
+## Making the code do the right thing.
+
+If you run the above effect, it does put a card into the place it should -- but face up. We're almost there!
+
+
 
 
 
