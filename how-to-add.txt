@@ -170,6 +170,22 @@ That's 0.9.34.1.1.
 
 If you run the above effect, it does put a card into the place it should -- but face up. We're almost there!
 
+(Also, a "put face up into security" effect was newly caught by the grammar. That's good, but the new code wasn't handling it. That was disabled in a way that you can see, do we're only fixing one thing at a time.)
+
+A lot of the code needed was already here. All we needed to change was to make, instead of sometimes explicitly setting the card face up, was to also explicitly sometimes set the card face down.
+
+First, if face_down, make it part of our n_mod data structure.
+
+                    if (action_args.face_down) thing.n_mod += "face down; ";
+
+Then, make sure that gets used:
+
+-                    if (face == "UP") cl.card.face_up = true; // 
++                    if (fup) cl.card.face_up = true; // 
++                    if (fdown) cl.card.face_up = false; // 
+
+That's 0.9.34.1.2.
+
 
 
 

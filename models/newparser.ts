@@ -2576,18 +2576,13 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     console.error("can't do it");
                 } else {
 
-                    // TUCK is for instance, TARGET_CARD_MOVE for cardlocatiion
-                    if (thing.game_event === GameEvent.TUCK &&
+                    console.error(2579, action_args);
+                    // TUCK/FIELD_TO_SECURITY is for instance, TARGET_CARD_MOVE for cardlocatiion
+                    if ((thing.game_event === GameEvent.TUCK || thing.game_event === GameEvent.FIELD_TO_SECURITY) &&
                         target.raw_text.includes(" card ")) {
-                        // for moving non-card to security, use this instead
                         thing.game_event = GameEvent.TARGETED_CARD_MOVE;
                     }
 
-                    if (thing.game_event === GameEvent.TARGETED_CARD_MOVE &&
-                        !target.raw_text.includes(" card ") && false) {
-                        // for moving non-card to security, use this instead
-                        thing.game_event = GameEvent.FIELD_TO_SECURITY;
-                    }
                     if (action_args.dna) thing.cause = EventCause.DNA;
                     if (action_args.appfuse) {
                         console.log("app fuse is set");
@@ -2612,6 +2607,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     thing.td2 = y;
                     if (action_args.no_cost) thing.n_mod += "for free; ";
                     if (action_args.place_location) thing.n_mod += action_args.place_location + "; ";
+                    if (action_args.face_down) thing.n_mod += "face down; ";
                     line = "";
                 }
             }

@@ -1,0 +1,13 @@
+FIELD1:
+FIELD2:
+GAME:P1 T3 MAIN 10
+CAPTURE:Activate SorcerySwan moving card
+CAPTURE:Don't pay/activate
+CAPTURE:Target ShieldWing HAND-CS3-06
+CAPTURE:Target VanillaMon HAND-DW1-04
+CAPTURE:Target FairyFeatherlink HAND-CS3-02
+CAPTURE:Target ChirpFlare HAND-CS3-03
+CAPTURE:Target Paper Shield HAND-CS1-02
+FIELD1:Yyy,CS3-Sorceryswan,FACEDOWN,CS3-Shieldwing
+FIELD2:
+GAME:P1 T3 MAIN 4

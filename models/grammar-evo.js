@@ -1096,7 +1096,7 @@
             { "name": "Place$subexpression$1", "symbols": ["Place$subexpression$1$string$2"] },
             { "name": "Place$subexpression$1$string$3", "symbols": [{ "literal": "p" }, { "literal": "l" }, { "literal": "a" }, { "literal": "c" }, { "literal": "i" }, { "literal": "n" }, { "literal": "g" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Place$subexpression$1", "symbols": ["Place$subexpression$1$string$3"] },
-            { "name": "Place$ebnf$1$string$1", "symbols": [{ "literal": " " }, { "literal": "f" }, { "literal": "a" }, { "literal": "c" }, { "literal": "e" }, { "literal": " " }, { "literal": "u" }, { "literal": "p" }], "postprocess": function joiner(d) { return d.join(''); } },
+            { "name": "Place$ebnf$1$string$1", "symbols": [{ "literal": " " }, { "literal": "f" }, { "literal": "a" }, { "literal": "c" }, { "literal": "e" }, { "literal": " " }, { "literal": "X" }, { "literal": "X" }, { "literal": "X" }, { "literal": " " }, { "literal": "u" }, { "literal": "p" }], "postprocess": function joiner(d) { return d.join(''); } },
             { "name": "Place$ebnf$1", "symbols": ["Place$ebnf$1$string$1"], "postprocess": id },
             { "name": "Place$ebnf$1", "symbols": [], "postprocess": function (d) { return null; } },
             { "name": "Place$string$1", "symbols": [{ "literal": " " }, { "literal": "a" }, { "literal": "s" }, { "literal": " " }, { "literal": "t" }, { "literal": "h" }, { "literal": "e" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },
@@ -1112,7 +1112,7 @@
                         target: d[1],
                         target2: { raw_text: "security" },
                         place_location: gv(d[4]),
-                        face_up: !!d[2]
+                        //    face_up: !!d[2]
                     };
                 } },
             { "name": "Place$subexpression$3$string$1", "symbols": [{ "literal": "p" }, { "literal": "l" }, { "literal": "a" }, { "literal": "c" }, { "literal": "e" }, { "literal": " " }], "postprocess": function joiner(d) { return d.join(''); } },

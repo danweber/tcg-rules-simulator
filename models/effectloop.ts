@@ -3112,9 +3112,11 @@ export class XX {
                 if (weirdo.n_mod?.match(/deck/)) location = Location.DECK;
                 if (weirdo.td2?.raw_text.match(/hand/i)) location = Location.HAND;
                 let order = weirdo.n_mod?.match(/bottom/i) ? "BOTTOM" : "TOP";
-                let face = weirdo.n_mod?.match(/face.up/i) ? "UP" : "DOWN";
+                let fup = weirdo.n_mod?.match(/face.up/i);//? "UP" : "DOWN";
+                let fdown = weirdo.n_mod?.match(/face.down/i);//? "UP" : "DOWN";
+
                 // handle instance
-                logger.info(`order ${order}  face ${face}`);
+                logger.info(`order ${order} n_mod ${weirdo.n_mod} face ${fup} ${fdown}`);
                 //console.error(3115, weirdo.td2?.raw_text, location);
                 if (target.kind == "Instance") {
                     let i: Instance = target;
@@ -3122,7 +3124,8 @@ export class XX {
                     // we need something more generic to tell that our target isn't there any more
                     if (!c) return false;
                     c.extract().move_to(location, target_instance, order);
-                    if (face == "UP") c.face_up = true; // 
+                    if (fup) c.face_up = true; // 
+                    if (fdown) c.face_up = false; // 
 
                     let top;
                     while (top = i.pile[0])
@@ -3134,7 +3137,9 @@ export class XX {
                     let cl: CardLocation = target;
                     //console.error(2596, "moving cl to " + location, target_instance?.id, order);
                     cl.extract().move_to(location, target_instance, order);
-                    if (face == "UP") cl.card.face_up = true; // 
+                    if (fup) cl.card.face_up = true; // 
+                    if (fdown) cl.card.face_up = false; // 
+                    
                 }
                 return true; // i guess it always works?
             }

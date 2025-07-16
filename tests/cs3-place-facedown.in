@@ -1,0 +1,11 @@
+VERSION:2
+
+# [On Play] You may place 1 card in your hand face down as this Monster's bottom evolution card.\n",
+
+HAND1:CS3-06 DW1-Van CS3-02 CS3-03 CS1-02 CS3-08
+GAME:P1 T3 MAIN 10
+DUMP
+
+CMD:PLAY CS3-08
+STEP:AUTOANSWER:CAPTURE
+DUMP
