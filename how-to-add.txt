@@ -186,6 +186,21 @@ Then, make sure that gets used:
 
 That's 0.9.34.1.2.
 
+So we *almost* have it. Except the data we send to the UI doesn't indicate that the card is face down at all.
+
+    '{"id":1,"label":"Yyy","name":"SorcerySwan","colors":"GREEN","dp":5000,"level":4,"suspended":false,"stack":["CS3-06@GREEN@31","CS3-08@GREEN@30"],"plugs":[],"sa":1,"loc":4,"location":"BATTLE","summary":""}'
+
+Making a specific UI do the right thing is out of scope. However, we must give the UI the information that it needs. This means marking it as face-down, and giving only the owning player the details aobut it.
+
+The current format of the stack is cardid, comma-separated colors, and a ID that identifies a card as it moves around the field. Until today it was intended to track face-up cards. But it probably should track a face-down card, too. Once you place it, you can technically track it.
+
+So what we want is
+ - consistent ID for the card
+ - always face down for other player
+ - face down for owner, but, able to view it
+
+Trying just 'back' for 0.9.34.1.3.
+
 
 
 

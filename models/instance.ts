@@ -438,7 +438,8 @@ export class Instance {
             suspended: this.suspended,
             // why were we using the x.card_instance_id?
             // stack: this.pile.map(x => `${x.id}@${x.card_instance_id}`),
-            stack: this.pile.map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`),
+            stack: this.pile.map(x => x.face_up ? `${x.id}@${x.colors_s()}@${x.card_instance_id}`: 'back'),
+            // 'back' or 'DOWN'?? should we use 'back' everywhere instead of 'DOWN'?
             plugs: this.plugged.reverse().map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`),
             sa: this.get_sa(),
             loc: this.location,
