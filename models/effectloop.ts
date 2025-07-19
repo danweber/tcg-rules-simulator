@@ -1802,6 +1802,9 @@ export class SolidEffectLoop {
                 ].includes(w.game_event)) {
                     secret = true;
                 }
+                if (w.td && (w.td.raw_text.includes("hand") || w.td.raw_text.includes("security"))) {
+                    secret = true;
+                }
                 let msg1 = "Targets are: " + this.potential_targets.map(x => x.get_name()).join(",") +
                     "\n" + `Player ${p} to choose ${w.choose?.value()}`;
 
@@ -2899,7 +2902,7 @@ export class XX {
             if ("kind" in target && target.kind == "Instance") {
                 let i: Instance = target;
                 let c = i.top();
-                c.extract().move_to(Location.STACK);
+                c.extract().move_to(Location.TEMPSTACK);
                 //                while (c = i.top()) {
                 //                  c.extract().move_to(Location.TRASH);
                 //            }
@@ -2908,7 +2911,7 @@ export class XX {
                 i.do_removal("trash", "stacksummon");
                 // theory: rename the GAME_EVENT here
             } else {
-                cl.extract().move_to(Location.STACK);
+                cl.extract().move_to(Location.TEMPSTACK);
             }
             return true; // assume success
         } else if (weirdo.game_event == GameEvent.PLUG) {

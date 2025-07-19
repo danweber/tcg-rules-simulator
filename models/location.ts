@@ -49,7 +49,7 @@ export enum Location {
     TOKENDECK = 4096,
     TOKENTRASH = 8192,
     ALLTRASH = TRASH | TOKENTRASH,
-    STACK = 16834,
+    TEMPSTACK = 16834, // this is the temporary stack we build like for a stack summon
     SHADOWREALM = 32768,
     END = 65536
 };

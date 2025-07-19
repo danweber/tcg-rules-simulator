@@ -1,0 +1,15 @@
+VERSION:2
+
+# the inherit of a facedown card doesn't exist. CS1-Paper's inherited gives 1 memory at turn start.  CS2-01 gives +1000 DP while you have a red.
+
+
+FIELD1:Inherited,DW1-Van,FACEDOWN,CS1-Paper,CS1-Paper,FACEDOWN,CS2-01 Red,CS2-ShieldSmasher
+GAME:P1 T3 HATCHING 5
+ECHO: should have 5000 DP and 9000 DP
+DUMP:DP
+
+CMD:MAIN
+STEP:AUTOANSWER:CAPTURE
+ECHO: -- main, gain just 1 mem
+DUMP:DP
+

@@ -199,7 +199,54 @@ So what we want is
  - always face down for other player
  - face down for owner, but, able to view it
 
-Trying just 'back' for 0.9.34.1.3.
+Trying just 'back' for 0.9.34.1.3. This only gives us #2. We'll return later.
+
+## Face-down cards have no effect (including no DP).
+
+This is one of two big things left to implement, the other being recognizing face-down cards to search on.
+
+Let's do rules-checks and "having no effect" together, because they're essentially the same problem. Any card that is checked for inheriteds, effects, or DP has none of it.
+
+First thing is a test case.
+
+    VERSION:2
+    # the inherit of a facedown card doesn't exist. CS1-Paper's inherited gives 1 memory at turn start.  CS2-01 gives +1000 DP while you have a red.
+    FIELD1:Inherited,DW1-Van,FACEDOWN,CS1-Paper,CS1-Paper,FACEDOWN,CS2-01 Red,CS2-ShieldSmasher
+    GAME:P1 T3 HATCHING 5
+    ECHO: should have 5000 DP and 9000 DP
+    DUMP:DP
+    CMD:MAIN
+    STEP:AUTOANSWER:CAPTURE
+    ECHO: -- main, gain just 1 mem
+    DUMP:DP
+
+Running it right now will have 2 problems: both [start of main] trigger, as does the +1000 passive boost.
+
+Effects for an instance are only checked in a few places, so we're going to just add those checks that the card is still face up. And, it turns out, we need to make sure that cards in trash are considered face up as well. (We never bothered before!) Also, we were broadcasting what cards a player can choose to both players when the choices included hand or security. Let's fix all those.
+
+-        this.face_up = !!(this.location & Location.FIELD); // mark as face down if any place but field
++        this.face_up = !!(this.location & (Location.FIELD | Location.ALLTRASH ); // mark as face down if any place but field or trash
+
+
++                if (w.td && (w.td.raw_text.includes("hand") || w.td.raw_text.includes("security"))) {
++                    secret = true;
++                }
+
+-            ret.push(... this.pile[i].new_inherited_effects);
++            if (this.pile[i].face_up) {
++                ret.push(... this.pile[i].new_inherited_effects);
++            } else {
++                // ignore face down card in stack
++            }
+
+
+                 for (let i = this.pile.length - 2; i >= 0; i--) {
++                    if (! this.pile[i].face_up) continue;
+                     ret += " " + this.pile[i].name;
+
+That's 0.9.34.1.4.
+
+
 
 
 

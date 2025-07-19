@@ -1058,7 +1058,7 @@ export class Card {
     }
 
     static hidden: Location[] = [Location.NEW, Location.DECK, Location.EGGDECK, Location.HAND];
-    static visible: Location[] = [Location.BATTLE, Location.EGGZONE, Location.TRASH, Location.REVEAL, Location.TOKENDECK, Location.TOKENTRASH, Location.NULLZONE, Location.OPTZONE, Location.STACK];
+    static visible: Location[] = [Location.BATTLE, Location.EGGZONE, Location.TRASH, Location.REVEAL, Location.TOKENDECK, Location.TOKENTRASH, Location.NULLZONE, Location.OPTZONE, Location.TEMPSTACK];
     static maybe: Location[] = [Location.SECURITY];
 
     // finds the card in the place it was at, in case we need it
@@ -1181,7 +1181,7 @@ export class Card {
         // we need to know the instance and index, too
 
         this.location = l;
-        this.face_up = !!(this.location & Location.FIELD); // mark as face down if any place but field
+        this.face_up = !!(this.location & (Location.FIELD | Location.ALLTRASH ); // mark as face down if any place but field or trash
 
         if (instance && this.location !== Location.HAND) {
             // we will need to specify *where* in the instance eventually
@@ -1523,7 +1523,7 @@ export class CardLocation {
     id: string;
     instance?: number;
     card_id: string;
-    private pile: Card[];
+    private pile: Card[]; // this function modifies the pile; it violates good data segretation patterns
     location: Location;
     cardloc: Location;
     mode: "plug" | undefined;

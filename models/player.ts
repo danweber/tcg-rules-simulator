@@ -1758,7 +1758,7 @@ export class Player {
             case Location.TOKENTRASH: return this.tokentrash
             case Location.EGGZONE: return this.egg_zone ? this.egg_zone.pile : []
             case Location.BATTLE: return i ? this.get_instance(i).pile : []
-            case Location.STACK: return this.stack
+            case Location.TEMPSTACK: return this.stack
             default:
                 logger.error(Location[l]);
                 let a: any = null; a.bad_locus();

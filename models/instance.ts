@@ -106,13 +106,15 @@ export class Instance {
     // an inherit or a plug, we can request its text, its effect, its keywords
     source_effects(): SolidEffect[] {
         let ret: SolidEffect[] = [];
-        //        for (let i = this.pile.length - 2; i >= 0; i--) {
         for (let i = 0; i < this.pile.length - 1; i++) {
-            ret.push(... this.pile[i].new_inherited_effects);
+            if (this.pile[i].face_up) {
+                ret.push(... this.pile[i].new_inherited_effects);
+            } else {
+                // ignore face down card in stack
+            }
         }
         for (let plug of this.plugged) {
             // "when linking" shouldn't be considered a linked effect
-            let plug_fx = plug.new_link_effects;
             ret.push(...plug.new_link_effects.filter(x => !x.keywords.includes("[When Linking]")));
         }
         return ret;
@@ -205,7 +207,8 @@ export class Instance {
             if (this.is_monster() && this.pile.length > 1) {
                 ret += "[" + (this.pile.length - 1);
                 for (let i = this.pile.length - 2; i >= 0; i--) {
-                    // we should have a function that says "Agumon EX-1"
+                    if (! this.pile[i].face_up) continue;
+                    // we should have a function that says "Vanillamon DW-1"
                     //         logger.debug("*** " + i);
                     //       logger.debug("*** " + this.pile[i]);
                     ret += " " + this.pile[i].name;
@@ -438,7 +441,7 @@ export class Instance {
             suspended: this.suspended,
             // why were we using the x.card_instance_id?
             // stack: this.pile.map(x => `${x.id}@${x.card_instance_id}`),
-            stack: this.pile.map(x => x.face_up ? `${x.id}@${x.colors_s()}@${x.card_instance_id}`: 'back'),
+            stack: this.pile.map(x => x.face_up ? `${x.id}@${x.colors_s()}@${x.card_instance_id}` : 'back'),
             // 'back' or 'DOWN'?? should we use 'back' everywhere instead of 'DOWN'?
             plugs: this.plugged.reverse().map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`),
             sa: this.get_sa(),
@@ -1686,18 +1689,18 @@ export class Instance {
         if (!this.in_play()) return false;
         if (this.suspended) return false;
         if (!this.has_blocker()) return false;
-        let [suspend, ] = attacking_events(this.game, this, this.other_player);
+        let [suspend,] = attacking_events(this.game, this, this.other_player);
 
         if (!this.can_do(suspend)) return false;
-        
-	    let block = {
-		// do we distinguish attacking by effect??
-		cause: EventCause.GAME_FLOW,
-		game_event: GameEvent.BLOCK,
-		label: "suspend to block",
-		chosen_target: this, td: new TargetDesc(""),
-		n_player: this.n_me_player,
-    	};
+
+        let block = {
+            // do we distinguish attacking by effect??
+            cause: EventCause.GAME_FLOW,
+            game_event: GameEvent.BLOCK,
+            label: "suspend to block",
+            chosen_target: this, td: new TargetDesc(""),
+            n_player: this.n_me_player,
+        };
         if (!this.can_do(block)) return false;
 
         return true;
@@ -1883,7 +1886,7 @@ export class Instance {
         let card = cl.extract();
         card.move_to("trash");
         return true;
-    }*/ 
+    }*/
 
     // "reason" is purely for human consumption
     do_bounce(reason: string) { this.do_removal("hand", reason); }
@@ -1932,8 +1935,10 @@ export class Instance {
             let card = this.pile[i];
             logger.debug("MOVING CARD " + card.name + " TO TRASH");
             if (i < this.pile.length - 1) {
+                // lower cards get pusheed to trash
                 this.push_to_trash(card);
             } else {
+                // last card gets pushed wherever
                 this.push_to_location(location, card, position);
             }
         }
@@ -1956,10 +1961,12 @@ export class Instance {
     push_to_trash(card: Card) { this.push_to_location(Location.TRASH, card); }
     push_to_location(location: Location, card: Card, position: string = "TOP") {
 
+        // save "faceup" 
+        console.error(1968, card.name, card.face_up);
         this.game.log(`Moving ${card.name} to ${Location[location].toLowerCase()} ${position}`);
         if (card.overflow != 0) {
             // Memory change happens immediately.
-            // TODO: Consolidate with devolve. 
+            // TODO: Consolidate with devolve.     
             this.game.la("Overflow " + card.overflow);
             if (this.n_me_player == this.game.turn_player) {
                 this.game.change_memory(card.overflow);
@@ -1968,6 +1975,7 @@ export class Instance {
             }
         }
         card.move_to(location, undefined, position);
+        console.error(1981, card.name, card.face_up);
     }
 
     // for placing option cards
@@ -2003,9 +2011,9 @@ export class Instance {
 
         //        console.error(`sp card ${card.get_name()} in ${Location[card.get_location()]}`);
         // why only do this if it's in reveal? 
-      //  if (card.get_location() == Location.REVEAL) { 
-             card.extract(); 
-     //   }
+        //  if (card.get_location() == Location.REVEAL) { 
+        card.extract();
+        //   }
         card.move_to(Location.BATTLE, instance);
         //        console.error(`sp card ${card.get_name()} in ${Location[card.get_location()]}`);
         instance.play_turn = game.n_turn;

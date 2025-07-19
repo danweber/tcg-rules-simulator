@@ -25,5 +25,6 @@ Evolve Cost 0
 Card Effect(s)
 ＜Rush＞ (This monster can attack the turn it comes into play).
 Inherited Effect
+[On Deletion] Gain 1 memory.
 Card Restriction
 # this would like an inherited effect

@@ -1,0 +1,8 @@
+ECHO: should have 5000 DP and 9000 DP
+FIELD1:Inherited,DW1-Vanillamon,FACEDOWN,CS1-Papershield,CS1-Papershield,FACEDOWN,CS2-Doggiedagger,5000DP Red,CS2-Shieldsmasher,9000DP
+FIELD2:
+GAME:P1 T3 HATCHING 5
+ECHO: -- main, gain just 1 mem
+FIELD1:Inherited,DW1-Vanillamon,FACEDOWN,CS1-Papershield,CS1-Papershield,FACEDOWN,CS2-Doggiedagger,5000DP Red,CS2-Shieldsmasher,9000DP
+FIELD2:
+GAME:P1 T3 MAIN 6
