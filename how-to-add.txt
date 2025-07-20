@@ -246,12 +246,16 @@ Effects for an instance are only checked in a few places, so we're going to just
 
 That's 0.9.34.1.4.
 
+## Oops, face-down [on delete]
 
+When something gets sent to trash, we need a 'snapshot' of its state at the moment of deletion. There are tests like "if this Monster *had* trait X, do a thing."
 
+Background on deletion: the instance is sent to trash, individual cards are sent to trash, but they're not removed from the instance. (So could a card belong to several instances at once? That doesn't sound right.)
 
+We are going to need to track the state of monsters at given points for things like "the played monster's level" which checks at prior state. This is a preview. So at removal we track the faced-ness if a custom array. Just need to make the code that checks for effects check this. (Other effects that check face_up are only checked after removal so we don't need to modify those.
 
+(Maybe the face-up/face-down of the cards in the stack should be tracked all the time in the Instance. This would require significant changes, and possibly not even for a good benefit.)
 
-
-
+That's 0.9.34.1.5.
 
 

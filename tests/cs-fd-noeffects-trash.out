@@ -1,0 +1,7 @@
+FIELD1:Inherited,DW1-Vanillamon,DW1-Rusher,FACEDOWN,DW1-Rusher,FACEDOWN,DW1-Rusher
+FIELD2:
+GAME:P1 T3 MAIN 5
+ECHO: -- gain only 1 memory
+FIELD1:
+FIELD2:
+GAME:P1 T3 MAIN 6

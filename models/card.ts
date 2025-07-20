@@ -1181,7 +1181,7 @@ export class Card {
         // we need to know the instance and index, too
 
         this.location = l;
-        this.face_up = !!(this.location & (Location.FIELD | Location.ALLTRASH ); // mark as face down if any place but field or trash
+        this.face_up = !!(this.location & (Location.FIELD | Location.ALLTRASH)); // mark as face down if any place but field or trash
 
         if (instance && this.location !== Location.HAND) {
             // we will need to specify *where* in the instance eventually

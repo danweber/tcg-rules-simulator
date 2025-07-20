@@ -1,0 +1,18 @@
+VERSION:2
+
+# the facedown inherited shouldn't activate in trash
+
+FIELD1:Inherited,DW1-Van,DW1-Rusher,FACEDOWN,DW1-Rusher,FACEDOWN,DW1-Rusher
+#FACEDOWN,CS1-Paper,CS1-Paper,FACEDOWN,CS2-01 Red,CS2-ShieldSmasher
+GAME:P1 T3 MAIN 5
+SECURITY2:DW1-Big
+
+DUMP
+
+CMD:ATTACK Inherited Player
+STEP:AUTOANSWER:CAPTURE
+ECHO: -- gain only 1 memory
+DUMP
+
+
+

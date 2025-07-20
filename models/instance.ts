@@ -30,6 +30,7 @@ export class Instance {
     // given plugged cards, we should move to a model where an instance
     // is exactly 1 card, with a pile of "evolution cards" and a pile of "plugged cards"
     plugged: Card[] = []; // ordered bottom to top, again. 
+    cached_face_up: boolean[] = []; // on removal track the state of all cards
 
     play_turn: number;
     location: Location;
@@ -105,9 +106,13 @@ export class Instance {
     // TODO: a generic way of getting a source card so, regardless if it's
     // an inherit or a plug, we can request its text, its effect, its keywords
     source_effects(): SolidEffect[] {
+        let bools : boolean[] = this.cached_face_up;
+        if (bools.length === 0) {
+            bools = this.pile.map(x => x.face_up);
+        }
         let ret: SolidEffect[] = [];
         for (let i = 0; i < this.pile.length - 1; i++) {
-            if (this.pile[i].face_up) {
+            if (bools[i]) {
                 ret.push(... this.pile[i].new_inherited_effects);
             } else {
                 // ignore face down card in stack
@@ -1907,6 +1912,10 @@ export class Instance {
         if (this.top() && this.top().is_token()) location = Location.TOKENTRASH;
         let s_location = "trash";
         let position = "TOP"; // maybe stuff should go to top of trash anyway
+
+        for (let i in this.pile) {
+            this.cached_face_up[i] = this.pile[i].face_up;
+        }
 
         if (which == "trash") {
             verb = "Trashing";
