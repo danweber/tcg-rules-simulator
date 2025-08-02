@@ -1,0 +1,17 @@
+c9:55:33 PM - Starting compilation in watch mode...
+
+../newparser.ts(3,33): error TS2307: Cannot find module './effectloop' or its corresponding type declarations.
+../newparser.ts(4,30): error TS2307: Cannot find module './parse-actions' or its corresponding type declarations.
+../newparser.ts(12,49): error TS2307: Cannot find module './translate' or its corresponding type declarations.
+../newparser.ts(26,30): error TS2307: Cannot find module './logger' or its corresponding type declarations.
+../newparser.ts(62,187): error TS2307: Cannot find module './effect' or its corresponding type declarations.
+../newparser.ts(63,51): error TS2307: Cannot find module './event' or its corresponding type declarations.
+../newparser.ts(64,22): error TS2307: Cannot find module './game' or its corresponding type declarations.
+../newparser.ts(65,132): error TS2307: Cannot find module './target' or its corresponding type declarations.
+../newparser.ts(66,53): error TS2307: Cannot find module './card' or its corresponding type declarations.
+../newparser.ts(67,37): error TS2307: Cannot find module './phase' or its corresponding type declarations.
+../newparser.ts(68,26): error TS2307: Cannot find module './location' or its corresponding type declarations.
+../newparser.ts(71,28): error TS2307: Cannot find module './combat' or its corresponding type declarations.
+../newparser.ts(390,59): error TS7006: Parameter 's' implicitly has an 'any' type.
+
+9:55:35 PM - Found 13 errors. Watching for file changes.

@@ -1050,9 +1050,17 @@ export class SolidEffectLoop {
                 let verb = w.game_event ? " " + gerund(w.game_event, w.status_condition) : "";
                 this.game.log(`Asking player ${p} if they want to activate ${text}${verb}`);
                 let fulltexts: string[] = [];
+
                 for (let i = 0; i < cost_count; i++) {
                     let atom = this.effect.effects[this.n_effect + i];
+                    console.info("atom  " + i + " is " + atom.raw_text);
+                    console.info(atom);
                     fulltexts.push(atom.raw_text);
+                }
+                if (fulltexts.length === 0) {
+                    // find the individual atomics
+                    fulltexts.push(atomic_effect.raw_text);
+                    console.error(atomic_effect);
                 }
                 let answers = [{
                     command: "1", text: `Activate ${text}${verb}`, ver: uuidv4(),
@@ -2025,13 +2033,13 @@ export class SolidEffectLoop {
             let prior: Instance = this.chosen_targets![0] as Instance;
             let special_previous = new SpecialInstance(prior);
             logger.info(`special_previous is ${!!special_previous}`);
-            console.error(2022, w.td2);
+            //console.error(2022, w.td2);
             let potential_targets = this.game.find_target(w.td2, game_event2, this.effect.source, this, Location.SECURITY, special_previous);
             logger.info(this.rand + "Searched for targerts2 for " + GameEvent[w.game_event] + " in " + w.td2.raw_text + " AKA " + w.td2.toPlainText());
             let choose2 = 1;
             try {
-                console.info(1978, "w w w", w.td2);
-                console.dir(w.td2, { depth: 9 });
+                //console.info(1978, "w w w", w.td2);
+                //console.dir(w.td2, { depth: 9 });
                 let mtd = (w.td2 as any as MultiTargetDesc);
                 choose2 = mtd.count().value(this.game, this.effect.source);
                 logger.info("Choose 2 is " + choose2);

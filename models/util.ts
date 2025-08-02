@@ -49,7 +49,7 @@ export function for_each_count_target(w: SubEffect, game: Game, ts: TargetSource
     let c1: ForEachTarget | undefined = w.n_count_tgt;
     if (!c1) return false; // shouldn't have ever gotten in here in the first place
     let i;
-    logger.info(`looking foreach, target ${c1.target.raw_text} ${c1.target.raw_text}`);
+    logger.info(`looking foreach, target ${c1.target.raw_text}`);
     if (false && c1?.target.raw_text.match(/color of your opponent's Monster (and|or)f Tamer/i)) {
         let op = game.get_n_player(3 - p);
         i = op.my_colors(false).length;

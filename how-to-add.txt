@@ -256,6 +256,8 @@ We are going to need to track the state of monsters at given points for things l
 
 (Maybe the face-up/face-down of the cards in the stack should be tracked all the time in the Instance. This would require significant changes, and possibly not even for a good benefit.)
 
-That's 0.9.34.1.5.
+That's 0.9.34.1.5. 0.9.34.1.7 has the updated grammar.
 
+## Other things to add
 
+- make sure 'for each' handles "this Monster's face-down evolution cards". 0.9.34.1.8

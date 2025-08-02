@@ -391,8 +391,11 @@ export function ForEachTargetCreator(foreach: string): ForEachTarget {
     } else if (n = foreach.match(/(\d+) (.*)( in play)?/)) {
         let count = parseInt(n[1]);
         return new ForEachTarget("bob", new MultiTargetDesc("a " + n[2]), "instance", count);
-    } else {
+    } else if (foreach.length < 2) {
+        // nothing
         return new ForEachTarget("bob", new TargetDesc(foreach));
+    } else {
+        return new ForEachTarget("bob", new MultiTargetDesc(foreach));
     }
 
 
