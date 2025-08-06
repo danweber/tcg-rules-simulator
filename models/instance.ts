@@ -1971,7 +1971,6 @@ export class Instance {
     push_to_location(location: Location, card: Card, position: string = "TOP") {
 
         // save "faceup" 
-        console.error(1968, card.name, card.face_up);
         this.game.log(`Moving ${card.name} to ${Location[location].toLowerCase()} ${position}`);
         if (card.overflow != 0) {
             // Memory change happens immediately.

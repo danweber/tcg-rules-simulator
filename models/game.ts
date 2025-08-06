@@ -1975,7 +1975,6 @@ export class Game {
             for (let index = 0; index < p.trash.length; index++) {
                 let card = p.trash[index];
                 for (let se of card.new_effects) {
-                    console.error(1971, se.active_zone, Location.TRASH);
                     if (se.active_zone! & Location.TRASH) {
                         //                        ret.push(se);
                         let cl = new CardLocation(this, p_number, Location.TRASH, index);

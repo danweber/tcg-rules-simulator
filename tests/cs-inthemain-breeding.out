@@ -18,7 +18,7 @@ CAPTURE:Activate WitChrow suspending
 CAPTURE:Don't pay/activate
 FIELD1:Other,CS3-Witchrow Other,DW1-Vanillamon
 FIELD2:
-EGGZONE1:Mon,CS3-Witchrow,CS3-Beaklet,CS2-Longsword,REST
+EGGZONE1:Mon,CS3-Witchrow,CS3-Beaklet,FACEDOWN,CS2-Longsword,REST
 EGGZONE2:
 DECK1:DW1-Vanillamon CS2-Sharpblade
 DECK2:

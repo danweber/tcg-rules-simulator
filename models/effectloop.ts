@@ -3131,7 +3131,9 @@ export class XX {
             let fup: boolean = false;
             let fdown: boolean = false;
             let order: string = "";
-            console.error
+            order = weirdo.n_mod?.match(/bottom/i) ? "BOTTOM" : "TOP";
+            fup = !! weirdo.n_mod?.match(/face.up/i);//? "UP" : "DOWN";
+            fdown = !! weirdo.n_mod?.match(/face.down/i);//? "UP" : "DOWN";
             if (weirdo.td.raw_text.includes("deck")) {
                 // what hell is this?
 
@@ -3145,9 +3147,6 @@ export class XX {
             } else {
                 if (weirdo.n_mod?.match(/deck/)) location = Location.DECK;
                 if (weirdo.td2?.raw_text.match(/hand/i)) location = Location.HAND;
-                order = weirdo.n_mod?.match(/bottom/i) ? "BOTTOM" : "TOP";
-                fup = !! weirdo.n_mod?.match(/face.up/i);//? "UP" : "DOWN";
-                fdown = !! weirdo.n_mod?.match(/face.down/i);//? "UP" : "DOWN";
 
                 // handle instance
                 logger.info(`order ${order} n_mod ${weirdo.n_mod} face ${fup} ${fdown} target ${target.kind} ${target.get_name()}`);
