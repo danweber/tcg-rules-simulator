@@ -1540,12 +1540,12 @@ export class CardLocation {
             this.pile = g.get_n_player(n_player).trash;
         } else if (location == Location.REVEAL) {
             this.pile = g.get_n_player(n_player).reveal;
-        } else if (location == Location.BATTLE) {
-            //      this.pile = g.get_n_player(n_player).reveal;
+        } else if (location == Location.BATTLE || location == Location.EGGZONE) {
             if (mode === "plug")
                 this.pile = g.get_instance(instance_id).plugged;
             else
                 this.pile = g.get_instance(instance_id).pile;
+            if (g.get_instance(instance_id).location !== location) this.pile = [];
         } else if (location == Location.NULLZONE) {
             this.pile = g.get_n_player(n_player).nullzone;
         } else if (location == Location.OPTZONE) {

@@ -1,0 +1,17 @@
+VERSION:2
+
+# "effect": "In the main phase, by suspending this Monster, place your deck's top card face down as this Monster's bottom evolution card.",
+
+FIELD1:Mon,CS3-Witch Other,DW1-Van
+HAND1:DW1-Van CS1-02
+DECK1:DW1-Van CS2-02 CS2-03
+GAME:P1 T3 MAIN 9
+
+DUMP:DECK
+GET-X-PLAYS
+ECHO: -- use main effect
+CMD:MAIN Mon
+STEP:AUTOANSWER:CAPTURE
+DUMP:DECK
+
+

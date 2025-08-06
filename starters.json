@@ -1236,7 +1236,7 @@
     "evolveEffect": "",
     "dnaEvolve": "-",
     "dp": "5000",
-    "effect": "[Your Turn] When one of your Monster would evolve into a level 4 green Monster card, by placing 1 card from under one of your Tamers as the bottom evolution card of that Monster, reduce the evolution cost by 1.\n[On Play] You may place 1 card in your hand face down as this Monster's bottom evolution card.\n",
+    "effect": "[Your Turn] When one of your Monster would evolve into a level 4 green Monster card, by placing 1 card from under one of your Tamers as the bottom evolution card of that Monster, reduce the evolution cost by 1.\n[On Play] You may place 1 card in your hand face down as this Monster's bottom evolution card.\n\uff1cLoading\uff1e (In the main phase, by suspending this Monster, place your deck's top card face down as this Monster's bottom evolution card. This effect can also activate in the breeding area.)",
     "form": "Fancy",
     "id": "CS3-08",
     "name": {
@@ -1247,6 +1247,33 @@
     "securityEffect": "-",
     "specialEvolve": "",
     "type": "Spellcaster",
+    "version": "Normal"
+  },
+  {
+    "aceEffect": "-",
+    "attribute": "Bird",
+    "block": ["01"],
+    "burstEvolve": "-",
+    "cardLv": "Lv.4",
+    "cardNumber": "CS3-09",
+    "cardType": "Monster",
+    "color": "Green/Black",
+    "digiXros": "-",
+    "evolveCondition": [{ "color": "Green", "cost": "2", "level": "3" }, { "color": "Black", "cost": "4", "level": "3" } ],
+    "evolveEffect": "",
+    "dnaEvolve": "-",
+    "dp": "6000",
+    "effect": "\uff1cLoading\uff1e",
+    "form": "Gothic",
+    "id": "CS3-09",
+    "name": {
+      "english": "WitChrow"
+    },
+    "playCost": "8",
+    "rarity": "Uncommon",
+    "securityEffect": "-",
+    "specialEvolve": "",
+    "type": "Spellcaster/Emo",
     "version": "Normal"
   },
   {

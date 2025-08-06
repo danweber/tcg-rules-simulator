@@ -1808,6 +1808,10 @@ export class Game {
                 if (search_loc & Location.SECURITY || ge == GameEvent.EVOLVE) {
                     to_search.push(...p.security.map((c, i) => new CardLocation(this, p.player_num, Location.SECURITY, i)));
                 }
+                if (search_loc & Location.EGGZONE && p.egg_zone) {
+                    console.error("can't search for cardloc for eggzone yet");
+                    //to_search.push(new CardLocation(this, p.player_num, Location.EGGZONE, 0));
+                }
             }
             to_search.push(...p.reveal.map((c, i) => new CardLocation(this, p.player_num, Location.REVEAL, i)));
 
@@ -1876,8 +1880,11 @@ export class Game {
         // call with EGGZONE: just eggzone
         let locus = Location.BATTLE;
         // if this is an [on deletion] we can reference ourselves in the trash
-        let i = s.get_instance();
-        if (search_loc === Location.EGGZONE || search_loc === Location.FIELD) locus = search_loc;
+        let i = s.get_instance(); 
+        if (search_loc & Location.EGGZONE) { //  || search_loc === Location.FIELD) {
+            logger.info("switching locus from " + locus + " to " + search_loc);
+            locus = search_loc;
+        }
         // if we are searching for "this (green) monster" add trash.
         if (t.raw_text.match(/^this.{1,10}monster/i)) locus |= Location.ALLTRASH;
         let bb = this.instances.filter(x => (x.location & locus) && t.matches(x, s, this, prior_target, sel));
@@ -1946,7 +1953,7 @@ export class Game {
             // search plugged cards
             for (let instance of p.field) {
                 if (!instance) continue;
-                if (!instance.in_play()) continue;
+                if (!instance.on_field()) continue;
                 // todo: make iterator for this
                 for (let i = 0; i < instance.plugged.length; i++) {
                     let card = instance.plugged[i];
@@ -1968,6 +1975,7 @@ export class Game {
             for (let index = 0; index < p.trash.length; index++) {
                 let card = p.trash[index];
                 for (let se of card.new_effects) {
+                    console.error(1971, se.active_zone, Location.TRASH);
                     if (se.active_zone! & Location.TRASH) {
                         //                        ret.push(se);
                         let cl = new CardLocation(this, p_number, Location.TRASH, index);
@@ -1991,7 +1999,7 @@ export class Game {
         logger.debug("2234 looking for reactors to " + e.length + "  events: " + e.map(x => GameEvent[x.game_event]).join(","));;
         for (let i of this.instances) {
             if (!i) continue;
-            if (i.in_eggzone()) continue;
+            //if (i.in_eggzone()) continue;
             if (i.in_hand()) continue;
             // things in eggzone cannot react. BUT, ALSO, things outside of the eggzone
             // should not even be able to notice stuff in the eggzone.
@@ -2054,7 +2062,7 @@ export class Game {
         for (let i of this.instances) {
             if (!i) continue;
             // things in eggzone cannot interrupt stuff (YET)
-            if (i.in_eggzone()) continue;
+            //if (i.in_eggzone()) continue;
             // *instances* in trash can't interrupt, can they? but cards could
             if (i.in_trash()) continue;
             // definitely nothing in hand

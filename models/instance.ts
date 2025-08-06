@@ -106,7 +106,7 @@ export class Instance {
     // TODO: a generic way of getting a source card so, regardless if it's
     // an inherit or a plug, we can request its text, its effect, its keywords
     source_effects(): SolidEffect[] {
-        let bools : boolean[] = this.cached_face_up;
+        let bools: boolean[] = this.cached_face_up;
         if (bools.length === 0) {
             bools = this.pile.map(x => x.face_up);
         }
@@ -212,7 +212,7 @@ export class Instance {
             if (this.is_monster() && this.pile.length > 1) {
                 ret += "[" + (this.pile.length - 1);
                 for (let i = this.pile.length - 2; i >= 0; i--) {
-                    if (! this.pile[i].face_up) continue;
+                    if (!this.pile[i].face_up) continue;
                     // we should have a function that says "Vanillamon DW-1"
                     //         logger.debug("*** " + i);
                     //       logger.debug("*** " + this.pile[i]);
@@ -361,8 +361,8 @@ export class Instance {
 
         ret = ret.filter(x => !(x.once_per_turn && x.n_last_used_turn == this.game.n_turn));
 
-        // assume that instances only exist on field
-        ret = ret.filter(x => !x.active_zone);
+        // active zone is either blank, or includes BATTLE
+        ret = ret.filter(x => !x.active_zone  || x.active_zone & Location.BATTLE   );
         logger.debug(`Instance ${this.id} Effect counts are ${normal} then ${with_sources} then temp ${with_temp} then player ${with_player} and test_fails is down to ${without_test_fails}`);
 
 

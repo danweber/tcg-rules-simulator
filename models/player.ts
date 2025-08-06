@@ -1535,7 +1535,9 @@ export class Player {
         [verbose_attack, can_attack] = this.get_attacker_array();
 
         // ignoring Main effects in egg zone, hand, trash for now
-        for (let mon of this.field) {
+        
+        let my_mons = [ ...(this.egg_zone ? [this.egg_zone]: []), ...this.field]; 
+        for (let mon of my_mons) {
             // assume each thing can only have 1 "main" effect
             if (mon.get_main()) {
                 v_key = `MAIN ${mon.id}`;

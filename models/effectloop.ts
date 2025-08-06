@@ -168,7 +168,12 @@ function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: Solid
             if (!source) {
                 let a: any = null; a.crash_no_source();
             }
-            let tgts = game.find_target(w.td, w.game_event, source, sel, Location.SECURITY);
+
+            let zone = Location.SECURITY;
+            if (sel.effect.active_zone && sel.effect.active_zone & Location.EGGZONE) {
+                zone |= Location.FIELD;
+            }
+            let tgts = game.find_target(w.td, w.game_event, source, sel, zone);
             // so we don't give the player the choice to pay things they can't
             if (eff.is_cost) tgts = tgts.filter(t => can_pay_material(t, w)[0]);
 
@@ -1497,6 +1502,7 @@ export class SolidEffectLoop {
                 logger.info(this.rand + "Searching for targerts for " + GameEvent[w.game_event] + " in " + w.td.raw_text + " AKA " + w.td.toPlainText());
 
 
+
                 // There is some dupe code here, but for this
                 // special case I think it's opkay.
 
@@ -1595,10 +1601,7 @@ export class SolidEffectLoop {
 
 
                 }
-
-
                 // there's parallel logic here for must_attack, but is it needed?
-
                 if (w.game_event == GameEvent.MUST_ATTACK) {
 
                     if (this.game.root_loop.combatloop) {
@@ -1675,10 +1678,21 @@ export class SolidEffectLoop {
 
                     // this.potential_targets = a.concat(b);
 
-             */   } else {
-                    this.potential_targets = w.td && this.game.find_target(w.td, w.game_event, this.effect.source!, this, Location.SECURITY);
+             */   } else if (w.td.raw_text.includes("deck")) {
+                    logger.info("no first target, using deck " + w.td.raw_text);
+                    // no target selection needed
+                    this.s = FakeStep.ASK_TARGET2;
+                    return false;
+                } else {
+                    let zone = Location.SECURITY;
+                    if (this.effect.active_zone && this.effect.active_zone & Location.EGGZONE) {
+                        zone |= Location.FIELD;                    
+                        console.error(1685, "XXX", this.effect.active_zone, "addl_loc updated", zone);
+                    }
+                    this.potential_targets = w.td && this.game.find_target(w.td, w.game_event, this.effect.source!, this, zone) as CardLocation[];
                     logger.info("is cost? " + atomic.is_cost);
                     if (atomic.is_cost) this.potential_targets = this.potential_targets.filter(t => can_pay_material(t, w)[0])
+                    // if tokens, just pick them to play 
                     if (w.game_event == GameEvent.PLAY && w.td.raw_text.match(/token/i)) this.potential_targets.length = Math.min(w.choose!.value(), this.potential_targets.length);
                     logger.info("length is " + this.potential_targets.length);
                     logger.info("potential targets " + GameEvent[w.game_event] + " is " + this.potential_targets.map(x => `${x.get_name()}-${x.id}`).join(","))
@@ -2034,7 +2048,11 @@ export class SolidEffectLoop {
             let special_previous = new SpecialInstance(prior);
             logger.info(`special_previous is ${!!special_previous}`);
             //console.error(2022, w.td2);
-            let potential_targets = this.game.find_target(w.td2, game_event2, this.effect.source, this, Location.SECURITY, special_previous);
+            let zone = Location.SECURITY;
+            if (this.effect.active_zone && this.effect.active_zone & Location.EGGZONE) {
+                zone |= Location.FIELD;
+            }
+            let potential_targets = this.game.find_target(w.td2, game_event2, this.effect.source, this, zone, special_previous);
             logger.info(this.rand + "Searched for targerts2 for " + GameEvent[w.game_event] + " in " + w.td2.raw_text + " AKA " + w.td2.toPlainText());
             let choose2 = 1;
             try {
@@ -2805,7 +2823,7 @@ export class XX {
             let o_player = game.get_n_player(3 - p);
             logger.info("PPPP player " + player.player_num + " " + o_player.player_num);
             let c: Card;
-            let played; 
+            let played;
             //            console.error(target);
             if ("cardloc" in target) {
                 //console.error("playing cardloc " + target.name);
@@ -2835,14 +2853,14 @@ export class XX {
             let top;
             // only if stack summoning, put all cards in stack under monster. this cheat will stop working if we ever play from reveal a stack summoner 
             while (top = stack[0]) {
-                    top.extract().move_to(Location.BATTLE, played, "BOTTOM");
-                    if (weirdo.n_mod != "free") {
-                        weirdo.n_mod = "reduced";
-                        weirdo.n ||= 0;
-                        weirdo.n! += c.stack_summon_n;
-                    };
-                    logger.info(`nmod is ${weirdo.n_mod} and n is ${weirdo.n} per is ${c.stack_summon_n}`);
-                }
+                top.extract().move_to(Location.BATTLE, played, "BOTTOM");
+                if (weirdo.n_mod != "free") {
+                    weirdo.n_mod = "reduced";
+                    weirdo.n ||= 0;
+                    weirdo.n! += c.stack_summon_n;
+                };
+                logger.info(`nmod is ${weirdo.n_mod} and n is ${weirdo.n} per is ${c.stack_summon_n}`);
+            }
             // if no play cost, can't play -- unless it's a token
             if (c.p_cost == undefined && !c.is_token()) { return false; }
             let origcost = Number(c.p_cost);
@@ -2958,6 +2976,8 @@ export class XX {
             let recipient: Instance = weirdo.chosen_target2![0];
             let i: Instance = target;
             let c = i.top();
+
+
 
             if (!c) return false;
             c.extract().move_to(Location.BATTLE, recipient, "bottom");
@@ -3096,7 +3116,7 @@ export class XX {
             // we might need different actions if the targeted_card_move is
             // an instnce, because that will trigger removal
         } else if (weirdo.game_event == GameEvent.TARGETED_CARD_MOVE) {
-            // "target" is what we move -- and i think it can be either an instance or a cardloc
+            // "target" is what we move -- and i think it can be either an instance or a cardloc, sometimes an OtherTarget
             // "target2" is where we move
             // TODO merge this in with MOVE_CARD below
             let target2: Instance = weirdo.chosen_target2 && weirdo.chosen_target2[0];
@@ -3104,56 +3124,58 @@ export class XX {
             let location = Location.SECURITY;
             logger.debug("adding?");
             if (target2 && target2.kind == "Instance") {
-                location = Location.BATTLE;
+                location = target2.location; // not necessarily BATTLE
                 target_instance = target2;
             }
-            if (weirdo.td.raw_text == "deck unused unsused unused") {
-                console.error("edit this nonsense");
+            let mover: Card | undefined = undefined;
+            let fup: boolean = false;
+            let fdown: boolean = false;
+            let order: string = "";
+            console.error
+            if (weirdo.td.raw_text.includes("deck")) {
                 // what hell is this?
+
                 let player = game.get_n_player(p);
-                let c = player.deck.pop();
-                if (!c) {
+                mover = player.deck.pop();
+                if (!mover) {
                     game.log("No recovery, deck is empty.");
                     return false;
                 }
-                game.la(`Card moved from deck to health`);
-                c.move_to(location);
-                return true;
+                console.info(3130, mover);
             } else {
                 if (weirdo.n_mod?.match(/deck/)) location = Location.DECK;
                 if (weirdo.td2?.raw_text.match(/hand/i)) location = Location.HAND;
-                let order = weirdo.n_mod?.match(/bottom/i) ? "BOTTOM" : "TOP";
-                let fup = weirdo.n_mod?.match(/face.up/i);//? "UP" : "DOWN";
-                let fdown = weirdo.n_mod?.match(/face.down/i);//? "UP" : "DOWN";
+                order = weirdo.n_mod?.match(/bottom/i) ? "BOTTOM" : "TOP";
+                fup = !! weirdo.n_mod?.match(/face.up/i);//? "UP" : "DOWN";
+                fdown = !! weirdo.n_mod?.match(/face.down/i);//? "UP" : "DOWN";
 
                 // handle instance
-                logger.info(`order ${order} n_mod ${weirdo.n_mod} face ${fup} ${fdown}`);
+                logger.info(`order ${order} n_mod ${weirdo.n_mod} face ${fup} ${fdown} target ${target.kind} ${target.get_name()}`);
                 //console.error(3115, weirdo.td2?.raw_text, location);
                 if (target.kind == "Instance") {
                     let i: Instance = target;
                     let c = i.top();
                     // we need something more generic to tell that our target isn't there any more
                     if (!c) return false;
-                    c.extract().move_to(location, target_instance, order);
-                    if (fup) c.face_up = true; // 
-                    if (fdown) c.face_up = false; // 
-
                     let top;
                     while (top = i.pile[0])
                         top.extract().move_to(Location.TRASH);
-
                     game._remove_instance(i.id);
                     i.do_removal("nul", "removed");
+                    mover = c.extract();
+
                 } else {
                     let cl: CardLocation = target;
                     //console.error(2596, "moving cl to " + location, target_instance?.id, order);
-                    cl.extract().move_to(location, target_instance, order);
-                    if (fup) cl.card.face_up = true; // 
-                    if (fdown) cl.card.face_up = false; // 
-                    
+                    mover = cl.extract();
                 }
-                return true; // i guess it always works?
             }
+            logger.info(`prepping to move ${mover.get_name()}`);
+            mover.move_to(location, target_instance, order);
+            if (fup) mover.face_up = true; // 
+            if (fdown) mover.face_up = false; // 
+
+            return true; // i guess it always works?
         } else if (weirdo.game_event == GameEvent.MOVE_CARD) {
             // success if *any* cards were moved, which will trigger our "when a card is X" effect
             // This logic is incorrect if there's ever a "move N cards. If you did (all N), X."

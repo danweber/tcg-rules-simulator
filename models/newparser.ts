@@ -724,6 +724,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
                 case "[Breeding]": solid.active_zone = Location.EGGZONE; continue;
 
                 case "[Main]": solid.main = true; continue;
+
                 case "[Once Per Turn]": solid.once_per_turn = true; continue;
 
                 case "[Start of Your Turn]": solid.phase_trigger = PhaseTrigger.START_OF_YOUR_TURN; continue;
@@ -1022,7 +1023,8 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
     // try an early parse. TODO: move as much in here as we can, for now limit to tokens
 
-        if (line.includes("Monster/")) {
+
+    if (line.includes("Monster/")) {
         console.error(997, line);
         let grammared = parseStringEvoCond(line, "EffSentence");
         if (grammared) {
@@ -1030,14 +1032,49 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
             logger.info("super new split: FULL PARSE " + line);
 
 
-                let [a1, l1] = parse_atomic(line, label, solid, card, {}, grammared);
-                atomics.push(a1);
-                solid.effects.push(a1);
-                logger.info("SDa1 " + a1.events.map(x => GameEvent[x.game_event]).join(","));
-                // by tradition, this is just a single thing
-                line = "";
-            }
+            let [a1, l1] = parse_atomic(line, label, solid, card, {}, grammared);
+            atomics.push(a1);
+            solid.effects.push(a1);
+            logger.info("SDa1 " + a1.events.map(x => GameEvent[x.game_event]).join(","));
+            // by tradition, this is just a single thing
+            line = "";
         }
+    }
+
+    // this handles costs and also an extra-sentence clause
+    if (line.includes("by ") && line.includes("breeding")) {
+        console.error(1046, line);
+        let grammared = parseStringEvoCond(line, "EffSentence");
+        if (grammared && grammared.cost) {
+            console.error(1049, grammared);
+
+            if (grammared.extra && grammared.extra.effect === "also-in-breeding") {
+                solid.active_zone = Location.FIELD;
+            }
+            // if (m = line.match(/^(?:If (.*),)?\s*by (.*?), (.*?)\.(.*)/i)) {
+
+            // where does the "cost / effect" logic go? 
+            logger.info("grammar split: by Y, Z.");
+            let by = grammared.cost.substring(3); // remove "by "
+            let [a1, l1] = parse_atomic(by, label, solid, card);
+            a1.is_cost = 1;
+            a1.optional = true;
+
+            /*
+            if (m[1]) a1.test_condition = parse_if(m[1]);
+            */
+            let [a2, l2] = parse_atomic(grammared.effect[0].raw_text, label, solid, card);
+            /*if (a2.events[0].game_event == GameEvent.CANCEL) {
+                logger.info("is a canceller");
+                solid.cancels = true;
+            }*/
+            atomics.push(a1, a2);
+            solid.effects.push(a1, a2);
+
+            line = "";
+        }
+    }
+
 
 
     const sentences: string[] =
@@ -2459,7 +2496,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         && !line.toLowerCase().includes("1 your")
         && !line.toLowerCase().includes("3 your")
     ) {
-        //console.error(2399, line);
+        console.error(2399, line);
         let grammared = incoming_grammar || parseStringEvoCond(line, "EffSentence");
         let action_args, target, x;
         if (grammared) {
@@ -2470,7 +2507,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             if (grammared.duration) {
                 expiration = grammared.duration.expiration;
             }
-            //console.log("GRAM"); console.dir(grammared, { depth: 99 });
+            console.log("GRAM"); console.dir(grammared, { depth: 99 });
             const effs = grammared.effect;
             const eff = effs[0]; // we only handle one effect in here. We should call parse_atomic multiple times for multiple effects
             const optional = eff.optional;
@@ -2567,9 +2604,9 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 target = action_args.target;
                 let target2 = action_args.target2;
                 thing.game_event = strToEvent(eff.action);
-
+                console.error(2571, target);
                 // if we use PlaceCard our target better not be an instance
-                let target_entity = target.targets[0].entity;
+                let target_entity = target.targets && target.targets[0].entity;
                 //console.error(2542, "XXXXXXX", GameEvent[thing.game_event], target_entity, line);
                 if (thing.game_event === GameEvent.TARGETED_CARD_MOVE && (!target_entity || !target_entity.match(/card/))) {
                     // we likely have an "it" object, fall back to old code. or if we're not "moving" a card.
@@ -2579,8 +2616,9 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     console.error(2579, action_args);
                     // TUCK/FIELD_TO_SECURITY is for instance, TARGET_CARD_MOVE for cardlocatiion
                     if ((thing.game_event === GameEvent.TUCK || thing.game_event === GameEvent.FIELD_TO_SECURITY) &&
-                        target.raw_text.includes(" card ")) {
+                        target.raw_text.includes(" card ") || target.raw_text.includes("deck")) {
                         thing.game_event = GameEvent.TARGETED_CARD_MOVE;
+                        logger.info("changing game event to TARGETED_CARD_MOVE for " + target.raw_text);
                     }
 
                     if (action_args.dna) thing.cause = EventCause.DNA;

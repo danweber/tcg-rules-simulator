@@ -1,0 +1,20 @@
+FIELD1:Mon,CS3-Witchrow Other,DW1-Vanillamon
+FIELD2:
+DECK1:DW1-Vanillamon CS2-Sharpblade CS2-Longsword
+DECK2:
+GAME:P1 T3 MAIN 9
+GET-X-PLAYS: json REFRESH
+GET-X-PLAYS: PLAY 0 Play VanillaMon
+GET-X-PLAYS: PLAY 1 Play Paper Shield
+GET-X-PLAYS: ATTACK 1 0 Attack WitChrow into player
+GET-X-PLAYS: ATTACK 2 0 Attack VanillaMon into player
+GET-X-PLAYS: MAIN 1 Activate WitChrow [Main] effect
+GET-X-PLAYS: NEXT PASS TURN
+ECHO: -- use main effect
+CAPTURE:Activate WitChrow suspending
+CAPTURE:Don't pay/activate
+FIELD1:Mon,CS3-Witchrow,CS2-Longsword,REST Other,DW1-Vanillamon
+FIELD2:
+DECK1:DW1-Vanillamon CS2-Sharpblade
+DECK2:
+GAME:P1 T3 MAIN 9

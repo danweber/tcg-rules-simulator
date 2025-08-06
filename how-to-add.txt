@@ -45,7 +45,7 @@ and its return
 
 # How To Add Face-Down Cards
 
-Let's walk through the entire process for adding face-down cards on the field. This is a really good example because it's going to up-end some prior assumptions and require changes at multiple levels.
+Let's walk through the entire process for adding face-down cards in sources. This is a really good example because it's going to up-end some prior assumptions and require changes at multiple levels.
 
 ## Test data format
 
@@ -258,6 +258,94 @@ We are going to need to track the state of monsters at given points for things l
 
 That's 0.9.34.1.5. 0.9.34.1.7 has the updated grammar.
 
-## Other things to add
+And we make sure 'for each' handles "this Monster's face-down evolution cards". 0.9.34.1.8
 
-- make sure 'for each' handles "this Monster's face-down evolution cards". 0.9.34.1.8
+## Side quest: Let's make a Keyword
+
+When we have several new things to add, it makes sense to break them up. So we make a new custom monster with this effect:
+
+    In the main phase, by suspending this Monster, place your deck's top card face down as this Monster's bottom evolution card.
+
+Primarily this is to handle the new timing of "In the main phase," which is nearly identical to a [main] effect except missing that keyword.
+
+Right now timing words like [Main] are handled explicitly with special code, and not through the grammar at all. Handling through the grammar is probably the correct long-term decision, but for simplicity let's just treat it like [Main].
+
+We need to make sure we can parse the placing. So an OtherTarget object is made to include "your deck's top card", and can be many other targets in the future.
+
+Changes that are needed with this:
+
+1. Selecting the first target is skipped if the target is a deck.
+
+-             */   } else {
++             */   } else if (w.td.raw_text.includes("deck")) {
++                    logger.info("no first target, using deck " + w.td.raw_text);
++                    // no target selection needed
++                    this.s = FakeStep.ASK_TARGET2;
++                    return false;
++                } else {
+
+2. We change TUCK to TARGETED_CARD_MOVE for this. (In reality, TUCK should disappear entirely.)
+
+                     if ((thing.game_event === GameEvent.TUCK || thing.game_event === GameEvent.FIELD_TO_SECURITY) &&
+-                        target.raw_text.includes(" card ")) {
++                        target.raw_text.includes(" card ") || target.raw_text.includes("deck")) {
+                         thing.game_event = GameEvent.TARGETED_CARD_MOVE;
++                        logger.info("changing game event to TARGETED_CARD_MOVE for " + target.raw_text);
+                     }
+ 
+3. The terminus effect for TARGETED_CARD_MOVE was re-factored so that the initial target can be an Instance, a CardLocation, or an OtherTarget. It now just ends like this:
+
++            logger.info(`prepping to move ${mover.get_name()}`);
++            mover.move_to(location, target_instance, order);
++            if (fup) mover.face_up = true; // 
++            if (fdown) mover.face_up = false; // 
+
+There is also a cheat to translate "In the main phase, " into "[Main]". 
+
+All that was added as 0.9.34.1.9.
+
+Let's finish it up. We want effects to be useable in the breeding area. 
+
+We need to be able to move things to the breeding area, which wasn't needed before this:
+
+-        } else if (location == Location.BATTLE) {
++        } else if (location == Location.BATTLE || location == Location.EGGZONE) {
+             if (mode === "plug")
+                 this.pile = g.get_instance(instance_id).plugged;
+             else
+                 this.pile = g.get_instance(instance_id).pile;
++            if (g.get_instance(instance_id).location !== location) this.pile = [];
+
+When looking for main effects, we look in the eggzone....
+
+-        for (let mon of this.field) {
++        let my_mons = [ ...(this.egg_zone ? [this.egg_zone]: []), ...this.field]; 
++        for (let mon of my_mons) {
+
+... making sure to demand that the effect exists in the proper zone so all our other effects don't trigger in breeding:
+
+-        // assume that instances only exist on field
+-        ret = ret.filter(x => !x.active_zone);
++        // active zone is either blank, or includes BATTLE
++        ret = ret.filter(x => !x.active_zone  || x.active_zone & Location.BATTLE   );
+
+
+And we need to search the breeding area for effects that can see it:
+
+-            let tgts = game.find_target(w.td, w.game_event, source, sel, Location.SECURITY);
++
++            let zone = Location.SECURITY;
++            if (sel.effect.active_zone && sel.effect.active_zone & Location.EGGZONE) {
++                zone |= Location.FIELD;
++            }
++            let tgts = game.find_target(w.td, w.game_event, source, sel, zone);
+
+And then, we can make our new keyword:
+
+    ＜Loading＞ (In the main phase, by suspending this Monster, place your deck's top card face down as this Monster's bottom evolution card. This effect can also activate in the breeding area.)
+
+Once the engine sees this keyword with its reminder text once, it will apply the same reminder text every time it sees it!
+
+That's version 0.9.34.1.10! Nice side-quest!
+
+
