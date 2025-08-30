@@ -113,6 +113,7 @@ export class CombatLoop {
 
     security_attacks_done: number;
     security_card?: Card; // current card being processed
+    evolve_choices?: false | Array<[CardLocation, CardLocation | Instance, CardLocation | Instance | undefined, 'evo' | 'fusion' | 'burst' | 'app', number?]>;
 
     toString(): string {
         return `Instance ${this.original_n_attacker} going into ${this.original_n_target}, step is ${CombatStep[this.s]}`;
@@ -205,8 +206,8 @@ export class CombatLoop {
                 return false;
             }
 
-            let blast_evos = this.defender_p.get_all_evolves(true, "yes", "no", false);
-            let questions = Player.evo_options_into_questions(blast_evos || [], true);
+            this.evolve_choices = this.defender_p.get_all_evolves(true, "yes", "no", false);
+            let questions = Player.evo_options_into_questions(this.evolve_choices || [], true);
             //let blast = this.defender_p.get_counter_evo_questions();
             this.game.wait(this.defender_p.player_num, questions);
             this.s = CombatStep.PROCESS_COUNTER_RESPONSES;
@@ -223,23 +224,17 @@ export class CombatLoop {
 
 
             logger.info("blast answer is " + answer);
-            if (answer == "-1") {
+            if (answer == "-1" || !this.evolve_choices) {
                 this.s = CombatStep.ASK_BLOCKER_RESPONSES;
                 return false;
             }
 
-            // this code has been de-duped but it's still in common between here and effectloop
+            let index = Number(answer) - 1;
+            let evo = this.evolve_choices[index]
 
-            let blobs = answer.split("-");
-            // all pairs of (card left right) and (location-instance), plus cost
-            let [c_l, , c_i, l_l, , l_i, r_l, , r_i, cost] = blobs;
-            let location: number = parseInt(c_l);
-            let match = false;
             let p = this.defender_p.player_num;
-            let cl = this.game.find_by_key(p, parseInt(c_l), parseInt(c_i));
-            let inst = this.game.find_by_key(p, parseInt(l_l), parseInt(l_i));
-            let tgt3 = this.game.find_by_key(p, parseInt(r_l), parseInt(r_i));
-
+            let [cl, inst, tgt3, , cost] = evo;
+            // TODO: handle cost == 0
             let str = `PLAYER ${p} BLAST EVOLVES ${cl.get_field_name(Location.HAND).toUpperCase()}`;
             if (tgt3) str += " AND " + tgt3.get_field_name().toUpperCase();
             str += " ONTO " + inst.get_field_name().toUpperCase();
@@ -341,6 +336,7 @@ export class CombatLoop {
         if (this.s == CombatStep.START_BLOCK) {
 
             // Is there any chance we became suspended since checking?
+            this.game.la("Blocking with " + this.defender_i.get_name());
 
             // TODO: verify that we really did suspend. DSEL can't handle that, but DSEL is bad anyway
             let _ = new TargetDesc("dummy");

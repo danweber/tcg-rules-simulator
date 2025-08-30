@@ -1267,7 +1267,7 @@ export class Game {
         let unsuspend_events: SubEffect[] = [];
         let _ = new TargetDesc("dummy");
 
-        for (let i of player.field) {
+        for (let i of player.my_mons()) {
             if (!i.is_ready()) {
                 // i.unsuspend("unsuspend phase");
                 // this.log(`unsuspended ${i.name()}`);
@@ -1365,10 +1365,14 @@ export class Game {
         if (typeof cost === "number" && !isNaN(cost)) evo_cost = cost;
 
         let e: SubEffect[] = [];
+        let app_card;
+        console.error(1369, mode);
         if (mode === "app") {
-            // stack the plugged card on top
-            // assumes just 1 plug
-            e.push({
+            app_card = onto2;
+            // the card gets stacked on top, but not in a way that we can notice
+            // if we ever have an effect like "when this card stops being a link card"
+            // or "when this card is used for an app fuse" we don't be able to notice
+/*            e.push({
                 cause: EventCause.GAME_FLOW,
                 game_event: GameEvent.TARGETED_CARD_MOVE,
                 chosen_target: onto2, // move plugged card...
@@ -1380,9 +1384,11 @@ export class Game {
                 label: "appfuse"
             });
             onto2 = undefined; // otherwise we will try to fusion evo
+            */
         }
         if (mode === "burst") {
             // two simultaneous things. that's not right but will get you close
+            // also we can't do this by effect
             e.push({
                 cause: EventCause.GAME_FLOW,
                 game_event: GameEvent.EVOLVE,
@@ -1424,7 +1430,7 @@ export class Game {
             let x = new DirectedSubEffectLoop(this, e, 1);
             this.root_loop.add_res_loop(x);
 
-        } else { // evo, fusion evo
+        } else { // evo, fusion evo, app fuse
 
             let cause = EventCause.GAME_FLOW;
             if (mode === "fusion") cause |= EventCause.DNA;
@@ -1553,6 +1559,8 @@ export class Game {
         return str.replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, '');
     }
 
+    // this can't return link cards. We should just abandon this entirely. 
+    // the function that needed link cards has been refactored to avoid keys
     find_by_key(player_num: number, location: number, index: number, instance_id?: number): CardLocation | Instance {
         logger.info(`p${player_num}  l${location}, L${Location[location]} , i${index}`);
         if (location == 0 && index == 0) return undefined!;
@@ -1723,6 +1731,35 @@ export class Game {
         let ret: (Instance | CardLocation)[] = [];
 
         logger.info(`FINDING FOR TARGET: ${t.toString()} Event ${GameEvent[ge]} TargetSource ${s.id()},${s.card_id()},${s.location()} `);
+        let master_location: Location = Location.NIL;
+        if (t.raw_text) {
+            logger.info("raw_text is " + t.raw_text);
+            // if we say "with evolutoin cards" we end up searching all cards when
+            // we should search instances, and the util.js code isn't properly 
+            // distinguishing them
+            if (t.raw_text.includes("evolution card") // searching ev cards 
+                && ! t.raw_text.includes("with ")  // but NOT "with X evolution card"
+                && ! t.raw_text.includes("in its"))  // or "with X in its cards"
+                master_location |= Location.UNDER_CARDS;
+            if (t.raw_text.includes("from under"))
+                master_location |= Location.UNDER_CARDS;
+            if (t.raw_text.includes("link cards"))
+                master_location |= Location.UNDER_CARDS;
+
+            if (t.raw_text.includes(" trash")) master_location |= Location.TRASH;
+            if (t.raw_text.includes(" hand")) master_location |= Location.HAND;
+            if (t.raw_text.includes(" security")) master_location |= Location.SECURITY;
+            if (t.raw_text.match(/among them/i)) master_location |= Location.REVEAL;
+            if (t.raw_text.match(/among it/i)) master_location |= Location.SEARCH; // special case
+            if (t.raw_text.match(/token/i)) master_location |= Location.TOKENDECK; // special case
+
+            // if nothing was set, default to batle
+            if (master_location === Location.NIL) master_location = Location.BATTLE;
+            if (t.raw_text.includes("this card")) master_location = Location.NIL; // search cards for sure
+            logger.debug(`raw_text Location is ${Location[master_location]} ${master_location}`);
+
+            // TODO:
+        }
         if (t.conjunction == Conjunction.LAST_THING) {
 
             if (sel) return Game.get_last_thing_from_sel(sel, s);
@@ -1774,9 +1811,7 @@ export class Game {
         }   // we aren't using froms yet, but we could use this to filter out just the things to search more efficiently
 
 
-
-
-        if ([
+        let search_cards: boolean = [
             GameEvent.TRASH_FROM_HAND,
             GameEvent.PLAY,
             GameEvent.USE,
@@ -1791,8 +1826,15 @@ export class Game {
             GameEvent.TRASH_LINK,
             GameEvent.PLUG, // can be both card and instance
         ].includes(ge)
-            || t.raw_text.match("security")
-        ) {
+            || !!t.raw_text.match("security");
+
+            // eventually we'll not just search like this
+        if (master_location !== Location.NIL && master_location === Location.BATTLE) search_cards = false;
+        if (master_location !== Location.NIL && master_location === Location.UNDER_CARDS) search_cards = true; // needed because the all_sources is under this branch
+        if (ge === GameEvent.STACK_ADD) search_cards = true;
+
+        logger.debug(`pre-search Location is ${Location[master_location]} and ${search_cards}`);
+        if (search_cards) {
 
             let to_search: CardLocation[] = [];
             if (t.raw_text.match(/token/i)) {
@@ -1823,6 +1865,7 @@ export class Game {
                 t.raw_text.includes("from under") ||
                 ge == GameEvent.TRASH_LINK) {
                 //to_search.length = 0;
+                logger.info("Adding all sources " + t.raw_text);
                 to_search.push(...all_sources(this));
             }
             if (ge == GameEvent.PLUG) {
@@ -1887,6 +1930,7 @@ export class Game {
         }
         // if we are searching for "this (green) monster" add trash.
         if (t.raw_text.match(/^this.{1,10}monster/i)) locus |= Location.ALLTRASH;
+        logger.info(`searching location ${locus} and ${Location[locus]}`);  
         let bb = this.instances.filter(x => (x.location & locus) && t.matches(x, s, this, prior_target, sel));
 
         let ss = t.sort(bb); // for when we need "biggest level" or something
@@ -1897,7 +1941,7 @@ export class Game {
             // dummy instance
         }
 
-        if (debug) logger.debug(`found ${bb.length} targets, and then sorted them down to ${ss.length}`);
+        logger.info  (`found ${bb.length} targets, and then sorted them down to ${ss.length}`);
         if (debug) logger.debug("fone");
         ret.push(...ss);
         return ret;
@@ -1963,7 +2007,7 @@ export class Game {
                             let cl = new CardLocation(this, p_number, Location.BATTLE, i, instance.id, "plug");
                             // if we chose to plug a instance, we need to compare the card it is to see we're the same
                             // maybe plug and source_add should've worked on only Cards? well, source_add does care about instance effects
-
+                        
                             if (Instance.one_effect_matchup(kind, se, e, new SpecialCard(cl), p_number, this, cl)) {
                                 logger.info("plug effects matches " + se.label);
                                 ret.push(se);
@@ -1997,11 +2041,9 @@ export class Game {
 
         logger.debug("2234 looking for reactors to " + e.length + "  events: " + e.map(x => GameEvent[x.game_event]).join(","));;
         for (let i of this.instances) {
-            if (!i) continue;
-            //if (i.in_eggzone()) continue;
-            if (i.in_hand()) continue;
-            // things in eggzone cannot react. BUT, ALSO, things outside of the eggzone
-            // should not even be able to notice stuff in the eggzone.
+            if (!i) continue;          
+            // only let instances in BATTLE or TRASH react. We'll need to add EGG_ZONE
+            if ((i.location & (Location.BATTLE | Location.ALLTRASH)) === 0) continue;
             let trigger;
             logger.debug("searching post trigger of " + i.id + " " + i.name() + " " + (i.has_retaliation() ? "RAT" : "(no)"));
             trigger = i.check_posteffect(e);

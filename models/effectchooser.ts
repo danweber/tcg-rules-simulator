@@ -174,10 +174,15 @@ export class EffectChooser {
         // 1-index for users
         let answers = [];
         for (let i = 0; i < cql; i++) {
-            let text = (this.current_queue[i].label + " " + this.current_queue[i].raw_text);
-            let fulltext = this.current_queue[i].raw_text;
-            let instance_id = this.current_queue[i].source.id();
-            let card_id = this.current_queue[i].card_label;
+            let se = this.current_queue[i];
+            let text = (se.label + " " + se.raw_text);
+            let fulltext = se.raw_text;
+            let instance_id = se.source.id();
+            let card_id = se.card_label;
+            let kind = se.source.kind();
+            let key = "?";
+            if (kind === "instance") key = se.source.get_instance().get_key();
+            if (kind === "card") key = se.source.get_card_location().get_key();
             if (text.length > 101) text = text.substring(0, 100) + "…";
             answers.push({
                 command: (i + 1).toString(),
@@ -185,6 +190,9 @@ export class EffectChooser {
                 card: card_id,
                 text: text,
                 fulltext: fulltext,
+                // xxx_ values are unused and for debugging
+                // xxx_kind: kind,
+                // xxx_key: key,
             });
         }
         this.game.wait(player, answers, "Choose effect to process:");

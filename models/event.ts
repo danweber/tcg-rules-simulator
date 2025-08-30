@@ -47,7 +47,8 @@ export function strToEvent(str: string): GameEvent {
 	if (str.toUpperCase() === "ATTACK") return GameEvent.MUST_ATTACK;
 	if (str.toUpperCase() === "MOVETOSECURITY") return GameEvent.FIELD_TO_SECURITY;
 	if (str.toUpperCase() === "EVOSOURCEDOUBLEREMOVE") return GameEvent.EVOSOURCE_DOUBLE_REMOVE;
-	if (str.toUpperCase() === "ENTITYSTRIP") return GameEvent.EVOSOURCE_REMOVE_FROM;
+	//if (str.toUpperCase() === "ENTITYSTRIP") return GameEvent.EVOSOURCE_REMOVE_FROM;
+	if (str.toUpperCase() === "REVEALTOHAND") return GameEvent.REVEAL_TO_HAND;
 	str = str.toUpperCase();
 	if (isGameEvent(str)) {
 		return GameEvent[str];
@@ -139,10 +140,6 @@ export enum GameEvent {
 	// not all keywords are te same
 	GIVE_SOLIDEFFECT_UNUSED, // a whole 'nother level of testing, like "that mon gains 'lose 2 memory on attacking'
 	DELETE, // 7
-	// tamers can be deleted, too
-	//	MON_DELETED_BY_BATTLE,
-	//	MON_DELETED_BY_EFFECT,
-	//	MON_DELETED_BY_RULES,
 	BLOCK,
 	ATTACK_TARGET_SWITCH, // do I need to distinguish "blocked"? 
 

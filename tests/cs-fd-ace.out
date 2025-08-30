@@ -1,0 +1,7 @@
+FIELD1:Mon,DW1-Vanillamon,CS2-Rampager,FACEDOWN,CS2-Rampager,5000DP
+FIELD2:Tank,DW1-Bigmon,REST,12000DP
+GAME:P1 T3 MAIN 10
+ECHO: -- attack and die, 1 card over flows, the other does not
+FIELD1:
+FIELD2:Tank,DW1-Bigmon,REST,12000DP
+GAME:P1 T3 MAIN 5

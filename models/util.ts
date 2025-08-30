@@ -25,7 +25,7 @@ export class EffectAndTarget {
 }
 
 import { createLogger } from "./logger";
-import { ForEachTarget, SubTargetDesc, TargetDesc, TargetSource } from './target';
+import { ForEachTarget, MultiTargetDesc, SubTargetDesc, TargetDesc, TargetSource } from './target';
 const logger = createLogger('util');
 
 
@@ -62,7 +62,15 @@ export function for_each_count_target(w: SubEffect, game: Game, ts: TargetSource
     // are we changing N or changing CHOOSE?
     // for now, we can tell by which is non-zero
     logger.info(`CHANGING n from ${w.n} to ${i} ?`);
-    logger.info(`CHANGING choose from ${w.choose} to ${i} ?`);
+
+    // if we have "to 1 X, trash 2 things for each Y" then "for each" applies to the 2, not the 1
+    let choose = w.choose;
+    let mtd = (w.td2 as any as MultiTargetDesc);
+    if (mtd?.choose?.n) {
+        choose = mtd.choose;
+    }
+
+    logger.info(`CHANGING choose from ${choose?.n} to ${i} ?`);
 
     // if it's a "give 3000 DP" then assume it's 3000*i
     if (w.game_event === GameEvent.GIVE_STATUS_CONDITION && w.status_condition
@@ -76,10 +84,10 @@ export function for_each_count_target(w: SubEffect, game: Game, ts: TargetSource
         // don't alter N or choose if we have a DP... it could easily be the reverse
     }
     if (w.n) w.n = w.n * i;
-    logger.info(`w.choose ${w.choose} i ${i}`);
-    if (w.choose) {
-        console.warn("old style multiple mod");
-        w.choose.n = w.choose.n * i;
+    logger.info(`choose ${choose?.n} i ${i}`);
+    if (choose) {
+        logger.warn("old style multiple mod");
+        choose.n = choose.n * i;
         if (i == 0) {
             // can't choose any, just fail the effect now
             //   sel.game.log(`No for-each, skipping`);
@@ -142,7 +150,6 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
     let ret;
 
     if (evo_cond.targetnumber) {
-        console.error("target nunber " + evo_cond.targetnumber);
         let t = Game.get_target_number(sel, 999);
         if (!t) return def;
         if (t !== base) return def;
@@ -248,7 +255,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
         evo_cond.entity_match,
         evo_cond.with,
         evo_cond.from);
-
+  
     // console.log(evo_cond.entity_match);
     // empty AND is false, this is incorrect from a boolean logic sense
     if (array.length > 0) {
@@ -312,11 +319,13 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
 
     }
 
+
     if (evo_cond.entity) {
         if (evo_cond.entity === "card") ret = (
             base.constructor.name == "CardLocation" || base.location == Location.REVEAL);
         // cards in the progress of being played are instances at this point
-        if (evo_cond.entity === "entity") ret = (base.constructor.name == "Instance");
+        else if (evo_cond.entity === "entity") ret = (base.constructor.name == "Instance");
+        else console.error("evo_cond unknown", evo_cond.entity);
         if (!ret) return def;
     }
 
@@ -365,9 +374,12 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: T
 
         let base_location = base.location;
         const loc: Location = string_to_location(evo_cond.location);
+
+        // if we're looking in SEARCH we can't detect this setting
+        // in the card itself. 
+
         // if we're deliberately searching reveal, then yes, search reveal
         if (loc & Location.REVEAL) {
-            console.log(371, base_location, loc);
             let ret = base_location & loc;
             if (!ret) return def;
         } else {
@@ -466,7 +478,7 @@ export function num_compare(a: number, b: number, c: number, s: TargetSource | u
             }
         logger.info("relative set c to " + c);
     }
-    logger.info(`a ${a} b ${COMPARE[b]} c ${c} relative ${relative}`);
+    logger.debug(`a ${a} b ${COMPARE[b]} c ${c} relative ${relative}`);
 
     if (a === undefined || a === null || c == undefined || c == null) return false;
     if (b == COMPARE.IS) return a == c;
@@ -499,6 +511,9 @@ export function find_in_tree(tree: any, needle: string): any {
     if (tree.type === needle) return tree;
     if (needle in tree) return tree;
 
+    // periodically add or remove the .reverse() here
+    // if we have multiple matches, it shouldn't matter which we use
+    // we don't want to pass a test case just because our grammar gave two results and only the first one worked
     if (Array.isArray(tree)) {
         for (let child of tree) {
             let ret = find_in_tree(child, needle);

@@ -1065,7 +1065,6 @@ export class SolidEffectLoop {
                 if (fulltexts.length === 0) {
                     // find the individual atomics
                     fulltexts.push(atomic_effect.raw_text);
-                    console.error(atomic_effect);
                 }
                 let answers = [{
                     command: "1", text: `Activate ${text}${verb}`, ver: uuidv4(),
@@ -1428,9 +1427,13 @@ export class SolidEffectLoop {
                 // we repeat our action for each thing we find
                 let i: number;
                 logger.info(`looking repeat for each, target ${c1.toString()} ${c1.raw_text()}`);
+                if ("get_count" in c1) {
+                    i = c1.get_count(this.game, this.effect.source);
+                } else {
+                    logger.warn("deprecated n_repeat");
                 // i = this.game.find_target(w.n_repeat, GameEvent.STACK_ADD, this.effect.source, this, Location.SECURITY).length;
-                i = w.n_repeat.test(this.game, this.effect.source, undefined, this).length //  this.effect.source, this, Location.SECURITY).length;
-
+                   i = c1.test(this.game, this.effect.source, undefined, this).length //  this.effect.source, this, Location.SECURITY).length;
+                }
                 logger.info("I IS " + i);
                 if (i == 0) {
                     this.game.log("No for-each, skipping");
@@ -1518,7 +1521,7 @@ export class SolidEffectLoop {
                         this.s = FakeStep.DO_EFFECT_GO;
                         let blobs = answers[0].command.split("-");
                         if (available_links) {
-                            let [source, recipient, cost, trash] = available_links[0]!;
+                            let [source, recipient, cost,] = available_links[0]!;
                             this.chosen_targets = [source];
                             w.chosen_target2 = [recipient];
                             w.chosen_target3 = source; // cheat
@@ -1546,6 +1549,7 @@ export class SolidEffectLoop {
 
                     let fusion: "only" | "no" = (w.cause & EventCause.DNA) ? "only" : "no";
                     let app: "only" | "no" = (w.cause & EventCause.APP_FUSE) ? "only" : "no";
+                    console.error(1548, fusion, app);
                     let available_evos = player.get_all_evolves(false, fusion, app, this, this.effect.source, w.td2, w.td,
                         w.td3, w.n_mod);
                     logger.info(`There are ${available_evos && available_evos.length} evos..`);
@@ -1561,13 +1565,15 @@ export class SolidEffectLoop {
                         // duped from ASK_TARGET1
                         this.s = FakeStep.DO_EFFECT_GO;
                         let blobs = answers[0].command.split("-");
-                        //    2024-11-08 13:11:35 [info] - game - wait choice: 16-0-5-0-4 Evolve Lv.5 Antylamon onto xx (4) 5f55dc5a-4375-4239-9c20-f8519\
+                        //    2024-11-08 13:11:35 [info] - game - wait choice: 16-0-5-0-4 Evolve Lv.5 ThingMon onto xx (4) 5f55dc5a-4375-4239-9c20-f8519\
                         logger.warn("we shouldn't be using location any more");
                         if (available_evos) {
                             let [cl, left, right, type, cost] = available_evos[0]!;
                             this.chosen_targets = [cl];
                             w.chosen_target2 = [left];
                             w.chosen_target3 = right;
+                            if (type === "app")
+                                w.n_mod = "app";
                             w.n = cost;
                         }
                         /*    let [_location, i, target, _, cost] = blobs;
@@ -1686,8 +1692,8 @@ export class SolidEffectLoop {
                 } else {
                     let zone = Location.SECURITY;
                     if (this.effect.active_zone && this.effect.active_zone & Location.EGGZONE) {
-                        zone |= Location.FIELD;                    
-                        console.error(1685, "XXX", this.effect.active_zone, "addl_loc updated", zone);
+                        zone |= Location.FIELD;
+                        // log( "XXX", this.effect.active_zone, "addl_loc updated", zone);
                     }
                     this.potential_targets = w.td && this.game.find_target(w.td, w.game_event, this.effect.source!, this, zone) as CardLocation[];
                     logger.info("is cost? " + atomic.is_cost);
@@ -1839,10 +1845,11 @@ export class SolidEffectLoop {
                 logger.info(w.td ? w.td.toString() : '');
                 //console.dir(w.td, { depth: 6 });
                 let mod = "";
-                let upto = (w.n_mod && w.n_mod.includes("upto")); //  && w.choose != ALL_OF);
+                let count = w.choose?.value();
+                let upto = (w.n_mod && w.n_mod.includes("upto") && count! > 1); //  && w.choose != ALL_OF);
                 if (upto) { mod = "upto"; }
                 logger.info(this.rand + `PLAYEREFFECT: w.nplayer is ${w.n_player}, backup is ${backup}`);
-                let msg = `Choose ${upto ? 'up to ' : ''}${w.choose?.value()} target${(w.choose!.value() > 1 ? 's' : '')}`;
+                let msg = `Choose ${upto ? 'up to ' : ''}${count} target${(w.choose!.value() > 1 ? 's' : '')}`;
                 msg += " for " + gerund(w.game_event, w.status_condition) + ":";
                 if (w.n_mod?.match(/upto total/)) {
                     msg = `Choose any number that add up to ${w.n} DP:`;
@@ -1945,28 +1952,22 @@ export class SolidEffectLoop {
                 let mon: Instance = this.effect.source.get_instance();
                 let p = mon ? mon.n_me_player : -1;
                 if (p == -1) {
+                    // get backup player
                     let cl: CardLocation = this.effect.source.get_card_location();
                     p = cl.n_me_player;
                 }
-                // assume EVOLVE is always a solo effect -- which is a lie
+
                 let atomic = this.effect.effects[this.n_effect];
                 //                this.effect.effects[this.
                 let weirdo = atomic.events[0];
                 let blob = answers![0];
                 logger.info("for evolve choice is " + blob);
-                let blobs = blob.split("-");
-                // all pairs of (card left right) and (location-instance), plus cost
-                let [c_l, , c_i, l_l, , l_i, r_l, , r_i, cost] = blobs;
-                let match = false;
-                logger.info("evo choices:");
-                logger.info(this.evolve_choices.map(e => `${e[0].id} -> ${e[1].id}`).join(","));
-                for (let x of this.evolve_choices) {
-                    //
-                }
-                // this has better be a cardlocation!
-                this.chosen_targets = [this.game.find_by_key(p, parseInt(c_l), parseInt(c_i))];
-                weirdo.chosen_target2 = [this.game.find_by_key(p, parseInt(l_l), parseInt(l_i))];
-                weirdo.chosen_target3 = this.game.find_by_key(p, parseInt(r_l), parseInt(r_i));
+                let index = Number(blob) - 1;
+                let evo = this.evolve_choices[index];
+                let [into, left, right, type, cost] = evo;
+                this.chosen_targets = [ into ];
+                weirdo.chosen_target2 = [ left ];
+                weirdo.chosen_target3 = right;
 
                 logger.info(`into is ${this.chosen_targets[0].get_field_name()}`);
                 logger.info(`left is ${weirdo.chosen_target2?.[0].get_field_name()}`);
@@ -1975,7 +1976,7 @@ export class SolidEffectLoop {
                 //                weirdo.chosen_target = cl;    
                 this.s = FakeStep.ASSIGN_TARGET_SUBS; // no ask_target2 for EVO
                 this.evolve_choices = undefined; // later atomics shouldn't see this
-                weirdo.n = parseInt(cost);
+                weirdo.n = Number(cost);
 
                 return false;
             }
@@ -2673,6 +2674,9 @@ export class XX {
             let pl = game.get_n_player(p);
             pl.shuffle("security");
             return true;
+        } else if (weirdo.game_event == GameEvent.DEVOLVE) {
+            game.log("Devolving " + name + " by " + weirdo.n);
+            target.deevolve(weirdo.n!);
         } else if (weirdo.game_event == GameEvent.DEVOLVE_FORCE) {
             game.log("Removing top card from " + name);
             return target.deevolve(1, { force: true });
@@ -2690,9 +2694,6 @@ export class XX {
             let ret = game.get_n_player(weirdo.n_player!).draw(weirdo.n);
             logger.info(`ret ${ret} for draw ${weirdo.n}`);
             return ret;
-        } else if (weirdo.game_event == GameEvent.DEVOLVE) {
-            game.log("Devolving " + name + " by " + weirdo.n);
-            target.deevolve(weirdo.n!);
         } else if (weirdo.game_event == GameEvent.TRASH_FROM_FIELD) { // just 
             game.log("Trashing " + name);
             target.do_trash("...");
@@ -2737,7 +2738,10 @@ export class XX {
             target.do_bottom_deck("effect"); // pass in my structure!
         } else if (weirdo.game_event == GameEvent.FIELD_TO_SECURITY) {
             game.log("Putting " + target.get_name() + " to security");
-            target.do_move_to_security("effect"); // pass in my structure!
+            if (target.kind === "Instance")
+                return target.do_move_to_security("effect"); // pass in my structure!
+            let cl: CardLocation = target;
+            cl.extract().move_to(Location.SECURITY);
         } else if (weirdo.game_event == GameEvent.MUST_ATTACK) {
             // log handled elsewhere
         } else if (weirdo.game_event == GameEvent.MEMORY_SET) {
@@ -2762,9 +2766,28 @@ export class XX {
             let instance: Instance | CardLocation = weirdo.chosen_target2![0];
             logger.info("evolving, trying " + instance.get_field_name(Location.END));
             // are we evolving before checking cost! :( :(
-            if (weirdo.chosen_target3) {
-                logger.info("fusion");
+            logger.info("fusion " + weirdo.cause + " " + !!weirdo.chosen_target3);
+
+            if (weirdo.cause & EventCause.APP_FUSE) {
+                console.log(2777);
+                console.dir(weirdo, {depth: 1});
+
+                // we grab the first link card and put it on top.
+                // this assumes there are no app fuses where something starts with 2 link cards
+                let i: Instance = instance as Instance;
+                let plugs = i.get_plugs();
+                if (plugs.length < 1) return false;
+                if (plugs.length > 1) logger.error("multiple plugs during app fuse");
+                let c:Card = plugs[0].extract();
+                c.move_to(Location.BATTLE, i);
+            }
+
+            // find all the cases where DNA isn't being set
+            //if (weirdo.cause & EventCause.DNA) {
+            if (weirdo.chosen_target3 && !(weirdo.cause & EventCause.APP_FUSE)) {
+                logger.info("fusion " + weirdo.cause);
                 // didn't we set this by cause above?
+
                 weirdo.cause = weirdo.cause | EventCause.DNA;
                 let instance2: Instance | CardLocation = weirdo.chosen_target3;
                 let c: Card = ("card" in target) ? target.card : target;
@@ -2785,7 +2808,6 @@ export class XX {
                         item.extract().move_to(Location.BATTLE, fusioned, "BOTTOM");
                     }
                 }
-
             } else {
                 // for normal evo, instance *must* be instance
                 if (!("me_player" in instance)) return false;
@@ -2809,7 +2831,7 @@ export class XX {
             game.log(`Evolve into ${instance.get_name()} ${msg}`); // no need to announce, we did that at start
             // todo: show the old name, including for fusion
             game.fancy.add_string(depth, `Evo into ${instance.get_name()}`);
-
+    
             game.log("Draw for Evolve");
             player.draw();
             return true;
@@ -3132,8 +3154,8 @@ export class XX {
             let fdown: boolean = false;
             let order: string = "";
             order = weirdo.n_mod?.match(/bottom/i) ? "BOTTOM" : "TOP";
-            fup = !! weirdo.n_mod?.match(/face.up/i);//? "UP" : "DOWN";
-            fdown = !! weirdo.n_mod?.match(/face.down/i);//? "UP" : "DOWN";
+            fup = !!weirdo.n_mod?.match(/face.up/i);//? "UP" : "DOWN";
+            fdown = !!weirdo.n_mod?.match(/face.down/i);//? "UP" : "DOWN";
             if (weirdo.td.raw_text.includes("deck")) {
                 // what hell is this?
 
@@ -3227,12 +3249,13 @@ export class XX {
             return ret;
 
         } else if (weirdo.game_event == GameEvent.CARD_REMOVE_FROM_HEALTH_OBSOLETE) {
+            /*
             // "Remove from health" is assumed to be "sent from health to trash" but that's not really true
             // nothing if done by game rules, we did that in combat.ts
             // maybe it *should* be driven here, but nothing can interrupt card removal right now
             if (weirdo.cause == EventCause.GAME_FLOW) return true;
-
-
+        
+        
             let oppo = 3 - p!;
             let player = game.get_n_player(p);
             if (weirdo.td.raw_text == "opponent") {
@@ -3246,6 +3269,7 @@ export class XX {
             }
             game.la(`No card in player ${oppo}'s deck to trash`);
             return false;
+            */
         } else if (weirdo.game_event == GameEvent.ATTACK_DECLARE) {
 
             logger.info("target is " + target.name() + " " + target.id);
@@ -3260,6 +3284,8 @@ export class XX {
             //console.dir(weirdo, { depth: 2 });
         } else if (weirdo.game_event == GameEvent.CANCEL) {
             // handled elsewhere
+        } else if (weirdo.game_event == GameEvent.CHOOSE) {
+            // does nothing
         } else if (weirdo.game_event == GameEvent.ACTIVATE) {
             // handled inside interrupter loop
         } else {

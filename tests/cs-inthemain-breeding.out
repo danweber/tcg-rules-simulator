@@ -5,6 +5,7 @@ EGGZONE2:
 DECK1:DW1-Vanillamon CS2-Sharpblade CS2-Longsword
 DECK2:
 GAME:P1 T3 MAIN 9
+ECHO: -- if we haven't loaded up "Loading" then this test will fail. try cs-facedown
 GET-X-PLAYS: json REFRESH
 GET-X-PLAYS: PLAY 0 Play VanillaMon
 GET-X-PLAYS: PLAY 1 Play Paper Shield

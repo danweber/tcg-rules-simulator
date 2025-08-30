@@ -8,6 +8,7 @@ DECK1:DW1-Van CS2-02 CS2-03
 GAME:P1 T3 MAIN 9
 
 DUMP:DECK
+ECHO: -- if we haven't loaded up "Loading" then this test will fail. try cs-facedown
 GET-X-PLAYS
 ECHO: -- use main effect
 CMD:MAIN Mon

@@ -1022,16 +1022,12 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     }
 
     // try an early parse. TODO: move as much in here as we can, for now limit to tokens
+    //console.log(1025, line);
 
-
-    if (line.includes("Monster/")) {
-        console.error(997, line);
+    if (line.includes("Monster/")) { // token?/ 
         let grammared = parseStringEvoCond(line, "EffSentence");
         if (grammared) {
-            console.error(1000, grammared);
             logger.info("super new split: FULL PARSE " + line);
-
-
             let [a1, l1] = parse_atomic(line, label, solid, card, {}, grammared);
             atomics.push(a1);
             solid.effects.push(a1);
@@ -1043,10 +1039,10 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
     // this handles costs and also an extra-sentence clause
     if (line.includes("by ") && line.includes("breeding")) {
-        console.error(1046, line);
+        //console.error(1046, line);
         let grammared = parseStringEvoCond(line, "EffSentence");
         if (grammared && grammared.cost) {
-            console.error(1049, grammared);
+            //console.error(1049, grammared);
 
             if (grammared.extra && grammared.extra.effect === "also-in-breeding") {
                 solid.active_zone = Location.FIELD;
@@ -1076,6 +1072,68 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     }
 
 
+    // see if we can split into actions using the grammar
+    if (true) {
+        if (!line.toLowerCase().includes("by ")) { // can't handle costs yet
+            let paragraph = parseStringEvoCond(line, "SolidEffect");
+            if (paragraph) {
+                logger.info("grammared this fully: " + line);
+
+                //console.log(1084, line);
+                //console.dir(paragraph, { depth: 5 });
+
+
+                paragraph.effect_array.forEach((atomic: any, index: number) => {
+                    //console.error(1198, "index", index);  
+                    let temp_grammar = { ...atomic };
+                    if (temp_grammar.effect && !Array.isArray(temp_grammar.effect)) {
+                        temp_grammar.effect = [temp_grammar.effect]; // make sure it's an array 
+                    } 
+                    if (temp_grammar.type === "UnknownEffect") temp_grammar = undefined;
+ //                   temp_grammar.effect = [atomic];
+                    let pif = index > 0 ? { previous_if: true } : {};
+                    //console.error(1202, temp_grammar);  
+                    let [a1, l1] = parse_atomic(atomic.raw_text, label, solid, card, pif, temp_grammar);
+                    // assume they must all point to the same target1
+                    if (false && index > 0) {
+                        a1.weirdo.td = new MultiTargetDesc("it");
+                        a1.events[0].td = new MultiTargetDesc("it");
+                    }
+                    atomics.push(a1);
+                    solid.effects.push(a1);
+                })
+
+                if (false)
+                for (let atomic of paragraph.effect_array) {
+
+                    let temp_grammar = { ...atomic };
+                    //                       temp_grammar.effect = [effect];
+                    //                    if (! Array.isArray(temp_grammar)) temp_grammar = [temp_grammar];
+                    if (!Array.isArray(temp_grammar.effect)) { // temp_grammar.effect = [temp_grammar.effect];
+                        //                        if (! (temp_grammar.length >= 1)) {  
+                        // effect isn't array! may be a status effect...
+                        temp_grammar.effect = [temp_grammar.effect];
+
+                    }
+                    if (false) {
+                        temp_grammar = undefined;
+                        console.error("couldn't find parse effect for " + line);
+                        logger.error("couldn't find parse effect for " + line);
+
+                    }
+
+                    const pif = undefined; // previous if
+                    let [a1, l1] = parse_atomic(atomic.raw_text, label, solid, card, pif, temp_grammar);
+                    atomics.push(a1);
+                    solid.effects.push(a1);
+                }
+                line = "";
+            }
+        }
+
+    }
+    // show unparsed
+    if (line.length > 1) console.log(1139, line);
 
     const sentences: string[] =
         //line.startsWith("Reveal") ? [line] : 
@@ -1100,7 +1158,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
         // With this effect it can attack the turn it was played
         if (next_sentence.includes("With this effect")) merge = true;
         // For each X, add 2 to N.
-        if (next_sentence.match(/add \d/)) merge = true;
+        if (next_sentence.match(/For (each|every).*, add \d/)) merge = true;
 
         if (merge) {
             sentences[n] += " " + next_sentence;
@@ -1686,20 +1744,6 @@ function single_parse_if(line: string): SingleGameTest {
         let target = new TargetDesc(m[1]);
         return new SingleGameTest(GameTestType.MEMORY, undefined, undefined, m[2], m[0]);
     }
-
-    if (m = line.match(/your tamers have (\d)( or (more|fewer))? total colors/i)) {
-        //   let count = m[1] ? "0" : m[3];
-        console.error("missing test");
-        // return new SingleGameTest(GameTestType.TARGET_EXISTS, new TargetDesc("your " + m[4]), undefined, count);
-    }
-
-
-    //    if (m = line.match(/you have (.*)/)) {
-    //      let multi = parseStringEvoCond(m[1], "MultiTarget");
-    // }
-
-    // in play is ending up in first match
-
 
     if (m = line.match(/you (don.t )?have (an? )?(no )?(\d or (?:more|fewer))?(.*?)( in play)?$/i)) {
         let count = m[1] ? "0" : m[4];
@@ -2393,7 +2437,7 @@ function nested_solids(input: string, label: string, card?: Card): SolidsToActiv
 function parse_atomic(line: string, label: string, solid: SolidEffect2,
     card: Card | undefined, flags?: any, incoming_grammar?: any
 ): [AtomicEffect2, string] {
-    logger.info("atomic " + line);
+    logger.info("atomic " + line + " " + JSON.stringify(incoming_grammar));
     if (!solid) logger.info("Warning, no solid");
     // bullshit I shouldn't need, I think it's just for eating keywords
     for (let i = 0; i < 5; i++) line = line.replace(/^\s*\[[^\]]*\]\s*/g, '');
@@ -2411,7 +2455,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         choose: DynamicNumber,
         n: number, immune: boolean, n_mod: string, n_max: number,
         n_count_tgt?: ForEachTarget, // "suspend 1 monster for each tamer"
-        n_repeat?: GameTest, // repeat (Devolve 1) N times
+        n_repeat?: GameTest | ForEachTarget, // repeat (Devolve 1) N times
+        // deprecate GameTest for n_repeat
         cause: EventCause,
         cost_change?: any,
         delayed_effect?: SolidEffect2,
@@ -2451,7 +2496,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         let nested = line.after("＜Delay＞.・")
         if (atomic.test_condition) console.error("warning over-writing test contidion");
         atomic.test_condition = new GameTest(GameTestType.NOT_THIS_TURN);
-
+  
         let proper_thing: any = { ...thing };
         proper_thing.game_event = GameEvent.TRASH_FROM_FIELD;
         proper_thing.td = new TargetDesc("this card");
@@ -2465,6 +2510,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         line = "";
     }
 
+    //console.log("LINE PRE " + line);
     if (
         (
             line.toLowerCase().includes("play") ||
@@ -2496,7 +2542,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         && !line.toLowerCase().includes("1 your")
         && !line.toLowerCase().includes("3 your")
     ) {
-        console.error(2399, line);
         let grammared = incoming_grammar || parseStringEvoCond(line, "EffSentence");
         let action_args, target, x;
         if (grammared) {
@@ -2504,19 +2549,24 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 // we're double parsing this :(
                 atomic.test_condition = parse_if(grammared.if);
             }
+
             if (grammared.duration) {
                 expiration = grammared.duration.expiration;
             }
-            console.log("GRAM"); console.dir(grammared, { depth: 99 });
-            const effs = grammared.effect;
+            // console.log("GRAM"); console.dir(grammared, { depth: 99 });
+            let  effs = grammared.effect;
+            if (! Array.isArray(effs)) { effs = [effs]; }
             const eff = effs[0]; // we only handle one effect in here. We should call parse_atomic multiple times for multiple effects
             const optional = eff.optional;
             if (optional) atomic.optional = true;
             if (eff.is_cost) atomic.is_cost = 1;
             action_args = eff.action_args;
             if (action_args?.optional) atomic.optional = true;
+            if (action_args.no_cost) thing.n_mod += "for free; ";
+
             // part of action
             if (action_args?.for_each) foreach = action_args.for_each;
+            
             // extra sentence
             // just slappin' the for_each here w/o a care in the world.
             // with the grammar we should have a better idea of 
@@ -2604,7 +2654,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 target = action_args.target;
                 let target2 = action_args.target2;
                 thing.game_event = strToEvent(eff.action);
-                console.error(2571, target);
                 // if we use PlaceCard our target better not be an instance
                 let target_entity = target.targets && target.targets[0].entity;
                 //console.error(2542, "XXXXXXX", GameEvent[thing.game_event], target_entity, line);
@@ -2612,8 +2661,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     // we likely have an "it" object, fall back to old code. or if we're not "moving" a card.
                     console.error("can't do it");
                 } else {
-
-                    console.error(2579, action_args);
                     // TUCK/FIELD_TO_SECURITY is for instance, TARGET_CARD_MOVE for cardlocatiion
                     if ((thing.game_event === GameEvent.TUCK || thing.game_event === GameEvent.FIELD_TO_SECURITY) &&
                         target.raw_text.includes(" card ") || target.raw_text.includes("deck")) {
@@ -2643,11 +2690,11 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     y.parse_matches = target2.targets;
 
                     thing.td2 = y;
-                    if (action_args.no_cost) thing.n_mod += "for free; ";
                     if (action_args.place_location) thing.n_mod += action_args.place_location + "; ";
                     if (action_args.face_down) thing.n_mod += "face down; ";
                     line = "";
                 }
+                console.debug(thing);
             }
 
 
@@ -2676,7 +2723,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     // breaks too many test cases
                     //thing.n_mod += "upto; ";
                 }
-                if (action_args.no_cost) thing.n_mod += "for free; ";
                 line = "";
             }
 
@@ -2712,13 +2758,15 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             if (eff.action === 'suspend' || eff.action === "unsuspend"
                 || eff.action === 'Choose'
                 || eff.action === 'devolve'
+                || eff.action === 'RevealToHand'
                 || eff.action === 'delete' || eff.action === 'XXXEntityStrip') {
                 target = action_args.target;
                 thing.game_event = strToEvent(eff.action) // targets an instance!
                 thing.n = action_args.number;
                 // for de-evolve and other keywords
                 if (action_args.for_each && eff.action === 'devolve') {
-                    thing.n_repeat = new GameTest(GameTestType.TARGET_EXISTS, new TargetDesc(foreach));
+                    thing.n_repeat = ForEachTargetCreator(foreach);
+                    //new GameTest(GameTestType.TARGET_EXISTS, new MultiTargetDesc(foreach));
                     foreach = undefined;
                 }
                 x = new MultiTargetDesc(target.raw_text);
@@ -2726,7 +2774,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 thing.n_mod += "devolve";
                 thing.n_max = thing.n;
                 thing.choose = x.choose;
-                if (x.upto) thing.n_mod += "upto; ";
+                if (x.upto) thing.n_mod += "upto; "; // devolve?
+                if (action_args.upto) thing.n_mod += "upto; "; // add/revealtohand
                 if (action_args.place) thing.n_mod += action_args.place + "; ";
                 line = "";
             }
@@ -2735,10 +2784,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
                 //        if (m = line.match(/^Return(ing)? (.*) to the (top|bottom|hand)(?: of .{1,14} deck)?/i)) {
                 //      let dest = m[3];
-                let mod_dest = "top deck";
+                let mod_dest = "top deck; ";
                 target = action_args.target;
                 thing.game_event = GameEvent.TARGETED_CARD_MOVE; // targets an instance!
-                thing.n_mod = mod_dest;
+                thing.n_mod += mod_dest;
 
                 x = new MultiTargetDesc(target.raw_text);
                 thing.td = x;
@@ -2750,10 +2799,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
                 //        if (m = line.match(/^Return(ing)? (.*) to the (top|bottom|hand)(?: of .{1,14} deck)?/i)) {
                 //      let dest = m[3];
-                let mod_dest = "bottom deck";
+                let mod_dest = "bottom deck; ";
                 target = action_args.target;
                 thing.game_event = GameEvent.TO_BOTTOM_DECK; // targets an instance!
-                thing.n_mod = mod_dest;
+                thing.n_mod += mod_dest;
 
                 x = new MultiTargetDesc(target.raw_text);
                 thing.td = x;
@@ -2873,10 +2922,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
         const fet = ForEachTargetCreator(m[3]) // gets parsed down below
         thing.td3 = fet as any as TargetDesc; // ugly override
-        thing.n_mod = `counter,n_count_tgt,1,${m[4]}; `; // td2 is unused in most effects
+        thing.n_mod += `counter,n_count_tgt,1,${m[4]}; `; // td2 is unused in most effects
         //  thing.td2 = new TargetDesc(m[3]);
         if (m[3].match(/effect/)) // for each done by the prior effect
-            thing.n_mod = `counter,unit,1,${m[4]}; `;
+            thing.n_mod += `counter,unit,1,${m[4]}; `;
         line = m[1];
     }
 
@@ -2946,7 +2995,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     // "further" may imply a second reduction, instead of changing the first
     if (m = line.match(/(.*) If (.*?), (increase|further) (.*) by ([-0-9]*)/)) {
         thing.n_test = parse_if(m[2]);
-        thing.n_mod = `counter,test,1,${m[5]}`;
+        thing.n_mod += `counter,test,1,${m[5]}`;
         line = m[1];
     }
 

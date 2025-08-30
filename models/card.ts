@@ -1503,10 +1503,6 @@ export class Card {
 
 // A CardInstance is self-aware of its location; this may
 // involves some double-entry bookkeeping.
-export class UnusedCardInstance {
-
-
-}
 
 
 // When "i" is a number, a specific array entry
@@ -1623,12 +1619,15 @@ export class CardLocation {
     }
     // number-number pair, first is location, second is index (for pile) or id (for field)
     get_key(): string {
-        return `${this.location}-${this.instance || 0}-${this.index}`;
+        let ret = `${this.location}-${this.instance || 0}-${this.index}`;
+        logger.info("get key: " + ret);  
+        return ret;
     }
     // return "NAME" or "NAME in HAND" if not on field
-    get_field_name(l: Location = Location.BATTLE): string {
+    // DUPE!
+    get_field_name(l: Location = Location.FIELD): string {
         let ret = /* this.get_set() + "-" + */ this.get_name();
-        if (this.location != l) {
+        if ((this.location & l) === 0) {
             ret += ` in ${Location[this.location]}`;
         }
         return ret;

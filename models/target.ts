@@ -377,23 +377,32 @@ function split_names(name: string): string[] {
 
 export function ForEachTargetCreator(foreach: string): ForEachTarget {
 
+    if (foreach.length < 2) {
+        // nothing
+        return new ForEachTarget("bob", new TargetDesc(foreach));
+    }
+
+    console.error(379, foreach);
     let n;
     if (n = foreach.match(/color (?:of|in) (.*)/)) {
         return new ForEachTarget("bob", new TargetDesc(n[1]), "color");
     } else if (n = foreach.match(/its evolution cards/)) {
         return new ForEachTarget("bob", new MultiTargetDesc("this Monster's evolution cards"));
+        // N colors your tamers have
     } else if (n = foreach.match(/(\d+)?.?color.? (.*) ha(ve|s)/)) {
         let count = parseInt(n[1]) || 1;
         return new ForEachTarget("bob", new TargetDesc(n[2]), "color", count);
+        // X you have with a differnet color
     } else if (n = foreach.match(/(Tamer you have in play) with a (different color)/)) {
-        console.error(387, n);
         return new ForEachTarget("different", new TargetDesc("your Tamer"), "color");
+        // (N of) your tamers' colors... this match is very aggressive without the apostrophe
+    } else if (n = foreach.match(/(\d+)?( of)? (.*)' color.?$/)) {
+        console.error(391, n);
+        let count = parseInt(n[1]) || 1;
+        return new ForEachTarget("bob", new TargetDesc(n[3]), "color", count);
     } else if (n = foreach.match(/(\d+) (.*)( in play)?/)) {
         let count = parseInt(n[1]);
         return new ForEachTarget("bob", new MultiTargetDesc("a " + n[2]), "instance", count);
-    } else if (foreach.length < 2) {
-        // nothing
-        return new ForEachTarget("bob", new TargetDesc(foreach));
     } else {
         return new ForEachTarget("bob", new MultiTargetDesc(foreach));
     }
@@ -414,6 +423,8 @@ export class ForEachTarget {
         if (type) this.type = type;
         if (ratio) this.ratio = ratio;
     }
+    // this is needed just for enabling some deprecated code to have the same signature
+    raw_text() { return this.target.raw_text; }  
     get_count(game: Game, ts: TargetSource): number {
         // STACK_ADD seems bad since it includes cards in hand :<
         let kind = this.target.raw_text.includes("card") ? GameEvent.PLAY : GameEvent.DELETE;
@@ -655,8 +666,7 @@ export class MultiTargetDesc {
         if (m = text.match(/(\d+)(?: of)\s*(.*)/)) {
             text = m[2];
             this.choose = new DynamicNumber(parseInt(m[1]), "");
-            console.error(557, this.choose);
-
+            console.debug(this.choose);
         }
         let only = new TargetDesc(text);
         this.targets.push(only);
@@ -902,14 +912,16 @@ export class TargetDesc {
         if (s.is_card()) {
             let t_card: CardLocation = t as CardLocation;
             if (s.get_card_location().card === t_card.card) {
-                logger.info("references are equal for card ");
+                logger.info("references are equal for card, returning true");
                 return true;
             }
             // if source is a card and asking if the *instance* is me, it should be any instane containing me
             // this is just for [when linking] nonsense
-            if (s.get_card_location().get_instance() === t) return true;
+            if (s.get_card_location().get_instance() === t) {
+                logger.info("card matches on instance it is in, returning true");
+                return true;
+            }
         }
-
 
         // sometimes we get called with a "card' here, like if
         // something has interrupted play of self.
@@ -946,11 +958,14 @@ export class TargetDesc {
                 return s.get_instance() === t;
             }
 
-            logger.info(` t location ${Location[t.location]} card_is ${t.card_id} and ` +
-                ` s location ${Location[s.location()]} card_is ${s.card_id()}`);
-            return (t.location == s.location() &&
-                t.card_id == s.card_id());
 
+            logger.info(` t location ${Location[t.location]} card_is ${t.card_id} t.id ${t.id} and ` +
+                ` s location ${Location[s.location()]} card_is ${s.card_id()} s.id ${s.id()}`);
+            
+            // t is a CARD, not a CARDLOCATION. How did that happen?
+            
+            let t_as_card: Card = t as any as Card;
+            return t_as_card === s.get_card_location().card;
         }
 
         return (t.id == s.id())

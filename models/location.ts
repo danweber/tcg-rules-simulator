@@ -33,6 +33,7 @@ export function string_to_location(s: string): Location {
 //I originally intended this to be for Instances, but I guess
 //it can work for cards, too.
 export enum Location {
+    NIL = 0,
     UNKNOWN = 1,
     NEW = 2,
     BATTLE = 4,
@@ -49,8 +50,12 @@ export enum Location {
     TOKENDECK = 4096,
     TOKENTRASH = 8192,
     ALLTRASH = TRASH | TOKENTRASH,
+    BATTLE_AND_TRASH = ALLTRASH | BATTLE,
     TEMPSTACK = 16834, // this is the temporary stack we build like for a stack summon
     SHADOWREALM = 32768,
-    END = 65536
+    SEARCH = 65536, // virtual region
+    UNDER_CARDS = 131072, 
+    BATTLE_AND_UNDER_CARDS = BATTLE | UNDER_CARDS,
+    END = 262144
 };
 

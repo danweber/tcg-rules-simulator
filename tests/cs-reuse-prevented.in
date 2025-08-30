@@ -13,7 +13,7 @@ GAME:P1 T4 MAIN 8
 GET-X-PLAYS
 DUMP:HAND,KEYWORDS
 
-ECHO: this test can fail if we haven't loaded up <Dodge> from another card
+ECHO: this test can fail if we haven't loaded up <Dodge> from another card, like cs3-playfromstack
 
 CMD:ATTACK Deleter Vic1
 STEP:AUTOANSWER:CAPTURE

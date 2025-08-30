@@ -9,7 +9,7 @@ FIELD2:Roger,CS3-Chirpflare,DODGE Vic1,DW1-Vanillamon,REST Vic2,DW1-Vanillamon,R
 HAND1:DW1-Standup
 HAND2:
 GAME:P1 T4 MAIN 8
-ECHO: this test can fail if we haven't loaded up <Dodge> from another card
+ECHO: this test can fail if we haven't loaded up <Dodge> from another card, like cs3-playfromstack
 CAPTURE:Activate ChirpFlare suspending
 CAPTURE:Don't pay/activate
 FIELD1:Deleter,DW1-Bigmon,CS2-Greatsword

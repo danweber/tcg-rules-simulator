@@ -49,6 +49,7 @@ function parse_placement(str: string) {
     return false;
 }
 
+// this is basically the last funcitonality done before moving to the grammar
 // match "return..." or "play..." or "place..." or "trash..."
 function parse_detach_action(line: string): any {
     let m;
@@ -60,7 +61,6 @@ function parse_detach_action(line: string): any {
         line = m[1];
     }
     if (m = line.match(/^return(?:ing)? (.*) (?:to|on) (.*)$/)) { // to deck or hand
-        console.error(63, m);
         let place = parse_placement(m[2]);
         if (!place || place.startsWith("security")) {
             console.error("unknown place " + m[2]);

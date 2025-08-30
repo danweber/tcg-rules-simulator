@@ -448,7 +448,7 @@ export class Instance {
             // stack: this.pile.map(x => `${x.id}@${x.card_instance_id}`),
             stack: this.pile.map(x => x.face_up ? `${x.id}@${x.colors_s()}@${x.card_instance_id}` : 'back'),
             // 'back' or 'DOWN'?? should we use 'back' everywhere instead of 'DOWN'?
-            plugs: this.plugged.reverse().map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`),
+            plugs: this.plugged.slice().reverse().map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`),
             sa: this.get_sa(),
             loc: this.location,
             location: Location[this.location],
@@ -673,9 +673,10 @@ export class Instance {
     }
 
     // as side effect, alters my_fx to track what triggered it
-    static one_effect_matchup(type: "preflight" | "posteffect", my_fx: SolidEffect, sfx: SubEffect[], me: TargetSource, n_me_player: number, game: Game, thus: Instance | CardLocation): boolean {
+    static one_effect_matchup(type: "preflight" | "posteffect", my_fx: SolidEffect, sfx: SubEffect[], me: TargetSource,
+        n_me_player: number, game: Game, thus: Instance | CardLocation): boolean {
 
-        let my_matchups;
+        let my_matchups: InterruptCondition[] | undefined;
         if (type === "preflight") {
             my_matchups = my_fx.interrupt;
         } else {
@@ -684,6 +685,8 @@ export class Instance {
         if (!my_matchups) return false;
 
         let ret: SolidEffect[] = [];
+
+        logger.info(`searching ${type} triggers for card/instance ${me.get_name(false)} to see if matches one of ${sfx.map(x=>GameEvent[x.game_event]).join(",") }`);
 
         let what_triggers_me = [];
         for (let g_fx of sfx) {
@@ -705,10 +708,7 @@ export class Instance {
                     if (my_interrupter.cause && (my_interrupter.cause & g_fx.cause) == 0) {
                         logger.info("events line up, but causes don't, skipping.");
                         continue;
-
                     }
-
-
 
                     if (g_fx.game_event === GameEvent.PLUG && my_interrupter &&
                         type === "posteffect"
@@ -1476,10 +1476,11 @@ export class Instance {
     get_key(): string {
         return `${this.location}-0-${this.id}`;
     }
-    // if not in expected place, label it up
-    get_field_name(l: Location = Location.BATTLE): string {
+    // if not in expected place, label it up . How could an Instance *not* be on field....?
+    // DUPE! 
+    get_field_name(l: Location = Location.FIELD): string {
         let ret = /* this.get_set() + "-" + */ this.get_name();
-        if (this.location != l) {
+        if ((this.location & l) === 0) {
             ret += ` in ${Location[this.location]}`;
         }
         return ret;
@@ -1494,7 +1495,6 @@ export class Instance {
             name = this.update_information("Name", status_conditions, name);
         }
         return name;
-
     }
     get_name(simple: boolean = false): string {
         return this.name(simple);
@@ -1971,8 +1971,11 @@ export class Instance {
     push_to_location(location: Location, card: Card, position: string = "TOP") {
 
         // save "faceup" 
-        this.game.log(`Moving ${card.name} to ${Location[location].toLowerCase()} ${position}`);
-        if (card.overflow != 0) {
+        // TODO: show name if either start or end is public info
+        let name = card.name;
+        if (!card.face_up) name = "face down card";
+        this.game.log(`Moving ${name} to ${Location[location].toLowerCase()} ${position}`);
+        if (card.overflow != 0 && card.face_up) {
             // Memory change happens immediately.
             // TODO: Consolidate with devolve.     
             this.game.la("Overflow " + card.overflow);
@@ -1983,7 +1986,6 @@ export class Instance {
             }
         }
         card.move_to(location, undefined, position);
-        console.error(1981, card.name, card.face_up);
     }
 
     // for placing option cards
@@ -2035,7 +2037,9 @@ export class Instance {
     // When an instance is moved from hatchery to battle area
     move(l: Location) {
         for (let card of this.pile) {
+            let fup = card.face_up;
             card.move_to(l);
+            card.face_up = fup; // preserve face up
         }
         this.location = l;
     }

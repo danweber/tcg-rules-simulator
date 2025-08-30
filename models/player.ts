@@ -624,6 +624,11 @@ export class Player {
         return true;
     }
 
+    my_mons(): Instance[] {
+        let my_mons = [ ...(this.egg_zone ? [this.egg_zone]: []), ...this.field]; 
+        return my_mons;
+    }
+
     hatch(depth: number): boolean {
         this.log("trying to hatch");
         if (!this.can_hatch()) return false;
@@ -676,10 +681,6 @@ export class Player {
         return false;
     }
 
-    get_counter_evo_questions_OBSOLETE(blast: boolean = false): UserQuestion[] {
-        return [];
-    }
-
     // For a single card in hand, show what I *could* evolve onto.
     // Returns array of pairs, first is the target inst, second is the cost. 
     // (Cost *could* be more than we have available.)
@@ -716,6 +717,44 @@ export class Player {
         return ret;
     }
 
+    // returns:
+    // 1. Command suitable for turn
+    // 2. String to display
+    // 3. ui_blob of arbitrary key:value pairs
+    static evo_into_keys(evo: [CardLocation, CardLocation | Instance, CardLocation | Instance | undefined, 'evo' | 'fusion' | 'burst' | 'app', number?]):
+        [  string, string, any ]
+    {
+        let [into, left, right, type, cost] = evo;
+        let r_label = right ? right.id : 0;
+        let r_name = right ? right.get_field_name() : '';
+        if (type === 'app') {
+            r_label = "-1";
+            r_name = (left as Instance).plugged[0].get_name() + " AppFuse";
+        }
+        let v_key = `EVOLVE ${into.index} ${left.id} ${cost} ${r_label}`;
+        let str = `Lv.${into.get_level()} ${into.get_field_name(Location.HAND)}`;
+        let conjunction = type === 'fusion' ? 'and' : 'with';
+        let fusion = (type !== 'evo') ? ` ${conjunction} ${r_name}` : ``;
+        let prefusion = type === 'evo' ? '' : type === 'burst' ? 'Burst ' : 'DNA ';
+        if (type === 'app') prefusion = 'AppFuse ';
+        let cost_s = (cost == undefined) ? "-" : String(cost);
+        logger.debug(`cost_s ${cost_s} udnefined ${cost == undefined} cost ${cost}`);
+        let evo_target = left.get_field_name() + fusion;
+        let v_value = `${prefusion}Evolve ${str} onto ${evo_target} (${cost_s})`;
+
+        let evo_left = { location: Location[left.location], id: left.id };
+        let evo_right = right && { location: Location[right.location], id: right.id };
+
+        let evo_card = { location: Location[into.location], id: into.index };
+
+        let ui_blob = {            
+            evo_left: evo_left, evo_right: evo_right, evo_card: evo_card, cost: cost_s,
+            evo_target: evo_target
+        }
+
+        return [v_key, v_value, ui_blob ];
+
+    }
     // 
     static evo_options_into_questions(evos: Array<[CardLocation, CardLocation | Instance, CardLocation | Instance | undefined, 'evo' | 'fusion' | 'burst' | 'app', number?]>, blast: boolean = false): UserQuestion[] {
         let ret: Command[] = [];
@@ -725,9 +764,13 @@ export class Player {
         if (blast) {
             ret.push({ command: "-1", text: "Don't Blast Evolve", ver: uuidv4() });
         }
+        let index = 0;
         for (let evo of evos) {
-            let [into, left, right, type, cost] = evo;
-            logger.info(` into ${into} ${!!into} left ${left} ${!!left} right ${right} ${!!right} cost ${cost} ${!!cost} `);
+            index++;
+            let [ , string, ui_blob ] = Player.evo_into_keys(evo);
+
+/*            let [into, left, right, type, cost] = evo;
+            logger.info(` into ${into} ${!!into} left ${left} ${!!left} right ${right} ${!!right} cost ${cost} ${!!cost} type ${type}`);
 
             let str = `Lv.${into.card.get_level()} ${into.get_field_name(Location.HAND)}`;
             let l = into.location;
@@ -738,24 +781,25 @@ export class Player {
             let into_key = into.get_key();
             let left_key = left.get_key();
             let right_key = right ? right.get_key() : "0-0-0";
+            if (type === 'app') right_key = "9-9-9"; //  dumb flag for app
+
+            let prefusion = type === 'evo' ? '' : type === 'burst' ? 'Burst ' : 'DNA ';
+            if (type === 'app') prefusion = 'AppFuse ';
+
 
             let evo_left = { location: Location[left.location], id: left.id };
             let evo_right = right && { location: Location[right.location], id: right.id };
             let evo_card = { location: Location[into.location], id: into.index };
 
 
-            let v = `Evolve ${str} onto ${left_s}${right_s} (${cost_s})`;
-            let cmd = `${into_key}-${left_key}-${right_key}-${cost_s}`;
-            logger.info("CMD: " + cmd);
+            let v = `${prefusion}Evolve ${str} onto ${left_s}${right_s} (${cost_s})`;
+            let cmd = `${into_key}-${left_key}-${right_key}-${cost_s}`;*/
+            logger.info("CMD: " + string);
             ret.push({
-                command: cmd,
-                text: v,
+                command: String(index),
+                text: string,
                 ver: uuidv4(),
-                evo_left: evo_left, evo_right: evo_right, evo_card: evo_card, cost: cost_s,
-                evo_target: `${left_s}${right_s}`
-
-
-            });
+                ... ui_blob});
         }
         return ret;
     }
@@ -1465,37 +1509,11 @@ export class Player {
 
 
         if (all_evos) {
-            //           console.error(1223, all_evos);
-            for (let [into, left, right, type, cost] of all_evos) {
-
-                logger.debug("somewhat dupe code, but we can't use the same keys");
-                // assume all basic evos are from hand and left is an instance
-                let r_label = right ? right.id : 0;
-                let r_name = right ? right.get_name() : '';
-                if (type === 'app') {
-                    r_label = "-1";
-                    r_name = (left as Instance).plugged[0].get_name() + " AppFuse";
-                }
-                v_key = `EVOLVE ${into.index} ${left.id} ${cost} ${r_label}`;
-                let str = `Lv.${into.get_level()} ${into.get_name()}`;
-                let conjunction = type === 'fusion' ? 'and' : 'with';
-                let fusion = (type !== 'evo') ? ` ${conjunction} ${r_name}` : ``;
-                let prefusion = type === 'evo' ? '' : type === 'burst' ? 'Burst ' : 'DNA ';
-                if (type === 'app') prefusion = 'AppFuse ';
-                let cost_s = (cost == undefined) ? "-" : String(cost);
-                logger.debug(`cost_s ${cost_s} udnefined ${cost == undefined} cost ${cost}`);
-                let evo_target = left.get_name() + fusion;
-                v_value = `${prefusion}Evolve ${str} onto ${evo_target} (${cost_s})`;
-                let evo_left = { location: Location[left.location], id: left.id };
-                let evo_right = right && { location: Location[right.location], id: right.id };
-
-                let evo_card = { location: Location[into.location], id: into.index };
+            for (let evo of all_evos) { 
+                let [v_key, v_value, ui_blob] = Player.evo_into_keys(evo);
                 verbose_evolve.push({
                     command: v_key, text: v_value, ver: uuidv4(),
-                    evo_left: evo_left, evo_right: evo_right, evo_card: evo_card, cost: cost_s,
-                    evo_target: evo_target
-                });
-
+                    ...ui_blob});  
             }
         }
 
@@ -1536,8 +1554,7 @@ export class Player {
 
         // ignoring Main effects in egg zone, hand, trash for now
         
-        let my_mons = [ ...(this.egg_zone ? [this.egg_zone]: []), ...this.field]; 
-        for (let mon of my_mons) {
+        for (let mon of this.my_mons()) {
             // assume each thing can only have 1 "main" effect
             if (mon.get_main()) {
                 v_key = `MAIN ${mon.id}`;

@@ -350,8 +350,9 @@ That's version 0.9.34.1.10! Nice side-quest!
 
 Oops, the card was going in face-up when sent from deck. You can see the bug fix in 0.9.34.1.11 for that. Pretty easy.
 
+## More things to catch
 
-
-
-
+We had to:
+  - make the face-up persist when raising
+  - no overflow when face-down sent to trash
 

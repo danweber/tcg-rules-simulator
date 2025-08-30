@@ -1,0 +1,16 @@
+VERSION:2
+
+TITLE: Facedown doesn't overflow
+TEXT: Facedown cards don't overflow
+
+FIELD2:Tank,DW1-Big,REST
+FIELD1:Mon,DW1-Van,CS2-Rampager,FACEDOWN,CS2-Rampager
+GAME:P1 T3 MAIN 10
+DUMP:DP
+
+ECHO: -- attack and die, 1 card over flows, the other does not
+CMD:ATTACK Mon Tank
+STEP:AUTOANSWER:CAPTURE
+DUMP:DP
+
+

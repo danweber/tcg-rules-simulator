@@ -7,10 +7,10 @@ ECHO: -- attack into Yellow3, get dp boost, trigger blast
 EFFECT-TREE:NOTHING
 GET-CHOICES:Choose:
 GET-CHOICES:Don't Blast Evolve
-GET-CHOICES:Evolve Lv.7 Rampager onto Adamantium Shield in HAND and Anime Sword (0)
-GET-CHOICES:Evolve Lv.7 Rampager onto Obsidian Shield and Colossal Sword in HAND (0)
-GET-CHOICES:Evolve Lv.7 Rampager onto Onyx Shield and Colossal Sword in HAND (0)
-GET-CHOICES:Evolve Lv.7 Rampager onto Onyx Shield and Colossal Sword in HAND (0)
+GET-CHOICES:DNA Evolve Lv.7 Rampager onto Adamantium Shield in HAND and Anime Sword (0)
+GET-CHOICES:DNA Evolve Lv.7 Rampager onto Obsidian Shield and Colossal Sword in HAND (0)
+GET-CHOICES:DNA Evolve Lv.7 Rampager onto Onyx Shield and Colossal Sword in HAND (0)
+GET-CHOICES:DNA Evolve Lv.7 Rampager onto Onyx Shield and Colossal Sword in HAND (0)
 FIELD1:Blue,CS2-Animesword,CS2-Doggiedagger,12000DP Yellow1,CS1-Obsidianshield,CS1-Tinyshield,13000DP Yellow2,CS1-Onyxshield,REST,8000DP Yellow3,CS1-Onyxshield,CS1-Tinyshield,REST,8000DP
 FIELD2:Attacker,CS2-Shieldsmasher,REST,14000DP
 HAND1:CS2-Rampager CS2-Colossalsword DW1-Vanillamon CS1-Adamantiumshield
