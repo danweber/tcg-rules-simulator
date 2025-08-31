@@ -1390,7 +1390,8 @@ export class Card {
 */
         for (let evo_cond of conditions) {
             if ("raw_text" in evo_cond) {
-                if (verify_special_evo(base, evo_cond)) {
+                // we'll never need context here, right? all verifies in this file are like this
+                if (verify_special_evo(base, evo_cond, undefined!, undefined!)) {
                     ret.push(evo_cond.cost);
                 }
                 continue;
@@ -1427,13 +1428,13 @@ export class Card {
             // we might someday have more than 1 plug that's useable
             let monster_matches = cond.monsters;
             for (const top of monster_matches) { // iterate over the name of the mon
-                let topmatch = verify_special_evo(mon, top);
+                let topmatch = verify_special_evo(mon, top, undefined!, undefined!);
                 if (!topmatch) continue;
                 for (let plug of monster_matches) {
                     if (top == plug) continue;
                     let cl = new CardLocation(this.game!, this.n_player, Location.BATTLE, 0, mon.id, "plug");
                     // assume just 1 plug for now
-                    if (!verify_special_evo(cl, plug)) continue; // plug isn't right
+                    if (!verify_special_evo(cl, plug, undefined!, undefined!)) continue; // plug isn't right
                     ret.push(cond.cost);
                 }
             }
@@ -1470,7 +1471,7 @@ export class Card {
             if (this.allow) {
                 // dummy source, we just need the player, we can't reference anything
                 let cl: CardLocation = new CardLocation(this.game!, this.n_player, Location.HAND, 0);
-                let t = this.allow.test(this.game!, new SpecialCard(cl));
+                let t = this.allow.test(this.game!, new SpecialCard(cl), undefined, undefined!);
                 if (t.length > 0) return true;
             }
             let matchset: Color[][] = [this.colors];

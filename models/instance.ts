@@ -1260,7 +1260,7 @@ export class Instance {
         cc.source = source;
         if (atomic.test_condition) {
             //            console.error("TESTING TC " + atomic.test_condition.toPlainText());
-            if (atomic.test_condition.test(game, source).length == 0) {
+            if (atomic.test_condition.test(game, source, undefined).length == 0) {
                 logger.debug("test condition failed");
                 return [];
             }
@@ -1275,7 +1275,8 @@ export class Instance {
         if (w.game_event == GameEvent.NIL) return [];
         let c1;
         if (c1 = w.n_count_tgt) {
-            for_each_count_target(w, game, source, n_me_player);
+            //console.error("NO SEL 1278");
+            for_each_count_target(w, game, source, n_me_player, undefined!);
         }
         w.n_player = n_me_player;
         w.label = cc.label;
@@ -1285,7 +1286,8 @@ export class Instance {
             return [undefined];
         } else {
             // do we really need to pass in solideffect here? will we do pronouns?
-            let targets = w.td && game.find_target(w.td, w.game_event, source, false);
+            //console.error("NO SEL 1289");
+            let targets = w.td && game.find_target(w.td, w.game_event, source, undefined!);
             return targets;
         }
 

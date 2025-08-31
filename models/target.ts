@@ -55,7 +55,7 @@ function getMaxDistinctAssignments(itemColorMap: ItemColorMap): Map<Item, ColorN
 
 
 import { createLogger } from "./logger";
-import { color_count, COMPARE, find_in_tree, for_each_count_target, num_compare, verify_special_evo } from './util'; // Adjust the path as necessary
+import { color_count, COMPARE, find_in_tree, num_compare, verify_special_evo } from './util';
 const logger = createLogger('target');
 
 export let ALL_OF = 999;
@@ -153,7 +153,7 @@ export class GameTest {
     singles: SingleGameTest[] = [];
     conjunction: Conjunction = Conjunction.OR;
 
-    test(g: Game, source: TargetSource, subs?: SubEffect[] | undefined, sel?: SolidEffectLoop): string[] {
+    test(g: Game, source: TargetSource, subs: SubEffect[] | undefined, sel?: SolidEffectLoop): string[] {
 
         // if ALL, test all and return simple flag if they all succeeded
         if (this.conjunction == Conjunction.ALL) {
@@ -262,7 +262,8 @@ export class SingleGameTest {
             let type: "instance" | "color" = "instance";
             if (this.raw_text?.includes("color")) type = "color";
             let fet: ForEachTarget = new ForEachTarget("sgt", this.td!, type);
-            let n_found = fet.get_count(g, source);
+            let n_found = fet.get_count(g, source, sel);
+
             if (this.less_than) {
                 console.error("not handling less than");
             }
@@ -317,7 +318,7 @@ export class SingleGameTest {
             let l = Location.UNKNOWN;
             let e = GameEvent.NIL;
             if (!this.td) return [];
-            let tgts = g.find_target(this.td, e, source, false, l);
+            let tgts = g.find_target(this.td, e, source, sel, l);
             let attacker = combat_loop.attacker;
             if (!attacker) return [];
             if (tgts.some(t => t === attacker)) return [attacker.get_name()];
@@ -382,7 +383,6 @@ export function ForEachTargetCreator(foreach: string): ForEachTarget {
         return new ForEachTarget("bob", new TargetDesc(foreach));
     }
 
-    console.error(379, foreach);
     let n;
     if (n = foreach.match(/color (?:of|in) (.*)/)) {
         return new ForEachTarget("bob", new TargetDesc(n[1]), "color");
@@ -397,7 +397,6 @@ export function ForEachTargetCreator(foreach: string): ForEachTarget {
         return new ForEachTarget("different", new TargetDesc("your Tamer"), "color");
         // (N of) your tamers' colors... this match is very aggressive without the apostrophe
     } else if (n = foreach.match(/(\d+)?( of)? (.*)' color.?$/)) {
-        console.error(391, n);
         let count = parseInt(n[1]) || 1;
         return new ForEachTarget("bob", new TargetDesc(n[3]), "color", count);
     } else if (n = foreach.match(/(\d+) (.*)( in play)?/)) {
@@ -425,11 +424,11 @@ export class ForEachTarget {
     }
     // this is needed just for enabling some deprecated code to have the same signature
     raw_text() { return this.target.raw_text; }  
-    get_count(game: Game, ts: TargetSource): number {
+    get_count(game: Game, ts: TargetSource, sel?: SolidEffectLoop): number {
         // STACK_ADD seems bad since it includes cards in hand :<
         let kind = this.target.raw_text.includes("card") ? GameEvent.PLAY : GameEvent.DELETE;
         if (this.target.raw_text.includes("evolution card")) kind = GameEvent.TARGETED_CARD_MOVE;
-        let i = game.find_target(this.target, kind, ts, false, Location.SECURITY);
+        let i = game.find_target(this.target, kind, ts, sel, Location.SECURITY);
         logger.info(`for each ${i.map(i => i.get_name())} objects count is ${i.length} ratio is ${this.ratio}`);
         
         if (this.type === "instance") return Math.floor(i.length / this.ratio);
@@ -468,11 +467,12 @@ export class DynamicNumber {
     upto: boolean = false;
     fet: ForEachTarget;
 
-    value(game?: Game, source?: TargetSource): number {
+    valueOf() { return this.n };
+    value(game?: Game, source?: TargetSource, sel?: SolidEffectLoop): number {
         if (this.for_each) {
 
             if (game && source) {
-                let multiplier = this.fet.get_count(game, source);
+                let multiplier = this.fet.get_count(game, source, sel);
                 return this.n * multiplier;
             }
         }
@@ -692,7 +692,7 @@ export class MultiTargetDesc {
 
     }
     matches(t: Instance | CardLocation, s: TargetSource, g: Game,
-        previous?: TargetSource, sel?: SolidEffectLoop | false): boolean {
+        previous: TargetSource, sel: SolidEffectLoop ): boolean {
         // matches if any target matches; when "pick 1 X and 1 Y"  we can show
         // all things that match either. (Later the user picks a pair.)
 
@@ -700,7 +700,7 @@ export class MultiTargetDesc {
         if (this.parse_matches) {
             logger.info("MTD " + JSON.stringify(this.parse_matches));
             let ret = this.parse_matches.some(
-                pm => verify_special_evo(t, pm, s, sel || undefined));
+                pm => verify_special_evo(t, pm, s, sel));
             logger.info("ret for " + t.get_name() + "  is " + ret);
             return ret;
         }
@@ -976,7 +976,7 @@ export class TargetDesc {
     }
 
     matches(t: Instance | CardLocation, s: TargetSource, g: Game,
-        previous?: TargetSource, sel?: SolidEffectLoop | false): boolean {
+        previous?: TargetSource, sel?: SolidEffectLoop): boolean {
         logger.silly("testing main target for " + Conjunction[this.conjunction]);
 
         if (this.conjunction == Conjunction.SELF || this.conjunction == Conjunction.ANOTHER) {
@@ -1044,7 +1044,8 @@ export class TargetDesc {
 
         if (this.with) {
             logger.info("have a with " + JSON.stringify(this.with));
-            let ret = verify_special_evo(t, this.with, s);
+//            if (!sel) console.error("NO SEL 1051");
+            let ret = verify_special_evo(t, this.with, s, sel!);
             logger.info("ret with is " + ret);
             if (!ret) return false;
         }

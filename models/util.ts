@@ -44,7 +44,13 @@ export function color_count(objects: (Instance | CardLocation)[]): number {
 
 
 // w n_count_tgt
-export function for_each_count_target(w: SubEffect, game: Game, ts: TargetSource, p: number): boolean {
+// returns true if it did something
+
+export function for_each_count_target(w: SubEffect,
+    game: Game,
+    ts: TargetSource,
+    p: number,
+    sel: SolidEffectLoop): boolean {
     if (2 < 1) return false;
     let c1: ForEachTarget | undefined = w.n_count_tgt;
     if (!c1) return false; // shouldn't have ever gotten in here in the first place
@@ -55,7 +61,7 @@ export function for_each_count_target(w: SubEffect, game: Game, ts: TargetSource
         i = op.my_colors(false).length;
         console.error(49, i);
     } else {
-        i = c1.get_count(game, ts);
+        i = c1.get_count(game, ts, sel);
     }
     logger.info("targets for " + c1.target.raw_text + " is " + i);
 
@@ -123,16 +129,17 @@ function appendArrays(array1: any | any[],
     return result;
 }
 
-export function verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: TargetSource,
-    sel?: SolidEffectLoop): boolean {
+export function verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: TargetSource,
+    sel: SolidEffectLoop): boolean {
     let ret = _verify_special_evo(base, evo_cond, s, sel);
     logger.info(" verify _special_evo " + ret + "  for " + base.get_name() + " " + evo_cond.raw_text
-        //   + " " + JSON.stringify(evo_cond)); //  JSON.stringify(evo_cond) + " = " + ret);
+        + " " + !!sel
+    //   + " " + JSON.stringify(evo_cond)); //  JSON.stringify(evo_cond) + " = " + ret);
     );
     return ret;
 }
-function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s?: TargetSource,
-    sel?: SolidEffectLoop): boolean {
+function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: TargetSource,
+    sel: SolidEffectLoop): boolean {
     //console.error("looking for match for " + base.get_name() + " " + JSON.stringify(evo_cond));
     //console.error(evo_cond); 
 

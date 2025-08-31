@@ -206,7 +206,7 @@ export class CombatLoop {
                 return false;
             }
 
-            this.evolve_choices = this.defender_p.get_all_evolves(true, "yes", "no", false);
+            this.evolve_choices = this.defender_p.get_all_evolves(true, "yes", "no", undefined!);
             let questions = Player.evo_options_into_questions(this.evolve_choices || [], true);
             //let blast = this.defender_p.get_counter_evo_questions();
             this.game.wait(this.defender_p.player_num, questions);

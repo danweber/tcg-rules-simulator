@@ -2453,7 +2453,9 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     let thing: {
         game_event: GameEvent, td: TargetDesc, td2?: TargetDesc, td3?: TargetDesc,
         choose: DynamicNumber,
-        n: number, immune: boolean, n_mod: string, n_max: number,
+        n: number,
+        immune: boolean, n_mod: string, n_max: number,
+        //n_fet?: ForEachTarget,
         n_count_tgt?: ForEachTarget, // "suspend 1 monster for each tamer"
         n_repeat?: GameTest | ForEachTarget, // repeat (Devolve 1) N times
         // deprecate GameTest for n_repeat
@@ -2543,6 +2545,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         && !line.toLowerCase().includes("3 your")
     ) {
         let grammared = incoming_grammar || parseStringEvoCond(line, "EffSentence");
+        logger.info("parsed into grammar " + line.substring(0,50));
         let action_args, target, x;
         if (grammared) {
             if (grammared.if) {
@@ -2644,6 +2647,17 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 line = "";
             }
 
+            if (eff.action === 'modifycost') {
+                thing.game_event = GameEvent.MODIFY_COST;
+                thing.n = parseInt(action_args.number); 
+                if (foreach)  thing.n_count_tgt = ForEachTargetCreator(foreach);
+                foreach = "";
+                thing.n_mod += "reduced";
+                line = "";
+                logger.info("MODIFY_COST grammar: " + thing.n + " " + thing.n_mod);
+
+            }
+
             // TUCK is more generic than EVOSOURCE_ADD
 
             if (eff.action === 'link' || eff.action === 'evolve' ||
@@ -2694,7 +2708,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     if (action_args.face_down) thing.n_mod += "face down; ";
                     line = "";
                 }
-                console.debug(thing);
+                //console.debug(thing);
             }
 
 
@@ -2915,6 +2929,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
     // is "each" an indication that this is a thing we did?
     if (m = line.match(/(.*?)For (each|each of|every) (.*), (?:increase|add)(?:.*?)(\d+)(.*)/)) {
+
+   // if (m = line.match(/(.*?)For (each |each|every)( of) (.*), (?:increase|add)(?:.*?)(\d+)(.*)/)) {
         // counter
         // td2: where we store our thing
         // 1 ... nothing
@@ -2922,10 +2938,11 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
         const fet = ForEachTargetCreator(m[3]) // gets parsed down below
         thing.td3 = fet as any as TargetDesc; // ugly override
-        thing.n_mod += `counter,n_count_tgt,1,${m[4]}; `; // td2 is unused in most effects
         //  thing.td2 = new TargetDesc(m[3]);
         if (m[3].match(/effect/)) // for each done by the prior effect
             thing.n_mod += `counter,unit,1,${m[4]}; `;
+        else
+            thing.n_mod += `counter,n_count_tgt,1,${m[4]}; `; // td2 is unused in most effects
         line = m[1];
     }
 
@@ -2952,6 +2969,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     // for eachX, gain Y.
 
     //     For each of your opponent's Monster suspended by this effect
+    //    if (m = line.match(/(.*) for (?:each|every)( of)? (.*?)\.?$/i)) {
+
     if (m = line.match(/(.*) for (?:each|every) (.*?)\.?$/i)) {
         foreach = m[2];
         line = m[1];

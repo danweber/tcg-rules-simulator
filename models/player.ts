@@ -441,7 +441,7 @@ export class Player {
     }
 
 
-    get_use_array(use_td: TargetDesc, source: TargetSource, solid: SolidEffectLoop | false = false): Command[] {
+    get_use_array(use_td: TargetDesc, source: TargetSource, solid: SolidEffectLoop): Command[] {
         let verbose_use: Command[] = [];
         // cards from hand?
 
@@ -809,7 +809,7 @@ export class Player {
 
     // in theory, what restrictions would we have?
     // 
-    get_all_links(solid: SolidEffectLoop | false, source?: TargetSource, to_plug?: TargetDesc, recipient?: TargetDesc):
+    get_all_links(solid: SolidEffectLoop, source?: TargetSource, to_plug?: TargetDesc, recipient?: TargetDesc):
         // plugger     reciipent     cost     totrash
         (Array<[CardLocation | Instance, Instance, number, number?]>) {
         let ret: Array<[CardLocation | Instance, Instance, number, number?]> = [];
@@ -874,7 +874,7 @@ export class Player {
     get_all_evolves(blast: boolean,
         fusion: "yes" | "no" | "only",
         app: "yes" | "no" | "only",
-        solid: SolidEffectLoop | false,
+        solid: SolidEffectLoop,
         source?: TargetSource,
         left?: TargetDesc, into?: TargetDesc, right?: TargetDesc,
         mod?: string,
@@ -1504,7 +1504,7 @@ export class Player {
             }
         }
 
-        let all_evos = this.get_all_evolves(false, "yes", "yes", false,
+        let all_evos = this.get_all_evolves(false, "yes", "yes", undefined!,
             undefined, undefined, undefined, undefined, undefined, true); // include eggs, no blast
 
 
@@ -1517,7 +1517,7 @@ export class Player {
             }
         }
 
-        let all_links = this.get_all_links(false);
+        let all_links = this.get_all_links(undefined!);
 
         for (let link of all_links) {
             let card: CardLocation | Instance, instance: Instance, cost: number, totrash: number | undefined;
@@ -1579,7 +1579,7 @@ export class Player {
     // nominally returns empty string on success, error string on error
     link(location: Location, index: number, instance_id: number, to_trash: number | undefined, args: { cost: number }): string {
 
-        let all_links = this.get_all_links(false);
+        let all_links = this.get_all_links(undefined!);
         let _plugger: CardLocation | Instance, _index, _inst, _cost, _to_trash;
         let match = false;
         for ([_plugger, _inst, _cost, _to_trash] of all_links) {
@@ -1629,7 +1629,7 @@ export class Player {
         }
         let type;
         // is this the same set of arguments we used before?
-        let all_evos = this.get_all_evolves(false, "yes", "yes", false,
+        let all_evos = this.get_all_evolves(false, "yes", "yes", undefined!,
             undefined, undefined, undefined, undefined, undefined, true); // include eggs, no blast
         if (!all_evos) return "failure";
         let _cl, _left, _right, _type, _cost;

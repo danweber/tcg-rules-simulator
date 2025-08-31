@@ -79,7 +79,7 @@ if (true) {
     let index = Math.floor(Math.random() * words.length);
     let word = words[index]
     const url = req.protocol + '://' + req.get('host') + req.originalUrl;
-    const title = 'Rule Simulator v0.9.36.6.0'
+    const title = 'Rule Simulator v0.9.37.0.1'
     console.log("version is " + title);
     res.render('index', { title: title, word: word, text: url, test: env_test });
   });

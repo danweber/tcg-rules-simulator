@@ -136,6 +136,67 @@ enum RLStep {
     NESTED_RES_LOOP
 };
 
+function modify_n_in_target(w: SubEffect, g: Game, source: TargetSource, sel: SolidEffectLoop) {
+    let m;
+    if (m = w.n_mod?.match(/counter,(n_count_tgt|td2|test|unit),(\d+),([-0-9]+)/)) {
+        logger.info("modifying n in target");
+        logger.info(w.td.raw_text);
+        logger.info(w.td.toString());
+        logger.info(w.td2 ? w.td2.raw_text : "X");
+        logger.info(w.td2 ? w.td2.toString() : "x");
+        logger.info("=-=");
+        //logger.info(w.td.targets[my_effect].toString());
+        //logger.info(w.td2 ? w.td2.targets[my_effect].toString() : "x");
+
+        let event = GameEvent.DELETE; // proxy for "instance"
+        // this is one of those weird places we can search both cardlocs and instances
+        // if "card" worked better as a target search, we could demand that.
+        if (w.td2?.raw_text.includes("security")) event = GameEvent.STACK_ADD;
+        // STACK_ADD because we can hit both instance and cardlocation
+        let count;
+        if (m[1] == "td2") {
+            logger.info("TD2 =====");
+            count = sel.game.find_target(w.td2!,
+                event,
+                sel.effect.source,
+                sel,
+                Location.SECURITY
+            ).length;
+        } else if (m[1] === "n_count_tgt") {
+            let nct: ForEachTarget = (w.td3 as any as ForEachTarget);
+            count = nct?.get_count(sel.game, sel.effect.source, sel);
+            if (!count) count = 0;
+            logger.info("n count for max adjust is " + count);
+        } else if (m[1] === "unit") {
+            let previous_atomic = sel.effect.effects[sel.n_effect - 1];
+            count = previous_atomic.cost_paid || 0;
+        } else {
+            logger.info("TEST =====");
+            let s: string[] | undefined = w.n_test?.test(sel.game, sel.effect.source, undefined, sel);
+            count = (s && s.length > 0) ? 1 : 0;
+        }
+        let per = parseInt(m[3]);
+        let mod = count * per;
+        logger.info(`count ${count} per ${per} mod ${mod} n is ${w.n} choose is ${w.choose}`);
+        if (w.n) w.n += mod;
+        // We set both "n" and "choose" for both "choose up to total of X value"
+        console.warn("old style n mod");
+        if (w.choose && w.choose.value() > 1) w.choose.n += mod;
+        logger.info(`count ${count} per ${per} mod ${mod} n is ${w.n} choose is ${w.choose}`);
+        if (w.game_event == GameEvent.GIVE_STATUS_CONDITION && w.status_condition && w.status_condition[0].s) {
+
+            // assume just 1
+            logger.info("status condition is " + GameEvent[w.status_condition[0].s.game_event]);
+            w.status_condition[0].s.n! += mod;
+            logger.info("status condition, n now " + w.status_condition[0].n);
+        }
+        let r = w.td.mod_max(mod);
+        logger.info("max now is " + r);
+
+    }
+}
+
+
 // a dry-run for terminus_loop would be awesome
 function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: SolidEffectLoop): boolean {
     if (3 < 2) return true; // when debugging, make this always true
@@ -152,10 +213,12 @@ function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: Solid
     if (!p) {
         let aa: any = null; aa.player_not_set();
     }
-
     for (let i = 0; i < eff.events.length; i++) {
         //logger.info("w number " + i);
-        let w = eff.events[i];
+        let _w: SubEffect = eff.events[i];
+        // we need to clone, because we modify in place
+        // in theory we could calculate this exactly once, i bet it's way inefficient to redo it over and over
+        let w = _.cloneDeep(_w);
         let ge = w.game_event;
         //logger.info("w.ge is " + GameEvent[ge]);
         //logger.info("target is " + w.td.raw_text);
@@ -173,6 +236,14 @@ function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: Solid
             if (sel.effect.active_zone && sel.effect.active_zone & Location.EGGZONE) {
                 zone |= Location.FIELD;
             }
+
+            // if we have a modifier like "add 1 the level that can be played" we
+            // need to ajust it here. Does this double apply??
+
+            // I thought this was inefficient, to make a copy and calculate the
+            // modifier, but the test suite technically runs faster with this in here, some how...
+            modify_n_in_target(w, game, source, sel);
+
             let tgts = game.find_target(w.td, w.game_event, source, sel, zone);
             // so we don't give the player the choice to pay things they can't
             if (eff.is_cost) tgts = tgts.filter(t => can_pay_material(t, w)[0]);
@@ -1058,8 +1129,8 @@ export class SolidEffectLoop {
 
                 for (let i = 0; i < cost_count; i++) {
                     let atom = this.effect.effects[this.n_effect + i];
-                    console.info("atom  " + i + " is " + atom.raw_text);
-                    console.info(atom);
+                    logger.info("atom  " + i + " is " + atom.raw_text);
+                    //console.info(atom);
                     fulltexts.push(atom.raw_text);
                 }
                 if (fulltexts.length === 0) {
@@ -1319,71 +1390,16 @@ export class SolidEffectLoop {
             let mon: Instance = this.effect.source.get_instance();
             logger.info("source instance is " + (mon ? mon.get_name() : "nothing"));
             let p = this.effect.source.get_n_player();
-            let m;
+
+            //            if (w.n_fet) {
+            //
+            //          }
             logger.info(`w.n_mod is ${w.n_mod}`);
             //        if (m = w.n_mod?.match(/counter,td2,(\d+),(\d+); /)) {
-            if (m = w.n_mod?.match(/counter,(n_count_tgt|td2|test|unit),(\d+),([-0-9]+)/)) {
-                logger.info("modifying n in target");
-                logger.info(w.td.raw_text);
-                logger.info(w.td.toString());
-                logger.info(w.td2 ? w.td2.raw_text : "X");
-                logger.info(w.td2 ? w.td2.toString() : "x");
-                logger.info("=-=");
-                //logger.info(w.td.targets[my_effect].toString());
-                //logger.info(w.td2 ? w.td2.targets[my_effect].toString() : "x");
-
-                let event = GameEvent.DELETE; // proxy for "instance"
-                // this is one of those weird places we can search both cardlocs and instances
-                // if "card" worked better as a target search, we could demand that.
-                if (w.td2?.raw_text.includes("security")) event = GameEvent.STACK_ADD;
-                // STACK_ADD because we can hit both instance and cardlocation
-                let count;
-                if (m[1] == "td2") {
-                    logger.info("TD2 =====");
-                    count = this.game.find_target(w.td2!,
-                        event,
-                        this.effect.source,
-                        this,
-                        Location.SECURITY
-                    ).length;
-                } else if (m[1] === "n_count_tgt") {
-                    let nct: ForEachTarget = (w.td3 as any as ForEachTarget);
-                    count = nct?.get_count(this.game, this.effect.source);
-                    if (!count) count = 0;
-                    logger.info("n count for max adjust is " + count);
-                } else if (m[1] === "unit") {
-                    let previous_atomic = this.effect.effects[this.n_effect - 1];
-                    count = previous_atomic.cost_paid || 0;
-                } else {
-                    logger.info("TEST =====");
-                    let s: string[] | undefined = w.n_test?.test(this.game, this.effect.source, undefined, this);
-                    count = (s && s.length > 0) ? 1 : 0;
-                }
-                let per = parseInt(m[3]);
-                let mod = count * per;
-                logger.info(`count ${count} per ${per} mod ${mod} n is ${w.n} choose is ${w.choose}`);
-                if (w.n) w.n += mod;
-                // We set both "n" and "choose" for both "choose up to total of X value"
-                console.warn("old style n mod");
-                if (w.choose && w.choose.value() > 1) w.choose.n += mod;
-                logger.info(`count ${count} per ${per} mod ${mod} n is ${w.n} choose is ${w.choose}`);
-                if (w.game_event == GameEvent.GIVE_STATUS_CONDITION && w.status_condition && w.status_condition[0].s) {
-
-                    // assume just 1
-                    logger.info("status condition is " + GameEvent[w.status_condition[0].s.game_event]);
-                    w.status_condition[0].s.n! += mod;
-                    logger.info("status condition, n now " + w.status_condition[0].n);
-                }
-                let r = w.td.mod_max(mod);
-                logger.info("max now is " + r);
-
-                // stupid
-                // let stgt = w.td.targets[1] as SubTargetDesc;
-                //  stgt.n += mod;
-                //  logger.info("now is " + stgt.n);
-
-                // does this change it for future events, too? 
-            }
+            
+            // In theory can_pay() could calculate this already, but
+            // it calculates on a copy of the effet. 
+            modify_n_in_target(w, this.game, this.effect.source, this);
 
 
             logger.info(this.rand + "is a cancelling solid effect is " + this.effect.cancels);
@@ -1415,7 +1431,7 @@ export class SolidEffectLoop {
             if (c1 = w.n_count_tgt) {
                 logger.info("n_count_tgt " + c1);
                 // we modify one of our arguments, ad-hoc guessing right now
-                let count = for_each_count_target(w, this.game, this.effect.source, p);
+                let count = for_each_count_target(w, this.game, this.effect.source, p, this);
                 logger.info("count is " + count);
                 if (!count) {
                     logger.info("count is 0");
@@ -1428,11 +1444,11 @@ export class SolidEffectLoop {
                 let i: number;
                 logger.info(`looking repeat for each, target ${c1.toString()} ${c1.raw_text()}`);
                 if ("get_count" in c1) {
-                    i = c1.get_count(this.game, this.effect.source);
+                    i = c1.get_count(this.game, this.effect.source, this);
                 } else {
                     logger.warn("deprecated n_repeat");
-                // i = this.game.find_target(w.n_repeat, GameEvent.STACK_ADD, this.effect.source, this, Location.SECURITY).length;
-                   i = c1.test(this.game, this.effect.source, undefined, this).length //  this.effect.source, this, Location.SECURITY).length;
+                    // i = this.game.find_target(w.n_repeat, GameEvent.STACK_ADD, this.effect.source, this, Location.SECURITY).length;
+                    i = c1.test(this.game, this.effect.source, undefined, this).length //  this.effect.source, this, Location.SECURITY).length;
                 }
                 logger.info("I IS " + i);
                 if (i == 0) {
@@ -1965,8 +1981,8 @@ export class SolidEffectLoop {
                 let index = Number(blob) - 1;
                 let evo = this.evolve_choices[index];
                 let [into, left, right, type, cost] = evo;
-                this.chosen_targets = [ into ];
-                weirdo.chosen_target2 = [ left ];
+                this.chosen_targets = [into];
+                weirdo.chosen_target2 = [left];
                 weirdo.chosen_target3 = right;
 
                 logger.info(`into is ${this.chosen_targets[0].get_field_name()}`);
@@ -2123,6 +2139,7 @@ export class SolidEffectLoop {
             this.s = FakeStep.ASSIGN_TARGET_SUBS;
         }
         if (this.s == FakeStep.ASSIGN_TARGET_SUBS) {
+
 
             // HANDLE TD2
             // We will some day need a loop for selecting secondary target
@@ -2769,8 +2786,6 @@ export class XX {
             logger.info("fusion " + weirdo.cause + " " + !!weirdo.chosen_target3);
 
             if (weirdo.cause & EventCause.APP_FUSE) {
-                console.log(2777);
-                console.dir(weirdo, {depth: 1});
 
                 // we grab the first link card and put it on top.
                 // this assumes there are no app fuses where something starts with 2 link cards
@@ -2778,7 +2793,7 @@ export class XX {
                 let plugs = i.get_plugs();
                 if (plugs.length < 1) return false;
                 if (plugs.length > 1) logger.error("multiple plugs during app fuse");
-                let c:Card = plugs[0].extract();
+                let c: Card = plugs[0].extract();
                 c.move_to(Location.BATTLE, i);
             }
 
@@ -2831,7 +2846,7 @@ export class XX {
             game.log(`Evolve into ${instance.get_name()} ${msg}`); // no need to announce, we did that at start
             // todo: show the old name, including for fusion
             game.fancy.add_string(depth, `Evo into ${instance.get_name()}`);
-    
+
             game.log("Draw for Evolve");
             player.draw();
             return true;

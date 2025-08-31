@@ -1366,7 +1366,6 @@ export class Game {
 
         let e: SubEffect[] = [];
         let app_card;
-        console.error(1369, mode);
         if (mode === "app") {
             app_card = onto2;
             // the card gets stacked on top, but not in a way that we can notice
@@ -1607,7 +1606,7 @@ export class Game {
             // we're not chasing this cat all the way up the tree below, just here for now
             // TODO: chase the cat all the way (but we need test cases)
             if (parse_matches) {
-                x = x.filter((x: any) => verify_special_evo(x, parse_matches, s));
+                x = x.filter((x: any) => verify_special_evo(x, parse_matches, s, undefined!)); 
             }
             if (x.length > 0) {
                 return x;
@@ -1717,7 +1716,7 @@ export class Game {
 
     // I've used the gameevent as a clue to where I'm searching and what I'm returning,
     // but I think I should just explicitly 
-    find_target(t: TargetDesc, ge: GameEvent, s: TargetSource, sel: SolidEffectLoop | false,
+    find_target(t: TargetDesc, ge: GameEvent, s: TargetSource, sel: SolidEffectLoop | undefined,
         search_loc: Location = Location.UNKNOWN,
         prior_target?: TargetSource
         // search_loc isn't used as much as it should be.
