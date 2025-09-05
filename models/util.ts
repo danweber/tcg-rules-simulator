@@ -241,7 +241,6 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: Ta
 
     }
 
-
     // it handled in target::find_it()
     if ("it" in evo_cond) {
         if (!sel) {
@@ -252,7 +251,16 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: Ta
         // we don't look up the last "it" and see if it matches; we keep looking 
         // back through "it"s until we find one that matches
         let last_thing = Game.get_last_thing_from_sel(sel, s!); // , evo_cond.and);
+        if (!last_thing) return def;
+        // If a card moves, it's cardlocatiomn will *necessarily* not match.
+        // check the underlying card for equality.
+        if ("cardloc" in base && "cardloc" in last_thing[0]) {
+            let last_cards = (last_thing as CardLocation[]).map(x => x.card);
+            let base_card = base.card;
+            ret = last_cards.includes(base_card);
+        } else {
         ret = last_thing.includes(base);
+        }
         if (!ret) return def;
     }
 

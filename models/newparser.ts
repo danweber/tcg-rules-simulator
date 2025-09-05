@@ -638,8 +638,13 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
         } else if (m = phrase.match(/having the (\S*)\s*trait/i)) {
             if (card) card.trait_rule = m[1];
             line = "";
+        } else if (m = phrase.match(/as level (\d) for (\S*)'s (\S*)\.$/i)) {
+            logger.error("unimplemented");
+
+            line = "";
         } else {
             logger.info("unknown name match");
+            console.error(phrase);
             assert(false);
         }
     }
@@ -2516,6 +2521,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     if (
         (
             line.toLowerCase().includes("play") ||
+            line.toLowerCase().includes("evolution cost") ||
+            line.toLowerCase().includes("evolve") ||
             //   line.toLowerCase().includes("trash") ||
             line.toLowerCase().includes("placing") ||
             line.toLowerCase().includes("place") ||
@@ -2545,7 +2552,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         && !line.toLowerCase().includes("3 your")
     ) {
         let grammared = incoming_grammar || parseStringEvoCond(line, "EffSentence");
-        logger.info("parsed into grammar " + line.substring(0,50));
+        logger.info("parsed into grammar " + line.substring(0,50) + "...");
         let action_args, target, x;
         if (grammared) {
             if (grammared.if) {
@@ -2565,9 +2572,13 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             if (eff.is_cost) atomic.is_cost = 1;
             action_args = eff.action_args;
             if (action_args?.optional) atomic.optional = true;
-            if (action_args.no_cost) thing.n_mod += "for free; ";
+            if (action_args?.no_cost) thing.n_mod += "for free; ";
+            if (action_args?.discount) {
+                 thing.cost_change = [];
+                 thing.cost_change.push({ n_mod: "reduced", n: action_args.discount });
+            }
 
-            // part of action
+            // part of action   ..
             if (action_args?.for_each) foreach = action_args.for_each;
             
             // extra sentence
@@ -2670,7 +2681,10 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 thing.game_event = strToEvent(eff.action);
                 // if we use PlaceCard our target better not be an instance
                 let target_entity = target.targets && target.targets[0].entity;
-                //console.error(2542, "XXXXXXX", GameEvent[thing.game_event], target_entity, line);
+                  //console.error(2542, "XXXXXXX", GameEvent[thing.game_event], target_entity, line);
+                if (thing.game_event === GameEvent.TARGETED_CARD_MOVE && target_entity && !target_entity.match(/card/)) {
+                    thing.game_event = GameEvent.FIELD_TO_HAND;
+                }
                 if (thing.game_event === GameEvent.TARGETED_CARD_MOVE && (!target_entity || !target_entity.match(/card/))) {
                     // we likely have an "it" object, fall back to old code. or if we're not "moving" a card.
                     console.error("can't do it");

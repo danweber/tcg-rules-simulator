@@ -549,8 +549,9 @@ export class MultiTargetDesc {
         if (!superlative) return items;
 
         let kind;
+        let asc = (superlative.superlative === "most" || superlative.superlative === "top") ? false : true;
         if (superlative.count) { // is this for 'top 3 cards"?
-            if (superlative.superlative !== "top")
+            if (asc)
                 items.reverse();
             // assume we got cards top to bottom
             if (items.length > this.choose.value()) {
@@ -560,7 +561,7 @@ export class MultiTargetDesc {
         }
 
 
-        const most = (superlative.superlative === "most") ? COMPARE.IS_HIGHEST : COMPARE.IS_LOWEST;
+        const most = !asc ? COMPARE.IS_HIGHEST : COMPARE.IS_LOWEST;
         switch (superlative.field) {
             case "level": kind = StatusTestWord.LEVEL; break;
             case "dp": kind = StatusTestWord.DP; break;
@@ -568,7 +569,6 @@ export class MultiTargetDesc {
         }
         let ret = TargetDesc.static_sort(most, kind, items);
         return ret;
-
     }
 
     constructor(text: string, mod?: string) {

@@ -1,7 +1,7 @@
 input=$1
 # if sort -R doesn't shuffle, try "shuf". If neither works, replace with "cat"
 alias shuffle="sort -R"
-if [[ "x$input" == "x" ]]; then
+if [ "x$input" == "x" ]; then
     files1=$(cat words-v1 2> /dev/null | shuffle)
     files2=$(cat words-cs words-v2 2> /dev/null | shuffle)
 else

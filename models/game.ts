@@ -1647,9 +1647,15 @@ export class Game {
                 // if looking for "THAT MONSTER" we shouldn't match on self
                 while (n > 0) {
                     n--;
+                    logger.debug(`checking effect ${n} of ${solid.effects.length} for prior target`);
                     let atomic = solid.effects[n];
                     let eff = atomic.events[0];
-                    let test = Game.verify_last_thing(eff.chosen_target, parse_matches, s);
+                    logger.debug(`checking target ${eff.chosen_target2 ? eff.chosen_target2[0].get_name() : "no target"}`);
+                    // maybe it was the td2 target
+                    let test = Game.verify_last_thing(eff.chosen_target2?.[0], parse_matches, s);
+                    if (test) return test;
+                    logger.debug(`checking target ${eff.chosen_target ? eff.chosen_target.get_name() : "no target"}}`);
+                    test = Game.verify_last_thing(eff.chosen_target, parse_matches, s);
                     if (test) return test;
 
                 }
@@ -1755,12 +1761,12 @@ export class Game {
             // if nothing was set, default to batle
             if (master_location === Location.NIL) master_location = Location.BATTLE;
             if (t.raw_text.includes("this card")) master_location = Location.NIL; // search cards for sure
-            logger.debug(`raw_text Location is ${Location[master_location]} ${master_location}`);
+            if (t.raw_text.includes("that card")) master_location = Location.NIL; // search cards for sure
+            logger.info(`raw_text Location is ${Location[master_location]} ${master_location}`);
 
             // TODO:
         }
         if (t.conjunction == Conjunction.LAST_THING) {
-
             if (sel) return Game.get_last_thing_from_sel(sel, s);
             // a b c
         }

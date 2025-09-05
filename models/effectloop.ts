@@ -3855,13 +3855,12 @@ function get_modified_cost(origcost: number, weirdo: SubEffect, game: Game, type
     let for_free = weirdo.n_mod?.includes("free");
     let floodgated = false;
     let me = game.get_n_player(weirdo.n_player!);
-
     if (for_free) {
         // set by original effect. Can interrupters set the cost to free?
         // If not, we could return right here.
         origcost = 0;
     }
-    if (weirdo.n_mod == "reduced") {
+    if (weirdo.n_mod?.includes("reduced")) { // todo: make "reduced; " everywhere
         floodgated = check_reduction_floodgate(type, me);
         delta -= weirdo.n!;
         logger.info("delta now " + delta);
