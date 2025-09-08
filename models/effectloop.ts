@@ -16,6 +16,18 @@ import _ from 'lodash';
 // turn it on to see what i mean
 const more_labelling = false;
 
+// used only in debug code that doesn't exist right now
+function formatTime(): string {
+    const now = new Date();
+
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+
+    return `${hours}:${minutes}:${seconds}.${milliseconds}`;
+}
+
 function random_id() {
     //return 'abc';
     let result = '';
@@ -1362,24 +1374,38 @@ export class SolidEffectLoop {
 
             logger.debug("player is " + p);
             // this is just for devolve, afaict
-            if (w.n_mod == "devolve" && w.n_max! > 1) {
+
+            let ask_upto = w.n_mod === "devolve" && w.n_max! > 1 && w.n_max;
+            let mtd2 = w.td2 as MultiTargetDesc
+
+            // we also need upto for "delete up to X cards from all targets" in td2
+            if (mtd2?.upto && mtd2?.choose?.n! > 1) ask_upto = mtd2?.choose.n;
+            if (ask_upto) {
                 logger.info("n mod upto");
                 let upto = [];
-                for (let i = 0; i < w.n_max!; i++) {
+                for (let i = 0; i < ask_upto!; i++) {
                     upto.push({ command: (i + 1).toString(), text: `Do ${i + 1} time(s)` });
                 }
                 this.game.wait(p, upto, "Choose 'up to'", 1);
                 this.s = FakeStep.GET_UPTO;
+                // fall through
+                return false;
+            } else { 
+                this.s = FakeStep.ASK_TARGET1;
                 return false;
             }
-            this.s = FakeStep.ASK_TARGET1;
-            return false;
         }
-
         if (this.s == FakeStep.GET_UPTO) {
             while (!this.game.has_answer()) return false;
             let w = this.effect.effects[this.n_effect].events[this.weirdo_count];
-            w.n = parseInt(this.game.get_answer());
+            let mtd2 = w.td2 as MultiTargetDesc
+            let num = parseInt(this.game.get_answer());
+            if (mtd2?.choose?.n) {
+                // we're modding td2 instead, for "from all, trash up to 2"
+                mtd2.choose.n = num;
+            } else {
+                w.n = num;
+            }
 
             this.s = FakeStep.ASK_TARGET1;
             // fall through
@@ -1396,7 +1422,7 @@ export class SolidEffectLoop {
             //          }
             logger.info(`w.n_mod is ${w.n_mod}`);
             //        if (m = w.n_mod?.match(/counter,td2,(\d+),(\d+); /)) {
-            
+
             // In theory can_pay() could calculate this already, but
             // it calculates on a copy of the effet. 
             modify_n_in_target(w, this.game, this.effect.source, this);
@@ -1849,7 +1875,7 @@ export class SolidEffectLoop {
                 if (w.td && (w.td.raw_text.includes("hand") || w.td.raw_text.includes("security"))) {
                     secret = true;
                 }
-                let msg1 = "Targets are: " + this.potential_targets.map(x => x.get_name()).join(",") +
+                let msg1 = "Targets are: " + this.potential_targets.map(x => x.get_public_name()).join(",") +
                     "\n" + `Player ${p} to choose ${w.choose?.value()}`;
 
                 if (!secret) {
@@ -2061,14 +2087,37 @@ export class SolidEffectLoop {
             // this is just when a specific generic effect needs a second target
             // can we re-use potential targets??? may-be...
             logger.warn("assuming prior target was an instance for 'another' logic");
-            let prior: Instance = this.chosen_targets![0] as Instance;
-            let special_previous = new SpecialInstance(prior);
-            logger.info(`special_previous is ${!!special_previous}`);
-            //console.error(2022, w.td2);
             let zone = Location.SECURITY;
             if (this.effect.active_zone && this.effect.active_zone & Location.EGGZONE) {
                 zone |= Location.FIELD;
             }
+
+            if (3 < 4 && this.chosen_targets && this.chosen_targets.length > 1) {
+                logger.info("multiple prior targets, handle " + this.chosen_targets.length);
+                // we have multiple things chosen in step 1. For now we will
+                // declare it logically nonsense to have any further choices, 
+                // like "select 2 evolution cards from each of your opponent's monsters"
+                let second_targets = [];
+                for (let each of this.chosen_targets) {
+                    let special_previous = new SpecialInstance(each as Instance);
+                    let t2 = this.game.find_target(w.td2, game_event2, this.effect.source,
+                        this, undefined, special_previous);
+                    second_targets.push(...t2);
+                }
+                w.chosen_target2 = second_targets;
+                this.game.log("auto-selecting 2nd target " + second_targets.map(x => x.get_name()).join(","));
+                this.s = FakeStep.ASSIGN_TARGET_SUBS;
+                // EVOSOURCE_DOUBLE_REMOVE makes just 1 event and all the cards are there as
+                // N elements in chosen_target2. Don't most things have N events of 1 move each instead??
+                this.chosen_targets = [this.chosen_targets[0]]; // crush to one list
+                return false;
+
+            }
+
+            let prior: Instance = this.chosen_targets![0] as Instance;
+            let special_previous = new SpecialInstance(prior);
+            logger.info(`special_previous is ${!!special_previous}`);
+            //console.error(2022, w.td2);
             let potential_targets = this.game.find_target(w.td2, game_event2, this.effect.source, this, zone, special_previous);
             logger.info(this.rand + "Searched for targerts2 for " + GameEvent[w.game_event] + " in " + w.td2.raw_text + " AKA " + w.td2.toPlainText());
             let choose2 = 1;
@@ -2093,6 +2142,7 @@ export class SolidEffectLoop {
                 this.s = FakeStep.FINISH_REPEAT_LOOP; // back to top
                 return false;
             }; // 
+
             if (potential_targets.length > choose2) {
                 // I'd like to assert that every thing with a single target
                 // set w.choose but there are too many exceptions
@@ -2135,7 +2185,7 @@ export class SolidEffectLoop {
             let answers = this.game.get_multi_answer();
             logger.info("chosen td2 answers is " + answers?.join(","));
             w.chosen_target2 = this.potential_targets2?.filter((x, y) => answers?.includes(((y) + 1).toString()));
-
+            // for double-target move, these are the cards to trash
             this.s = FakeStep.ASSIGN_TARGET_SUBS;
         }
         if (this.s == FakeStep.ASSIGN_TARGET_SUBS) {
@@ -2156,30 +2206,61 @@ export class SolidEffectLoop {
                 // having "find_target" in this file 10 times sucks
                 if (atomic.is_cost) logger.error("not filtering costs on td2");
                 if (tgts && tgts.length > 0 && !!tgts[0]) d.chosen_target2 = tgts; // all tgts?
-                //                console.error(1636, tgts[0]);
-                //               logger.info("auto assign td2 to " + d.chosen_target2.get_name());
             }
             // could set d.label here, in theory
             this.events_to_do.push(d);
 
+
+            let dupes: SubEffect[] = [undefined!]; // empty 0 object
+            if (false)
             for (let i = 1; i < this.chosen_targets!.length; i++) {
+                console.error(2200, "before dupe                          " + formatTime());
+                let clone = _.cloneDeepWith(atomic.events[this.weirdo_count]);
+                dupes.push(clone);
+                console.error(2202, "after dupe " + formatTime());
+                console.log("=============");
+            }
+            // duping then adding, as below, led to some crazy slowness, as each copy I think referenced the previous cop
+
+            for (let i = 1; i < this.chosen_targets!.length; i++) {
+                console.error(2187, "i", i, this.chosen_targets!.length);
                 logger.info(`chosen target ${i} targets[i] is ${this.chosen_targets![i].id} ${this.chosen_targets![i].get_name()} `);
                 // oh, we *should* have each weirdo make 1 or more (or zero?) subeffects and they get put 
                 // into a big array and *that* array gets run
                 // I've made the data structure already
 
-                //   let dupe1: SubEffect = Object.assign(atomic.weirdo);
-                // dupe1.chosen_target = this.chosen_targets![i];
-                // atomic.events[i] = dupe1;
+                if (false) {
+                    // this doesn't clone properly
+                    let dupe1: SubEffect = Object.assign(atomic.weirdo);
+                    dupe1.chosen_target = this.chosen_targets![i];
+                    this.events_to_do.push(dupe1);
+                    console.error(2207, "length is " + this.events_to_do.length);
+                    logger.info(`chosen target ${i} targets[i] is ${dupe1.chosen_target.id} ${dupe1.chosen_target.get_name()} `);
 
-
+                }
                 // THIS WAS UTTERFLY FAILING! WE WERE GETTING THE SAME OBJECT EACH TIME THROUGH
                 // let dupe2: SubEffect = Object.assign(atomic.events[this.weirdo_count]);
-                let dupe2: SubEffect = _.cloneDeep(atomic.events[this.weirdo_count]);;
 
+                //  console.error(2200, "before dupe                          " + formatTime());
+                
+                let dupe2: SubEffect = _.cloneDeepWith(atomic.events[this.weirdo_count], (value) => {
+                    if (value instanceof Player) {
+                        return value;
+                    }
+                    if (false && value instanceof Game) { // this line breaks it
+                        return value;
+                    }
+                    if (false && value instanceof Instance) { // this line breaks it and doesn't even seem to save any time
+                        return value;
+                    }
+                });
+                
+                //                console.dir(dupe2, { depth: 6 });
+                //let dupe2 = dupes[i];
                 dupe2.chosen_target = this.chosen_targets![i];
                 this.events_to_do.push(dupe2);
                 logger.info(`chosen target ${i} targets[i] is ${dupe2.chosen_target.id} ${dupe2.chosen_target.get_name()} `);
+
 
                 //if (i == 0) atomic.weirdo = dupe;
             }
@@ -3116,8 +3197,8 @@ export class XX {
                     let c: Card = cl.extract();
                     let to: Location = Location.TRASH;
                     // we're already using td2 here for something else!
-                    if (weirdo.td2?.raw_text?.includes("hand")) to = Location.HAND;
-                    if (weirdo.td2?.raw_text?.includes("security")) to = Location.SECURITY;
+                    if (false && weirdo.td2?.raw_text?.includes("hand")) to = Location.HAND;
+                    if (false && weirdo.td2?.raw_text?.includes("security")) to = Location.SECURITY;
                     game.log("moving source card " + c.name + " to " + Location[to]);
                     c.move_to(to);
                 }
@@ -3132,7 +3213,7 @@ export class XX {
             c.move_to(to);
             return true;
             // nothing, we did this inside the interrupter loop 
-        } else if (weirdo.game_event == GameEvent.EVOSOURCE_MOVE) {
+        } else if (weirdo.game_event == GameEvent.EVOSOURCE_MOVE && false) {
             // move from one instnace to another
             let cl: CardLocation = target;
             let c: Card = cl.extract();

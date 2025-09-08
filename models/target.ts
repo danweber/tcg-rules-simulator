@@ -700,7 +700,7 @@ export class MultiTargetDesc {
         if (this.parse_matches) {
             logger.info("MTD " + JSON.stringify(this.parse_matches));
             let ret = this.parse_matches.some(
-                pm => verify_special_evo(t, pm, s, sel));
+                pm => verify_special_evo(t, pm, s, sel, previous));
             logger.info("ret for " + t.get_name() + "  is " + ret);
             return ret;
         }

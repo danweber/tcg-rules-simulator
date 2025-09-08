@@ -2095,7 +2095,7 @@ export class Player {
 
         let moves = self ? JSON.parse(this.get_x_plays({ verbose: true, sort: false })) : null;
         let eggzone = this.egg_zone ? this.egg_zone.JSON_instance() : null;
-        let field = this.field.map(x => x.JSON_instance()).filter(x => x);
+        let field = this.field.map(x => x.JSON_instance()).filter(x => x)
         let hand: any = { count: this.hand.length };
         let security: any = { count: this.security.length };
         let eggs = { count: this.eggs.length };

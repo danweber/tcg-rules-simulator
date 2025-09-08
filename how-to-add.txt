@@ -352,7 +352,11 @@ Oops, the card was going in face-up when sent from deck. You can see the bug fix
 
 ## More things to catch
 
-We had to:
+We aren't going to go into detail on everything, but over the next few days of testing, we found these additional items to make sure they happen.
+
   - make the face-up persist when raising
   - no overflow when face-down sent to trash
+  - when showing keywords on cards, exclude inheritables of facedowns (this exposed a separate code-path) 
+  - when announcing and logging the cards available to target, use the "public_name()" of cards, so only "facedown" is logged. (After the targets are chosen, we display the public names.)
+  - showing to the current user "back/ACTUAL_CARD" and to opponent "back", letting the UI choose how to display the information
 

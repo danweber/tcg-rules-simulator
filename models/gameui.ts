@@ -24,6 +24,15 @@ class GameUI {
         this.logger = new Loggerx("gameui");
     }
 
+    public filter_facedown_cards(cards: any[]) {
+        return cards.map(card => {
+            if (card.match && card.match(/back\//)) {
+                return "back";
+            }
+            return card;
+        });
+    }
+
     public get_master_JSON(object: any): any {
         try {
             let pid = object.pid == "2" ? 2 : 1;
@@ -37,6 +46,19 @@ class GameUI {
             let p2_blob = JSON.parse(JSON.stringify(x))
             p1_blob.p2.moves = null;
             delete p1_blob.p2.hand.cards;
+            // sigh, I guess we remove private face-down info here
+            if (p1_blob.p2.eggzone) {
+                p1_blob.p2.eggzone.stack = this.filter_facedown_cards(p1_blob.p2.eggzone.stack);
+            }
+            if (p2_blob.p1.eggzone) {
+                p2_blob.p1.eggzone.stack = this.filter_facedown_cards(p2_blob.p1.eggzone.stack);
+            }
+            p1_blob.p2.field.forEach((value: any, index: number, array: any[]) => { 
+                array[index].stack = this.filter_facedown_cards(value.stack);
+            })
+            p2_blob.p1.field.forEach((value: any, index: number, array: any[]) => { 
+                array[index].stack = this.filter_facedown_cards(value.stack);
+            });
             p1_blob.p1.moves[0].last_id = last_id;
             p2_blob.p1.moves = null;
             delete p2_blob.p1.hand.cards;

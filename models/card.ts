@@ -1637,6 +1637,7 @@ export class CardLocation {
         return this.card_id.split("-")[0];
     }
     get_card_id(): string { return this.card_id; }
+    get_public_name() { if (this.face_up()) return this.name; return "facedown"; }
     get_name(): string { return this.name; }
     name_is(s: string) { return this.card.name_is(s); }
     name_contains(s: string) { return this.card.name_contains(s); }

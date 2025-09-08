@@ -1576,10 +1576,12 @@ export class Game {
         return new CardLocation(this, player_num, location, index);
     }
 
-    static get_target_number(sel: SolidEffectLoop | undefined, n: number): CardLocation | Instance | false {
+    static get_target_number(sel: SolidEffectLoop | undefined, n: number): ( CardLocation| Instance)[] | false {
         if (!sel) return false;
-        return sel.chosen_targets![0];
-
+        let ret = sel.chosen_targets;
+        console.log(1581, ret?.length);
+       // console.dir(ret, {depth: 2});
+        return ret!   ;
     }
 
     // common tests to see if this last_thing is one we can return
@@ -1897,7 +1899,7 @@ export class Game {
             }
             logger.info(`t is ${t.raw_text} or ${t.toString()} or ${t.toPlainText()}`);
             // we don't have a "biggest level" or anything for CardLocations
-            ret.push(...to_search.filter(x => t.matches(x, s, this, undefined, sel)));
+            ret.push(...to_search.filter(x => t.matches(x, s, this, prior_target, sel)));
             ret = t.sort(ret);
             logger.info(`ret length is ${ret.length}`);
             // play-self-from-trash, or for anything else that requires targeting a specific card in trash
@@ -2861,6 +2863,8 @@ export class Game {
         let p1 = this.Player1.JSON_player(true);
         let p2 = this.Player2.JSON_player(true);
         let temp_zones: any = [];
+
+        
 
         // this significantly bloats the size of the blob
         if (true || process.env.CARD_DATA == "true") {

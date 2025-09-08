@@ -436,6 +436,16 @@ export class Instance {
             return undefined;
         }
 
+        // if me:     show CARD or back/CARD
+        // if not me: show CARD or back
+        let stack;
+        
+        // i wanted to only show this if it's "our player" but the rest of the infra doesn't support that
+        if (true)
+            stack = this.pile.map(x => `${x.face_up ? '' : 'back/'}${x.id}@${x.colors_s()}@${x.card_instance_id}`);
+        else
+            stack = this.pile.map(x => x.face_up ? `${x.id}@${x.colors_s()}@${x.card_instance_id}` : 'back');
+
         let instance = {
             id: this.id,
             label: this.label,
@@ -446,7 +456,7 @@ export class Instance {
             suspended: this.suspended,
             // why were we using the x.card_instance_id?
             // stack: this.pile.map(x => `${x.id}@${x.card_instance_id}`),
-            stack: this.pile.map(x => x.face_up ? `${x.id}@${x.colors_s()}@${x.card_instance_id}` : 'back'),
+            stack: stack,
             // 'back' or 'DOWN'?? should we use 'back' everywhere instead of 'DOWN'?
             plugs: this.plugged.slice().reverse().map(x => `${x.id}@${x.colors_s()}@${x.card_instance_id}`),
             sa: this.get_sa(),
@@ -1142,6 +1152,7 @@ export class Instance {
         logger.error("need plug match, too");
         if (!td) return false;
         for (let i = 0; i < this.pile.length - 1; i++) {
+            if (!this.pile[i].face_up) continue;
             let cl: CardLocation = new CardLocation(this.game, this.n_me_player,
                 this.location, i, this.id);
             if (td.matches(cl, s, this.game)) return true;
@@ -1166,11 +1177,13 @@ export class Instance {
         let d = this.dp();
         return !isNaN(d);
     }
-    get_sources(): CardLocation[] {
+    get_sources(only_face_up: boolean): CardLocation[] {
         let ret: CardLocation[] = [];
-        for (let i = 0; i < this.pile.length - 1; i++)
+        for (let i = 0; i < this.pile.length - 1; i++) {
+            if (only_face_up && !this.pile[i].face_up) continue;
             ret.push(new CardLocation(this.game, this.n_me_player,
                 this.location, i, this.id));
+            }
         return ret;
     }
     get_plugs(): CardLocation[] {
@@ -1498,6 +1511,10 @@ export class Instance {
         }
         return name;
     }
+    // don't return name of face-down things; irrelevant for instance
+    get_public_name(): string {
+        return this.name(true);
+    }
     get_name(simple: boolean = false): string {
         return this.name(simple);
     }
@@ -1542,6 +1559,7 @@ export class Instance {
         if (this.is_monster()) {
             for (let i = 0; i < this.pile.length - 1; i++) {
                 let t = this.pile[i];
+                if (!t.face_up) continue;
                 let k = t.all_keywords("inherited");
                 ret.push(...Object.keys(k));
             }
@@ -1580,6 +1598,7 @@ export class Instance {
         if (this.is_monster()) {
             for (let i = 0; i < this.pile.length - 1; i++) {
                 let t = this.pile[i];
+                if (!t.face_up) continue;
                 if (a = t.has_keyword(label, "inherited")) { // inherited
                     ret.push(a);
                 }
@@ -1713,7 +1732,7 @@ export class Instance {
         return true;
     }
     can_attack(td?: TargetDesc, conditions?: string): (false | number[]) {
-        logger.debug("can_attack conditions " + conditions);
+        logger.debug("can_attack " + this.name() + " conditions " + conditions + " td.raw " + td?.raw_text );;
         // I'm manually parsing td
         if (this.game.turn_player != this.n_me_player) return false;
         if (this.game.phase === Phase.HATCHING) return false;
@@ -1736,7 +1755,7 @@ export class Instance {
         }
 
         // if effect only lets me attack monsters; move this to "conditions"
-        let can_attack_mon = (td && td.raw_text != "" && td.raw_text != "your opponent's monster") ? false : true;
+        let can_attack_mon = (td && td.raw_text != "" && !td.raw_text.match(/opponent's monster/i)) ? false : true;
 
         // TODO: verify all these are legit attack targets
         let ret = [];
@@ -1754,7 +1773,7 @@ export class Instance {
         // if we can attack directly add it. 
         if (this.can_do(declare)) {
             if (td) {
-                if (td.raw_text == "your opponent's monster") {
+                if (td.raw_text.match(/opponent's monster/i)) {
                     // do nothing
                 } else {
                     ret.push(0);

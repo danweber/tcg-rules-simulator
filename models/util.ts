@@ -130,8 +130,8 @@ function appendArrays(array1: any | any[],
 }
 
 export function verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: TargetSource,
-    sel: SolidEffectLoop): boolean {
-    let ret = _verify_special_evo(base, evo_cond, s, sel);
+    sel: SolidEffectLoop, previous?: TargetSource): boolean {
+    let ret = _verify_special_evo(base, evo_cond, s, sel, previous);
     logger.info(" verify _special_evo " + ret + "  for " + base.get_name() + " " + evo_cond.raw_text
         + " " + !!sel
     //   + " " + JSON.stringify(evo_cond)); //  JSON.stringify(evo_cond) + " = " + ret);
@@ -139,7 +139,7 @@ export function verify_special_evo(base: Instance | CardLocation, evo_cond: any,
     return ret;
 }
 function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: TargetSource,
-    sel: SolidEffectLoop): boolean {
+    sel: SolidEffectLoop, previous?: TargetSource): boolean {
     //console.error("looking for match for " + base.get_name() + " " + JSON.stringify(evo_cond));
     //console.error(evo_cond); 
 
@@ -156,10 +156,19 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: Ta
     if (evo_cond.not) def = true;
     let ret;
 
-    if (evo_cond.targetnumber) {
-        let t = Game.get_target_number(sel, 999);
-        if (!t) return def;
-        if (t !== base) return def;
+    if (evo_cond.targetspecial) {
+        // this used to be "targetnumber" for references target #1, but it was inappropriate for "top 3 evo cards of all your opponent's monster")
+        if (evo_cond.targetspecial !== 'previous') {
+            console.error("unknown targetspecial " + evo_cond.targetspecial);
+            return def;
+        }
+        let i = previous?.get_instance();
+        if (!i) {
+            console.error("no previous instance for " + evo_cond.raw_text);   
+            return def;
+        }
+        let ret = i === base;
+        if (!ret) return def;
     }
 
     // what cards am I under?
@@ -174,7 +183,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: Ta
             // text for "under a Tamer" isn't "evolution card" which separately checks for "not top card"
             return def;
         }
-        ret = verify_special_evo(i, evo_cond.under, s, sel);
+        ret = verify_special_evo(i, evo_cond.under, s, sel, previous);
         logger.debug("we are under " + evo_cond.under.raw_text + "  verified " + ret);
         if (!ret) return def;
     }
@@ -183,8 +192,8 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: Ta
     // what cards do I have in my sources?
     // assume in_evocards never has co-conditions, since it can return immediately
     if (evo_cond.in_evocards) {
-        let actual_sources = base.get_sources();
-        if (actual_sources.length == 0) {
+        let actual_sources = base.get_sources(true);
+    if (actual_sources.length == 0) {
             return def;
         }
         let t = evo_cond.in_evocards;
@@ -194,7 +203,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: Ta
         if (!t.targets) {
             console.error("no t targets????");
             // if any source matches, say we succeed. will fail on A & B
-            ret = actual_sources.some(c => verify_special_evo(c, t, s, sel));
+            ret = actual_sources.some(c => verify_special_evo(c, t, s, sel, previous));
             if (!ret) return def;
 
             return true;
@@ -213,7 +222,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: Ta
                 // 3. make sure we have at least 2 total
                 let count = 0;
                 actual_sources.forEach(function (c) {
-                    let m = verify_special_evo(c, t, s, sel);
+                    let m = verify_special_evo(c, t, s, sel, previous);
                     //    console.error("any", any, " return ", m, " for " + c.get_name() + " " + t.raw_text);
                     if (m) {
                         // if we just needed one match, this was it
@@ -276,11 +285,11 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: Ta
     if (array.length > 0) {
         //  if (evo_cond.with) array = array.concat(evo_cond.with);
         if (Array.isArray(array)) {
-            let ret = array.every((x: any) => verify_special_evo(base, x, s, sel));
+            let ret = array.every((x: any) => verify_special_evo(base, x, s, sel, previous));
             //console.error("return of all is " + ret);
             return ret;
         }
-        return verify_special_evo(base, array, s, sel);
+        return verify_special_evo(base, array, s, sel, previous);
     }
     /*
     what if OR + WITH?
@@ -297,7 +306,7 @@ function _verify_special_evo(base: Instance | CardLocation, evo_cond: any, s: Ta
     if (array = evo_cond.or) {
         //    console.error("looking for OR " + JSON.stringify(array));
         //  console.dir(evo_cond.or, { depth: 4 });
-        let ret = array.some((x: any) => verify_special_evo(base, x, s, sel));
+        let ret = array.some((x: any) => verify_special_evo(base, x, s, sel, previous));
         return ret;
         //         if (!ret) return def;
 
