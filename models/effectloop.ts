@@ -208,6 +208,8 @@ function modify_n_in_target(w: SubEffect, g: Game, source: TargetSource, sel: So
     }
 }
 
+// for a evosource_double_remove, the can_pay() only checks the first statement
+// can_pay_material() is a much shorter test
 
 // a dry-run for terminus_loop would be awesome
 function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: SolidEffectLoop): boolean {
@@ -258,14 +260,15 @@ function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: Solid
 
             let tgts = game.find_target(w.td, w.game_event, source, sel, zone);
             // so we don't give the player the choice to pay things they can't
-            if (eff.is_cost) tgts = tgts.filter(t => can_pay_material(t, w)[0]);
+            if (eff.is_cost) tgts = tgts.filter(t => can_pay_material(t, w, game, source, sel)[0]);
+
 
             // there must be some target for each event
             //logger.info(`there are ${tgts.length} targets for the event`);
             let legit_target_count = 0;
             // tgt: CardLocation | Instance;
             for (let tgt of tgts) {
-                let [can, instance] = can_pay_material(tgt, w);
+                let [can, instance] = can_pay_material(tgt, w, game, source, sel);
                 if (instance) found_tgts.push(instance);
                 legit_target_count += 1;
                 if (legit_target_count >= needed_targets) break;
@@ -305,8 +308,21 @@ function can_pay(eff: AtomicEffect, game: Game, source: TargetSource, sel: Solid
     return true;
 }
 
-function can_pay_material(tgt: Instance | CardLocation, w: SubEffect): [boolean, Instance | undefined] {
+// the second branch of EVOSOURCE_DOUBLE_REMOVE is in here, because we
+// will also need to select it for targeting
+function can_pay_material(tgt: Instance | CardLocation, w: SubEffect, game: Game,
+    source: TargetSource, sel: SolidEffectLoop): [boolean, Instance | undefined] {
     if ("can_do" in tgt) {
+        let mtd2 = w.td2 as MultiTargetDesc;
+        let special_previous = new SpecialInstance(tgt as Instance);
+        if (w.game_event == GameEvent.EVOSOURCE_DOUBLE_REMOVE && mtd2) {
+            let tgts = game.find_target(mtd2,
+                GameEvent.EVOSOURCE_REMOVE, source, sel, undefined, special_previous);
+            logger.info("tgt count is " + tgts.length + " and we need " + mtd2.count());
+            if (tgts.length >= mtd2.count().value()) return [true, tgt];
+            return [false, undefined];
+        }
+
         let can = tgt.can_do(w);
         logger.error("can_do for tgt is " + can);
         if (can) {
@@ -985,7 +1001,7 @@ export class SolidEffectLoop {
                     if (!can_pay(future_eff, this.game, this.effect.source, this)) {
                         this.game.log("Compound action can't be performed, not offering choice and moving to next");
                         logger.info("can't do compound action, moving to next");
-                        this.s = FakeStep.FINISH_REPEAT_LOOP;
+                        this.s = FakeStep.DONE;
                         return false;
                     }
 
@@ -1390,7 +1406,7 @@ export class SolidEffectLoop {
                 this.s = FakeStep.GET_UPTO;
                 // fall through
                 return false;
-            } else { 
+            } else {
                 this.s = FakeStep.ASK_TARGET1;
                 return false;
             }
@@ -1591,7 +1607,6 @@ export class SolidEffectLoop {
 
                     let fusion: "only" | "no" = (w.cause & EventCause.DNA) ? "only" : "no";
                     let app: "only" | "no" = (w.cause & EventCause.APP_FUSE) ? "only" : "no";
-                    console.error(1548, fusion, app);
                     let available_evos = player.get_all_evolves(false, fusion, app, this, this.effect.source, w.td2, w.td,
                         w.td3, w.n_mod);
                     logger.info(`There are ${available_evos && available_evos.length} evos..`);
@@ -1739,7 +1754,7 @@ export class SolidEffectLoop {
                     }
                     this.potential_targets = w.td && this.game.find_target(w.td, w.game_event, this.effect.source!, this, zone) as CardLocation[];
                     logger.info("is cost? " + atomic.is_cost);
-                    if (atomic.is_cost) this.potential_targets = this.potential_targets.filter(t => can_pay_material(t, w)[0])
+                    if (atomic.is_cost) this.potential_targets = this.potential_targets.filter(t => can_pay_material(t, w, this.game, this.effect.source, this)[0])
                     // if tokens, just pick them to play 
                     if (w.game_event == GameEvent.PLAY && w.td.raw_text.match(/token/i)) this.potential_targets.length = Math.min(w.choose!.value(), this.potential_targets.length);
                     logger.info("length is " + this.potential_targets.length);
@@ -2213,17 +2228,16 @@ export class SolidEffectLoop {
 
             let dupes: SubEffect[] = [undefined!]; // empty 0 object
             if (false)
-            for (let i = 1; i < this.chosen_targets!.length; i++) {
-                console.error(2200, "before dupe                          " + formatTime());
-                let clone = _.cloneDeepWith(atomic.events[this.weirdo_count]);
-                dupes.push(clone);
-                console.error(2202, "after dupe " + formatTime());
-                console.log("=============");
-            }
+                for (let i = 1; i < this.chosen_targets!.length; i++) {
+                    console.error(2200, "before dupe                          " + formatTime());
+                    let clone = _.cloneDeepWith(atomic.events[this.weirdo_count]);
+                    dupes.push(clone);
+                    console.error(2202, "after dupe " + formatTime());
+                    console.log("=============");
+                }
             // duping then adding, as below, led to some crazy slowness, as each copy I think referenced the previous cop
 
             for (let i = 1; i < this.chosen_targets!.length; i++) {
-                console.error(2187, "i", i, this.chosen_targets!.length);
                 logger.info(`chosen target ${i} targets[i] is ${this.chosen_targets![i].id} ${this.chosen_targets![i].get_name()} `);
                 // oh, we *should* have each weirdo make 1 or more (or zero?) subeffects and they get put 
                 // into a big array and *that* array gets run
@@ -2242,7 +2256,7 @@ export class SolidEffectLoop {
                 // let dupe2: SubEffect = Object.assign(atomic.events[this.weirdo_count]);
 
                 //  console.error(2200, "before dupe                          " + formatTime());
-                
+
                 let dupe2: SubEffect = _.cloneDeepWith(atomic.events[this.weirdo_count], (value) => {
                     if (value instanceof Player) {
                         return value;
@@ -2254,7 +2268,7 @@ export class SolidEffectLoop {
                         return value;
                     }
                 });
-                
+
                 //                console.dir(dupe2, { depth: 6 });
                 //let dupe2 = dupes[i];
                 dupe2.chosen_target = this.chosen_targets![i];

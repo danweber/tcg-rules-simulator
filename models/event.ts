@@ -49,6 +49,8 @@ export function strToEvent(str: string): GameEvent {
 	if (str.toUpperCase() === "EVOSOURCEDOUBLEREMOVE") return GameEvent.EVOSOURCE_DOUBLE_REMOVE;
 	//if (str.toUpperCase() === "ENTITYSTRIP") return GameEvent.EVOSOURCE_REMOVE_FROM;
 	if (str.toUpperCase() === "REVEALTOHAND") return GameEvent.REVEAL_TO_HAND;
+	if (str.toUpperCase() === "MODIFYCOST") return GameEvent.MODIFY_COST;
+	if (str.toUpperCase() === "MEMORYCHANGE") return GameEvent.MEMORY_CHANGE;
 	str = str.toUpperCase();
 	if (isGameEvent(str)) {
 		return GameEvent[str];

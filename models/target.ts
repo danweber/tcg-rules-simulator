@@ -382,7 +382,7 @@ export function ForEachTargetCreator(foreach: string): ForEachTarget {
         // nothing
         return new ForEachTarget("bob", new TargetDesc(foreach));
     }
-
+    logger.info("fet creator: " + foreach);
     let n;
     if (n = foreach.match(/color (?:of|in) (.*)/)) {
         return new ForEachTarget("bob", new TargetDesc(n[1]), "color");
@@ -403,7 +403,7 @@ export function ForEachTargetCreator(foreach: string): ForEachTarget {
         let count = parseInt(n[1]);
         return new ForEachTarget("bob", new MultiTargetDesc("a " + n[2]), "instance", count);
     } else {
-        return new ForEachTarget("bob", new MultiTargetDesc(foreach));
+        return new ForEachTarget("bob", new MultiTargetDesc("a " + foreach));
     }
 
 
@@ -426,8 +426,16 @@ export class ForEachTarget {
     raw_text() { return this.target.raw_text; }  
     get_count(game: Game, ts: TargetSource, sel?: SolidEffectLoop): number {
         // STACK_ADD seems bad since it includes cards in hand :<
+
         let kind = this.target.raw_text.includes("card") ? GameEvent.PLAY : GameEvent.DELETE;
         if (this.target.raw_text.includes("evolution card")) kind = GameEvent.TARGETED_CARD_MOVE;
+        let mtd = this.target as MultiTargetDesc;
+        if (mtd.parse_matches) {
+            // we have a modern match, look at its entity
+        } else {
+            //console.error(437, "legacy count");
+        }
+
         let i = game.find_target(this.target, kind, ts, sel, Location.SECURITY);
         logger.info(`for each ${i.map(i => i.get_name())} objects count is ${i.length} ratio is ${this.ratio}`);
         
@@ -592,6 +600,8 @@ export class MultiTargetDesc {
                         if (!item.adj_text || !item.entity) {
                             match = false;
                         }
+                        if (item.it)
+                            match = true;
                     }
                 }
                 if (match) {
@@ -1082,6 +1092,10 @@ export class TargetDesc {
             this.conjunction = Conjunction.DUMMY;
             return;
         }
+        if (text.startsWith("a ")) {
+            text = text.substring(2);
+        }
+
         if (text.startsWith("not ")) {
             this.conjunction = Conjunction.NOT;
             this.targets[0] = new TargetDesc(text.substring(4));

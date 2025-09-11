@@ -11,14 +11,14 @@ import Mastergame = require('./mastergame');
 
 import { SolidEffect, SubEffect } from './effect.js';
 import { EventCause, GameEvent } from './event';
-import { Conjunction, DynamicNumber, SpecialCard, SpecialInstance, SubTargetDesc, TargetDesc, TargetSource, fSpecialPlayer } from './target';
+import { Conjunction, DynamicNumber, MultiTargetDesc, SpecialCard, SpecialInstance, SubTargetDesc, TargetDesc, TargetSource, fSpecialPlayer } from './target';
 
 import seedrandom from 'seedrandom';
 
 
 import { createLogger } from "./logger";
 import { FancyLog } from './fancylog';
-import { EffectAndTarget, verify_special_evo } from './util';
+import { EffectAndTarget, find_in_tree, verify_special_evo } from './util';
 import { new_parse_line } from './newparser';
 
 const logger = createLogger('game');
@@ -1371,19 +1371,19 @@ export class Game {
             // the card gets stacked on top, but not in a way that we can notice
             // if we ever have an effect like "when this card stops being a link card"
             // or "when this card is used for an app fuse" we don't be able to notice
-/*            e.push({
-                cause: EventCause.GAME_FLOW,
-                game_event: GameEvent.TARGETED_CARD_MOVE,
-                chosen_target: onto2, // move plugged card...
-                n_mod: "top",
-                chosen_target2: [onto], // ... to top of stack
-                spec_source: onto,
-                td: td,
-                n_player: p.player_num,
-                label: "appfuse"
-            });
-            onto2 = undefined; // otherwise we will try to fusion evo
-            */
+            /*            e.push({
+                            cause: EventCause.GAME_FLOW,
+                            game_event: GameEvent.TARGETED_CARD_MOVE,
+                            chosen_target: onto2, // move plugged card...
+                            n_mod: "top",
+                            chosen_target2: [onto], // ... to top of stack
+                            spec_source: onto,
+                            td: td,
+                            n_player: p.player_num,
+                            label: "appfuse"
+                        });
+                        onto2 = undefined; // otherwise we will try to fusion evo
+                        */
         }
         if (mode === "burst") {
             // two simultaneous things. that's not right but will get you close
@@ -1576,12 +1576,12 @@ export class Game {
         return new CardLocation(this, player_num, location, index);
     }
 
-    static get_target_number(sel: SolidEffectLoop | undefined, n: number): ( CardLocation| Instance)[] | false {
+    static get_target_number(sel: SolidEffectLoop | undefined, n: number): (CardLocation | Instance)[] | false {
         if (!sel) return false;
         let ret = sel.chosen_targets;
         console.log(1581, ret?.length);
-       // console.dir(ret, {depth: 2});
-        return ret!   ;
+        // console.dir(ret, {depth: 2});
+        return ret!;
     }
 
     // common tests to see if this last_thing is one we can return
@@ -1608,7 +1608,7 @@ export class Game {
             // we're not chasing this cat all the way up the tree below, just here for now
             // TODO: chase the cat all the way (but we need test cases)
             if (parse_matches) {
-                x = x.filter((x: any) => verify_special_evo(x, parse_matches, s, undefined!)); 
+                x = x.filter((x: any) => verify_special_evo(x, parse_matches, s, undefined!));
             }
             if (x.length > 0) {
                 return x;
@@ -1616,7 +1616,7 @@ export class Game {
                 // fall thru
             }
         }
-    }               
+    }
 
 
     static get_last_thing_from_sel(sel: SolidEffectLoop | false, s: TargetSource, parse_matches?: any): (Instance | CardLocation)[] {
@@ -1635,11 +1635,11 @@ export class Game {
             let _solid = sel.effect;
 
             // short-circuit, if we are in td2, td1 could be a match
-            if (sel.chosen_targets && sel.chosen_targets.length > 0) {                
+            if (sel.chosen_targets && sel.chosen_targets.length > 0) {
                 let first = sel.chosen_targets[0];
                 let test = Game.verify_last_thing(first, parse_matches, s);
                 if (test) return test;
-             }
+            }
 
 
             for (let solid of [_solid, _solid.solid_starter]) {
@@ -1739,15 +1739,81 @@ export class Game {
 
         logger.info(`FINDING FOR TARGET: ${t.toString()} Event ${GameEvent[ge]} TargetSource ${s.id()},${s.card_id()},${s.location()} `);
         let master_location: Location = Location.NIL;
+
+
+        let search_cards: boolean = [
+            GameEvent.TRASH_FROM_HAND,
+            GameEvent.PLAY,
+            GameEvent.USE,
+            GameEvent.TRASH_TO_HAND,
+            GameEvent.REVEAL_TO_HAND,
+            GameEvent.PLACE_IN_FIELD,
+            GameEvent.EVOLVE,
+            GameEvent.TARGETED_CARD_MOVE,
+            GameEvent.STACK_ADD,
+            GameEvent.EVOSOURCE_REMOVE,
+            GameEvent.EVOSOURCE_MOVE,
+            GameEvent.TRASH_LINK,
+            GameEvent.PLUG, // can be both card and instance
+        ].includes(ge)
+            || !!t.raw_text.match("security");
+ 
         if (t.raw_text) {
             logger.info("raw_text is " + t.raw_text);
             // if we say "with evolutoin cards" we end up searching all cards when
             // we should search instances, and the util.js code isn't properly 
             // distinguishing them
-            if (t.raw_text.includes("evolution card") // searching ev cards 
-                && ! t.raw_text.includes("with ")  // but NOT "with X evolution card"
-                && ! t.raw_text.includes("in its"))  // or "with X in its cards"
+
+            // calculating "entity" doesn't always work, because "1 [Vanillamon]" could be either.
+            
+            let mtd = t as MultiTargetDesc;
+            let pm = mtd.parse_matches;
+            let entity = "";
+            if (pm) {
+                // we have a modern mtd
+                entity = pm.find(x => x.entity)?.entity;
+                // 1 [x] can't be determined which it is!
+                if (!entity) { 
+                    console.error(1778, "blank entity", pm);
+                } else if (entity === "card" || entity === "cards" || entity === "Monster card") {
+                     search_cards = true;
+                } else if (entity.endsWith("card") || entity.endsWith("cards")) {
+                     search_cards = true;
+                } else if (entity === "Monster" || entity === "Monsters"  || entity === "monster"
+                    || entity === "Tamer" || entity === "Tamers"
+                    || entity === "Option"
+                    || entity == "Monster or Tamer"
+                    || entity == "Monster and/or Tamers"
+                    || entity == "Monster or Tamers") {
+                     search_cards = false;
+                } else if (entity.match(/^\[.*\]$/)) {
+                    //console.error("indefinite entity " + entity);
+                } else {
+                    console.error(1782, "unknown entity: " + entity);
+                }
+                
+            }
+
+
+
+            if (t.raw_text.includes("evolution card")) {
+               if (search_cards) master_location |= Location.UNDER_CARDS;
+               /* if (entity === "card" || entity === "cards") {
+                    master_location |= Location.UNDER_CARDS;
+                } else if (entity === "Monster") {
+                    // do nothing
+                } else {
+                    console.error("unknown entity", entity);
+                }*/
+
+            }
+            if (t.raw_text.match(" from .{1,20} evolution card"))
                 master_location |= Location.UNDER_CARDS;
+
+            
+            
+            // searching ev cards 
+            // but we do need to find "a card with X in 
             if (t.raw_text.includes("from under"))
                 master_location |= Location.UNDER_CARDS;
             if (t.raw_text.includes("link cards"))
@@ -1818,24 +1884,8 @@ export class Game {
         }   // we aren't using froms yet, but we could use this to filter out just the things to search more efficiently
 
 
-        let search_cards: boolean = [
-            GameEvent.TRASH_FROM_HAND,
-            GameEvent.PLAY,
-            GameEvent.USE,
-            GameEvent.TRASH_TO_HAND,
-            GameEvent.REVEAL_TO_HAND,
-            GameEvent.PLACE_IN_FIELD,
-            GameEvent.EVOLVE,
-            GameEvent.TARGETED_CARD_MOVE,
-            GameEvent.STACK_ADD,
-            GameEvent.EVOSOURCE_REMOVE,
-            GameEvent.EVOSOURCE_MOVE,
-            GameEvent.TRASH_LINK,
-            GameEvent.PLUG, // can be both card and instance
-        ].includes(ge)
-            || !!t.raw_text.match("security");
 
-            // eventually we'll not just search like this
+        // eventually we'll not just search like this
         if (master_location !== Location.NIL && master_location === Location.BATTLE) search_cards = false;
         if (master_location !== Location.NIL && master_location === Location.UNDER_CARDS) search_cards = true; // needed because the all_sources is under this branch
         if (ge === GameEvent.STACK_ADD) search_cards = true;
@@ -1930,14 +1980,14 @@ export class Game {
         // call with EGGZONE: just eggzone
         let locus = Location.BATTLE;
         // if this is an [on deletion] we can reference ourselves in the trash
-        let i = s.get_instance(); 
+        let i = s.get_instance();
         if (search_loc & Location.EGGZONE) { //  || search_loc === Location.FIELD) {
             logger.info("switching locus from " + locus + " to " + search_loc);
             locus = search_loc;
         }
         // if we are searching for "this (green) monster" add trash.
         if (t.raw_text.match(/^this.{1,10}monster/i)) locus |= Location.ALLTRASH;
-        logger.info(`searching location ${locus} and ${Location[locus]}`);  
+        logger.info(`searching location ${locus} and ${Location[locus]}`);
         let bb = this.instances.filter(x => (x.location & locus) && t.matches(x, s, this, prior_target, sel));
 
         let ss = t.sort(bb); // for when we need "biggest level" or something
@@ -1948,7 +1998,7 @@ export class Game {
             // dummy instance
         }
 
-        logger.info  (`found ${bb.length} targets, and then sorted them down to ${ss.length}`);
+        logger.info(`found ${bb.length} targets, and then sorted them down to ${ss.length}`);
         if (debug) logger.debug("fone");
         ret.push(...ss);
         return ret;
@@ -2014,7 +2064,7 @@ export class Game {
                             let cl = new CardLocation(this, p_number, Location.BATTLE, i, instance.id, "plug");
                             // if we chose to plug a instance, we need to compare the card it is to see we're the same
                             // maybe plug and source_add should've worked on only Cards? well, source_add does care about instance effects
-                        
+
                             if (Instance.one_effect_matchup(kind, se, e, new SpecialCard(cl), p_number, this, cl)) {
                                 logger.info("plug effects matches " + se.label);
                                 ret.push(se);
@@ -2048,7 +2098,7 @@ export class Game {
 
         logger.debug("2234 looking for reactors to " + e.length + "  events: " + e.map(x => GameEvent[x.game_event]).join(","));;
         for (let i of this.instances) {
-            if (!i) continue;          
+            if (!i) continue;
             // only let instances in BATTLE or TRASH react. We'll need to add EGG_ZONE
             if ((i.location & (Location.BATTLE | Location.ALLTRASH)) === 0) continue;
             let trigger;
@@ -2864,7 +2914,7 @@ export class Game {
         let p2 = this.Player2.JSON_player(true);
         let temp_zones: any = [];
 
-        
+
 
         // this significantly bloats the size of the blob
         if (true || process.env.CARD_DATA == "true") {

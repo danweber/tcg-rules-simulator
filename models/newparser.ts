@@ -1043,34 +1043,74 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
     }
 
     // this handles costs and also an extra-sentence clause
-    if (line.includes("by ") && line.includes("breeding")) {
-        //console.error(1046, line);
-        let grammared = parseStringEvoCond(line, "EffSentence");
-        if (grammared && grammared.cost) {
-            //console.error(1049, grammared);
-
-            if (grammared.extra && grammared.extra.effect === "also-in-breeding") {
-                solid.active_zone = Location.FIELD;
-            }
-            // if (m = line.match(/^(?:If (.*),)?\s*by (.*?), (.*?)\.(.*)/i)) {
-
-            // where does the "cost / effect" logic go? 
+    if (line.includes("by ") && (line.includes("breeding") || line.includes("suspending"))) {
+        let grammared = parseStringEvoCond(line, "SolidEffect");
+        if (grammared) { //  && grammared.cost) {
+            // let cost = grammared
             logger.info("grammar split: by Y, Z.");
-            let by = grammared.cost.substring(3); // remove "by "
-            let [a1, l1] = parse_atomic(by, label, solid, card);
+            let effects = grammared.effect_array;
+            let by: any;
+
+            if (false && effects[0].cost) {
+                // console.error(1071.7, cost);
+                // very much like code below
+                by.effects.forEach((atomic: any, index: number) => {
+
+                    console.error(1073.1, atomic);
+                    let temp_grammar = { ...atomic };
+                    if (temp_grammar.type === "UnknownEffect") temp_grammar = undefined;
+                    let [a2, l2] = parse_atomic(atomic.raw_text, label, solid, card, {}, temp_grammar);
+                    a2.is_cost = by.effects.length - index; // mark all as costs;
+                    atomics.push(a2);
+                    solid.effects.push(a2);
+                })
+
+
+            } else if (false && effects[0].cost_txt) {
+                console.error(1072.0, by);
+                let [a1, l1] = parse_atomic(by, label, solid, card);
+                atomics.push(a1);
+                solid.effects.push(a1);
+
+            }
+            /*
+            let first_effect = effects[0];
+            let [a1, l1] = parse_atomic(first_effect.raw_text, label, solid, card, first_effect);
             a1.is_cost = 1;
             a1.optional = true;
 
+            atomics.push(a1);
+            solid.effects.push(a1);
+            */
             /*
             if (m[1]) a1.test_condition = parse_if(m[1]);
             */
-            let [a2, l2] = parse_atomic(grammared.effect[0].raw_text, label, solid, card);
+            // hope that all grammars come out just fine. compare to next block.
+            effects.forEach((atomic: any, index: number) => {
+                let temp_grammar = { ...atomic };
+                let [a2, l2] = parse_atomic(atomic.raw_text, label, solid, card, {}, temp_grammar);
+                if (atomic.effect.cost && index === 0) {
+                    a2.is_cost = atomic.effect.cost;
+                    a2.optional = true;
+                }
+                atomics.push(a2);
+                solid.effects.push(a2);
+
+
+                if (atomic.extra && atomic.extra.effect === "also-in-breeding") {
+                    solid.active_zone = Location.FIELD;
+                }
+
+            })
+
+
+            let str = atomics.map(a => GameEvent[a.events[0].game_event]).join(",");
+            // console.error(1094, "atomics.weirdo " + str);
+            logger.info("atomics.weirdo " + str);
             /*if (a2.events[0].game_event == GameEvent.CANCEL) {
                 logger.info("is a canceller");
                 solid.cancels = true;
             }*/
-            atomics.push(a1, a2);
-            solid.effects.push(a1, a2);
 
             line = "";
         }
@@ -1093,9 +1133,9 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
                     let temp_grammar = { ...atomic };
                     if (temp_grammar.effect && !Array.isArray(temp_grammar.effect)) {
                         temp_grammar.effect = [temp_grammar.effect]; // make sure it's an array 
-                    } 
+                    }
                     if (temp_grammar.type === "UnknownEffect") temp_grammar = undefined;
- //                   temp_grammar.effect = [atomic];
+                    //                   temp_grammar.effect = [atomic];
                     let pif = index > 0 ? { previous_if: true } : {};
                     //console.error(1202, temp_grammar);  
                     let [a1, l1] = parse_atomic(atomic.raw_text, label, solid, card, pif, temp_grammar);
@@ -1109,29 +1149,29 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
                 })
 
                 if (false)
-                for (let atomic of paragraph.effect_array) {
+                    for (let atomic of paragraph.effect_array) {
 
-                    let temp_grammar = { ...atomic };
-                    //                       temp_grammar.effect = [effect];
-                    //                    if (! Array.isArray(temp_grammar)) temp_grammar = [temp_grammar];
-                    if (!Array.isArray(temp_grammar.effect)) { // temp_grammar.effect = [temp_grammar.effect];
-                        //                        if (! (temp_grammar.length >= 1)) {  
-                        // effect isn't array! may be a status effect...
-                        temp_grammar.effect = [temp_grammar.effect];
+                        let temp_grammar = { ...atomic };
+                        //                       temp_grammar.effect = [effect];
+                        //                    if (! Array.isArray(temp_grammar)) temp_grammar = [temp_grammar];
+                        if (!Array.isArray(temp_grammar.effect)) { // temp_grammar.effect = [temp_grammar.effect];
+                            //                        if (! (temp_grammar.length >= 1)) {  
+                            // effect isn't array! may be a status effect...
+                            temp_grammar.effect = [temp_grammar.effect];
 
+                        }
+                        if (false) {
+                            temp_grammar = undefined;
+                            console.error("couldn't find parse effect for " + line);
+                            logger.error("couldn't find parse effect for " + line);
+
+                        }
+
+                        const pif = undefined; // previous if
+                        let [a1, l1] = parse_atomic(atomic.raw_text, label, solid, card, pif, temp_grammar);
+                        atomics.push(a1);
+                        solid.effects.push(a1);
                     }
-                    if (false) {
-                        temp_grammar = undefined;
-                        console.error("couldn't find parse effect for " + line);
-                        logger.error("couldn't find parse effect for " + line);
-
-                    }
-
-                    const pif = undefined; // previous if
-                    let [a1, l1] = parse_atomic(atomic.raw_text, label, solid, card, pif, temp_grammar);
-                    atomics.push(a1);
-                    solid.effects.push(a1);
-                }
                 line = "";
             }
         }
@@ -1906,9 +1946,9 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
     // this card would be played
 
     let grammared = parseStringEvoCond(line, "WhenSentence");
-    // console.error(line);
+    console.error(1949, line);
     if (grammared) {
-        //  console.error("WHEN", grammared);
+        console.error("WHEN", grammared);
         //  console.dir(grammared, { depth: 99 });
 
         let w = grammared.When;
@@ -1954,6 +1994,14 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
             ret.push(int_evo);
         }
 
+        if (w.event.includes("ATTACK_TARGET_SWITCH")) {
+            let int_evo: InterruptCondition = {
+                ge: GameEvent.ATTACK_TARGET_SWITCH,
+                td: new TargetDesc(""),
+            }
+            ret.push(int_evo);
+        }
+
 
         if (["UNSUSPEND", "SUSPEND"].includes(w.event)) {
             let int_evo: InterruptCondition = {
@@ -1965,6 +2013,7 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
             //console.log("grammared and consumed: " + line);
             ret.push(int_evo);
         }
+
 
         if (false)
             if (["DELETE"].includes(w.event)) {
@@ -1981,6 +2030,7 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
         //console.log("grammared but unhandled: " + line);
         //console.dir(grammared, { depth: 6 });
         if (ret.length > 0) return ret;
+        console.error("unhandled when: " + line, w);
 
     }
     //console.log("ungrammared: " + line);
@@ -2173,7 +2223,8 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
         return defeat_other;
     }
 
-    if (line.match(/an attack target is switched/i)) {
+
+    if (line.match(/an attack target is switched OBSOLETE /i)) {
         let ic: InterruptCondition =
         {
             ge: GameEvent.ATTACK_TARGET_SWITCH,
@@ -2442,6 +2493,14 @@ function nested_solids(input: string, label: string, card?: Card): SolidsToActiv
 function parse_atomic(line: string, label: string, solid: SolidEffect2,
     card: Card | undefined, flags?: any, incoming_grammar?: any
 ): [AtomicEffect2, string] {
+
+    //console.log(2501, incoming_grammar);
+    // I wish the grammar had type safety. Until then, manually make sure.
+    if (incoming_grammar) {
+        if (incoming_grammar.type !== 'EffSentence') {
+            console.error("warning, incomplete\x073", incoming_grammar);
+        }
+    }
     logger.info("atomic " + line + " " + JSON.stringify(incoming_grammar));
     if (!solid) logger.info("Warning, no solid");
     // bullshit I shouldn't need, I think it's just for eating keywords
@@ -2503,7 +2562,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         let nested = line.after("＜Delay＞.・")
         if (atomic.test_condition) console.error("warning over-writing test contidion");
         atomic.test_condition = new GameTest(GameTestType.NOT_THIS_TURN);
-  
+
         let proper_thing: any = { ...thing };
         proper_thing.game_event = GameEvent.TRASH_FROM_FIELD;
         proper_thing.td = new TargetDesc("this card");
@@ -2552,7 +2611,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
         && !line.toLowerCase().includes("3 your")
     ) {
         let grammared = incoming_grammar || parseStringEvoCond(line, "EffSentence");
-        logger.info("parsed into grammar " + line.substring(0,50) + "...");
+        logger.info("parsed into grammar " + line.substring(0, 50) + "...");
         let action_args, target, x;
         if (grammared) {
             if (grammared.if) {
@@ -2564,8 +2623,8 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 expiration = grammared.duration.expiration;
             }
             // console.log("GRAM"); console.dir(grammared, { depth: 99 });
-            let  effs = grammared.effect;
-            if (! Array.isArray(effs)) { effs = [effs]; }
+            let effs = grammared.effect;
+            if (!Array.isArray(effs)) { effs = [effs]; }
             const eff = effs[0]; // we only handle one effect in here. We should call parse_atomic multiple times for multiple effects
             const optional = eff.optional;
             if (optional) atomic.optional = true;
@@ -2574,13 +2633,13 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             if (action_args?.optional) atomic.optional = true;
             if (action_args?.no_cost) thing.n_mod += "for free; ";
             if (action_args?.discount) {
-                 thing.cost_change = [];
-                 thing.cost_change.push({ n_mod: "reduced", n: action_args.discount });
+                thing.cost_change = [];
+                thing.cost_change.push({ n_mod: "reduced", n: action_args.discount });
             }
 
             // part of action   ..
             if (action_args?.for_each) foreach = action_args.for_each;
-            
+
             // extra sentence
             // just slappin' the for_each here w/o a care in the world.
             // with the grammar we should have a better idea of 
@@ -2598,31 +2657,41 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 // we need to handle "upto" transparently without n_mod
 
 
-                let nested, keyword_gains, status, dp_change;
-                if (nested = action_args.nested_effect) {
-                    let [_0, nested_solid_effect, _1] = new_parse_line(nested, card, label, "main"); // how could we pass through a card here, we won't have any card keywords
-                    stat_conds.push({
-                        s: {
-                            game_event: GameEvent.NIL,
-                            td: new TargetDesc(""), // this doesn't need a target
-                            cause: EventCause.EFFECT
-                        },
-                        solid: [nested_solid_effect],
-                        exp_description: expiration
-                    });
-                    line = "";
-                }
-                if (dp_change = action_args.dp_change) {
-                    let s1 = parse_give_status(dp_change, card!);
-                    if (s1) {
-                        s1.exp_description = expiration;
-                        stat_conds.push(s1);
-                    } else {
-                        console.error("no s1");
+                let _nested, nested, keyword_gains, status, dp_change;
+                if (_nested = action_args.nested_effect) {
+                    for (nested of _nested) {
+                        let [_0, nested_solid_effect, _1] = new_parse_line(nested, card, label, "main"); // how could we pass through a card here, we won't have any card keywords
+                        stat_conds.push({
+                            s: {
+                                game_event: GameEvent.NIL,
+                                td: new TargetDesc(""), // this doesn't need a target
+                                cause: EventCause.EFFECT
+                            },
+                            solid: [nested_solid_effect],
+                            exp_description: expiration
+                        });
+                        line = "";
                     }
-                    line = "";
                 }
-                if (keyword_gains = action_args.keyword_gains) {
+                let _dp_change;
+                if (_dp_change = action_args.dp_change) {
+                    for (dp_change of _dp_change) {
+                        let s1 = parse_give_status(dp_change, card!);
+                        if (s1) {
+                            s1.exp_description = expiration;
+                            stat_conds.push(s1);
+                        } else {
+                            console.error("no s1");
+                        }
+                        line = "";
+                    }
+                }
+                let _keyword_gains;
+                if (_keyword_gains = action_args.keyword_gains) {
+                    // Condense array into 1 string, parse_give_status can eat it and it displays easier
+                    // I feel bad for the parser for doing the work to give us an array and we just undo it.
+                    let one_phrase = "gains " + _keyword_gains.map((x: string) => x.slice(x.indexOf(" ")+1));
+                    let keyword_gains = one_phrase;
                     let s1 = parse_give_status(keyword_gains, card!);
                     if (s1) {
                         s1.exp_description = expiration;
@@ -2653,20 +2722,30 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                     }
                 }
                 if (line !== "") {
-                    console.error("UNHANDLED");
+                    console.error("UNHANDLED " + line);
                 }
                 line = "";
             }
 
-            if (eff.action === 'modifycost') {
-                thing.game_event = GameEvent.MODIFY_COST;
-                thing.n = parseInt(action_args.number); 
-                if (foreach)  thing.n_count_tgt = ForEachTargetCreator(foreach);
+            if (eff.action === 'modifycost' || eff.action === 'draw' || eff.action === 'MemoryChange') {
+
+                GameEvent.DRAW;
+                GameEvent.MODIFY_COST;
+                thing.game_event = strToEvent(eff.action); //MODIFY_COST, DRAW
+                thing.n = parseInt(action_args.number);
+                if (foreach) {
+                    if (thing.game_event === GameEvent.DRAW) {
+                        // can't modify keyword
+                        // XXX we have no test case for this sep 6 2025
+                        thing.n_repeat = ForEachTargetCreator(foreach);
+                    } else {
+                        thing.n_count_tgt = ForEachTargetCreator(foreach);
+                    }
+                }
                 foreach = "";
                 thing.n_mod += "reduced";
                 line = "";
-                logger.info("MODIFY_COST grammar: " + thing.n + " " + thing.n_mod);
-
+                logger.info("MODIFY_COST/DRAW/MEMORY grammar: " + thing.n + " " + thing.n_mod);
             }
 
             // TUCK is more generic than EVOSOURCE_ADD
@@ -2681,7 +2760,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 thing.game_event = strToEvent(eff.action);
                 // if we use PlaceCard our target better not be an instance
                 let target_entity = target.targets && target.targets[0].entity;
-                  //console.error(2542, "XXXXXXX", GameEvent[thing.game_event], target_entity, line);
+                //console.error(2542, "XXXXXXX", GameEvent[thing.game_event], target_entity, line);
                 if (thing.game_event === GameEvent.TARGETED_CARD_MOVE && target_entity && !target_entity.match(/card/)) {
                     thing.game_event = GameEvent.FIELD_TO_HAND;
                 }
@@ -2869,7 +2948,6 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
 
 
                 thing.game_event = GameEvent.ACTIVATE;
-                console.error(2250, nested);
                 atomic.sta = nested_solids(nested, label, card);
                 atomic.sta.count = 1;
                 line = "";
@@ -2944,7 +3022,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
     // is "each" an indication that this is a thing we did?
     if (m = line.match(/(.*?)For (each|each of|every) (.*), (?:increase|add)(?:.*?)(\d+)(.*)/)) {
 
-   // if (m = line.match(/(.*?)For (each |each|every)( of) (.*), (?:increase|add)(?:.*?)(\d+)(.*)/)) {
+        // if (m = line.match(/(.*?)For (each |each|every)( of) (.*), (?:increase|add)(?:.*?)(\d+)(.*)/)) {
         // counter
         // td2: where we store our thing
         // 1 ... nothing
