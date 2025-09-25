@@ -997,7 +997,7 @@ export class Card {
         let ret = `${set}-${outname}`;
         if (!this.game?.get_card(ret)) {
             // no hit, we need to fall back to it 
-            return prefix + this.id + "-" + outname  + suffix;
+            return prefix + this.id + "-" + outname + suffix;
         }
         return prefix + ret + suffix;
     }
@@ -1242,15 +1242,19 @@ export class Card {
     }
     public name_is(str: string): boolean {
         str = Card.normalize(str);
-        //        logger.info("LOOKING FOR " + str);
+        //logger.info("LOOKING FOR " + str);
         if (this.name_rule) {
             //logger.info("NAME RULE: " + this.name_rule);
             let m;
 
             if (m = this.name_rule.match(/treated as \[(.*)\]/i)) {
-                //     logger.info("NAME COULD BE: " + m[1]);
-                if (Card.normalize(m[1]) === str) return true;
+                //logger.info("NAME COULD BE: " + m[1]);
+                for (let name of m[1].split("]/[")) {
+                    //logger.info(`Test name ${name} normalized ${Card.normalize(name)} str ${str}`);
+                    if (Card.normalize(name) === str) return true; 
+                }
             }
+            //logger.info("NO SPECIAL RULE MATCH");
         }
         return Card.normalize(this.name) == str;
     }
@@ -1258,8 +1262,12 @@ export class Card {
         let my_names: string[] = [this.name];
         if (this.name_rule) {
             let m;
-            if (m = this.name_rule.match(/treated as(?: having)? \[(.*)\]/i)) {
+            if (m = this.name_rule.match(/Also treated as(?: having)? \[(.*)\]/i)) {
                 my_names.push(...m[1].split("]/["));
+            }
+            if (m = this.name_rule.match(/Not treated as(?: having)? \[(.*)\]/i)) {
+                let bad_name: string = m[1];
+                my_names = my_names.filter(x => !x.includes(bad_name));
             }
         }
         let match_to = Card.normalize(str.toUpperCase());
@@ -1463,10 +1471,12 @@ export class Card {
 
     // TODO: you cannot "play" option cards, but you can "use" them. For now, who cares?
     public can_play(player: Player, memory: number): boolean {
-        if (this.n_type == 1) {
-            logger.error("NEVER PLAY AN EGG");
-            return false;
-        }
+        // we can, technically, play an egg, if it has a cost
+
+        //        if (this.n_type == 1) {
+  //          logger.error("NEVER PLAY AN EGG");
+    //        return false;
+      //  }
         if (this.n_type == 4) {
             if (this.allow) {
                 // dummy source, we just need the player, we can't reference anything
@@ -1484,7 +1494,7 @@ export class Card {
         }
         //       logger.debug("for card " + this.name + ": still okay");
         // TODO: handle alt can_play effects
-        let cost = this.p_cost || this.u_cost;
+        let cost = this.p_cost ?? this.u_cost;
         // We don't allow for interruptives to reduce the cost
 
         // true if we have memory, *or* if something interrupts play cost
@@ -1621,7 +1631,7 @@ export class CardLocation {
     // number-number pair, first is location, second is index (for pile) or id (for field)
     get_key(): string {
         let ret = `${this.location}-${this.instance || 0}-${this.index}`;
-        logger.info("get key: " + ret);  
+        logger.info("get key: " + ret);
         return ret;
     }
     // return "NAME" or "NAME in HAND" if not on field
@@ -1651,7 +1661,7 @@ export class CardLocation {
     has_trait(s: string) {
         return this.card.has_trait(s);
     }
-    
+
     get_link_requirements(): LinkCondition[] { return this.card.link_requirements };
     has_stack_add(): boolean { return !!this.card.has_stack_add(); }
     color_count(): number { return this.card.colors.length; }

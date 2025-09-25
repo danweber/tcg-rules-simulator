@@ -809,7 +809,7 @@ export class Instance {
         logger.warn("DO EVENT LINE UP: actual " + GameEvent[actual] + " and " + GameEvent[cand] + " " + candidate.td.raw_text + "/" + candidate.td2?.raw_text);
         if (actual == GameEvent.TARGETED_CARD_MOVE) {
             let t: CardLocation | Instance = actual_event.chosen_target;
-            logger.warn(`moving from ${!!t} and ${t && t.location}}}`);
+            logger.warn(`moving from ${!!t} and ${t && t.location} n_mod ${actual_event.n_mod} `);            
         }
         if (
             (actual == cand) ||
@@ -824,6 +824,12 @@ export class Instance {
                 actual_event.chosen_target.location == Location.BATTLE &&
                 actual_event.chosen_target.kind === "Instance" // not moving a card
             ) ||
+             // to_bottom_deck matches any move to deck 
+            (cand == GameEvent.TO_BOTTOM_DECK && actual == GameEvent.TARGETED_CARD_MOVE &&
+            actual_event.chosen_target.kind === "Instance" &&
+            actual_event.n_mod?.match(/deck/) 
+            ) ||
+            // plug is an example of all removal
             (cand == GameEvent.ALL_REMOVAL) && actual == GameEvent.PLUG &&
             actual_event.chosen_target.kind === "Instance"
             ||
@@ -1053,22 +1059,51 @@ export class Instance {
         if (effect.game_event == GameEvent.SUSPEND && !this.is_ready()) return false;
         for (let sc of this.all_statuses()) { //  expiring_status_effects) {
             logger.debug(`sc.s is ${sc.s} ${sc.s.immune} ${GameEvent[sc.s.game_event]} --> ${GameEvent[effect.game_event]}`);
+            logger.debug(`immune is ${GameEvent[sc.s.game_event]}`);
             logger.debug(`ge is ${GameEvent[sc.s.game_event]}`);
             logger.debug(`td is ${sc.s.td.raw_text}`);
             logger.debug(`choose is is ${sc.s.choose}`);
+            let real_status_condition = effect.status_condition && effect.status_condition[0];
+
             if (sc.s.immune) {
                 // When looking at "immune to opponent's monster effects" we need to
                 // 1. recognize it's by effect
                 // 2. recognize the source
                 // sc.s.game_event is what I'm immune to 
-                if (sc.s.game_event == effect.game_event) {
-                    logger.debug("immune check for source" + effect.spec_source?.get_name() + "targety" + effect.chosen_target?.get_name() + "target type" + effect.chosen_target?.kind + GameEvent[sc.s.game_event] + GameEvent[effect.game_event]);
+                if (sc.s.game_event == effect.game_event
+
+                    // if we're getting a status_condition of DP_CHANGE check if we're immune to DP_CHANGE
+                    // but not if the effect we're getting is to be immune.
+                     || effect.game_event === GameEvent.GIVE_STATUS_CONDITION
+                     && real_status_condition?.s.game_event === sc.s.game_event
+                     && !real_status_condition?.s.immune
+                ) {
+
+
+                    // specifically for DP_CHANGE, is it the same direction? "can't have lowered" allows raises
+                    if (sc.s.game_event === GameEvent.DP_CHANGE) {
+                        logger.info(`immune n is ${sc.s.n} and change is ${real_status_condition?.s.n} ...`);
+                        if (sc.s.n! > 0 ) {
+                            if (real_status_condition?.s.n! < 0) return true; 
+                        }
+                        if (sc.s.n! < 0 ) {
+                            if (real_status_condition?.s.n! > 0) return true;
+                        }
+                        logger.info(`immune n still going`);
+                    }
+
+                    logger.info("immune check for source " + effect.spec_source?.get_name() + " targety " + effect.chosen_target?.get_name() + "target type" + effect.chosen_target?.kind + GameEvent[sc.s.game_event] + GameEvent[effect.game_event]);
                     let sccs = sc.s.cause;
                     if (sc.s.cause == undefined || !effect.cause) {
                         let a: any = null; a.effect_cause();
                     }
                     logger.info(`1rew game events match up: ${GameEvent[effect.game_event]}`);
                     logger.info(`1rew Effect cause is ${EventCause[effect.cause]} and the immune effect has cause ${EventCause[sc.s.cause]}`)
+
+                    if (!effect.chosen_target) {                        
+                        // Does this mean its our own effect? So just say we can always do it?
+//                        return true;
+                    }
 
                     // If causes overlap, we can't do this
                     // this line should only be here if we're immune to EVERYTHING
@@ -1082,9 +1117,15 @@ export class Instance {
                         // special case for attack, i hate special cases. Incorporate this into MultiTargetDesc
                         if (sc.s.game_event === GameEvent.ATTACK_DECLARE && sc.s.td.raw_text === "player") {
                             // cannot attack players
+                            logger.debug("can't attack players");
                             if (effect.chosen_target?.kind === "Player") return false;
+                        } else if (sc.s.td.raw_text === "opponent") {
+                            // Immune to opponent effect but not our own... did this *ever* work before I added this?
+                            logger.info(`immune to opponent, n is ${real_status_condition?.s.n} ...` +
+                                `targeting p${effect.chosen_target?.n_me_player} from p${effect.spec_source?.n_me_player}`);
+                            if (effect.chosen_target?.n_me_player !== effect.spec_source?.n_me_player) return false;
                         } else if (sc.s.td.matches(effect.spec_source!, new SpecialInstance(this), this.game)) {
-                            console.info("match, so we're immune!");
+                            logger.debug("match, so we're immune!");
                             return false;
                         }
                     } else {
@@ -1386,10 +1427,13 @@ export class Instance {
 
         // TODO: this should use the above functions that calculate active effects
         for (let sc of status_conditions) { // this.expiring_status_effects) {
-            logger.debug(`SEE IF CAN DO ${status_cond_to_string(sc)} `);
+            logger.info(`SEE IF CAN DO ${status_cond_to_string(sc)} ${sc?.s?.n}`);
+            // at just what level should the fact that this is an immune-to-DP-effect be filtered out?
+            // good arguments can be made for doing it elsewhere
+            if (sc.s.immune) continue;
             if (this.can_do(sc.parent_subeffect!, false)) {
                 if (sc.s.game_event == GameEvent.DP_CHANGE) {
-                    logger.debug(`DP e ${dp} nn ${sc.s.n} `);
+                    logger.debug(`DP s ${dp} nn ${sc.s.n} `);
                     dp += get_mult(sc.s);
                 }
             }
@@ -1402,7 +1446,7 @@ export class Instance {
                 let atomic = cc.effects[0];
                 let weirdo = atomic.events[0];
                 if (weirdo.game_event == GameEvent.DP_CHANGE) {
-                    logger.debug(`DP ${dp} nn ${atomic.events[0].n} `);
+                    logger.debug(`DP e ${dp} nn ${atomic.events[0].n} `);
                     dp += get_mult(weirdo);
                 }
             }

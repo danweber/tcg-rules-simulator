@@ -599,7 +599,7 @@ export function new_parse_line(line: string, card: (Card | undefined), label: st
 
     if (line.match(/^.?.?Rule.?.?.?Name:/) || line.match(/^.?The name of this/i)) {
         //if (d) if (parserdebug) logger.debug("name match")
-        if (card) card.name_rule = line.after("also");
+        if (card) card.name_rule = line.after("Name:");
         line = "";
     }
     if (line.match(/^.?.?Rule.?.?.?Trait:/i)) {
@@ -1946,9 +1946,8 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
     // this card would be played
 
     let grammared = parseStringEvoCond(line, "WhenSentence");
-    console.error(1949, line);
+    //console.error(1949, line);
     if (grammared) {
-        console.error("WHEN", grammared);
         //  console.dir(grammared, { depth: 99 });
 
         let w = grammared.When;
@@ -2014,18 +2013,34 @@ function _parse_when(line: string, solid?: SolidEffect2): InterruptCondition | I
             ret.push(int_evo);
         }
 
+        //        let event = w.event;
+        //      if (!Array.isArray(event)) event = [event];
 
-        if (false)
-            if (["DELETE"].includes(w.event)) {
-                let int_evo: InterruptCondition = {
-                    ge: strToEvent(w.event),
-                    // again, we're re-grammaring
-                    td: new TargetDesc(w.target.raw_text),
-                    cause: EventCause.ALL // incorrect!
-                }
-                console.log("grammared and consumed: " + line);
-                return int_evo;
+        //         event: [ 'DELETE', 'FIELD_TO_HAND', 'TO_BOTTOM_DECK' ],
+        if (w.event.includes("DELETE")) {
+            let int_evo: InterruptCondition = {
+                ge: strToEvent("DELETE"),
+                td: new TargetDesc(w.target.raw_text),
+                cause: w.effect ? EventCause.EFFECT : EventCause.ALL
             }
+            ret.push(int_evo);
+        }
+        if (w.event.includes("FIELD_TO_HAND")) {
+            let int_evo: InterruptCondition = {
+                ge: strToEvent("FIELD_TO_HAND"),
+                td: new TargetDesc(w.target.raw_text),
+                cause: w.effect ? EventCause.EFFECT : EventCause.ALL
+            }
+            ret.push(int_evo);
+        }
+        if (w.event.includes("TO_BOTTOM_DECK")) {
+            let int_evo: InterruptCondition = {
+                ge: strToEvent("TO_BOTTOM_DECK"),
+                td: new TargetDesc(w.target.raw_text),
+                cause: w.effect ? EventCause.EFFECT : EventCause.ALL
+            }
+            ret.push(int_evo);
+        }
 
         //console.log("grammared but unhandled: " + line);
         //console.dir(grammared, { depth: 6 });
@@ -2599,6 +2614,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
             line.toLowerCase().includes("delay") ||
             line.toLowerCase().includes("de-evolve") ||
 
+            line.toLowerCase().includes("reduce") ||
             line.toLowerCase().includes("add") ||
             line.toLowerCase().includes("give") ||
             line.toLowerCase().includes("gets") ||
@@ -2690,7 +2706,7 @@ function parse_atomic(line: string, label: string, solid: SolidEffect2,
                 if (_keyword_gains = action_args.keyword_gains) {
                     // Condense array into 1 string, parse_give_status can eat it and it displays easier
                     // I feel bad for the parser for doing the work to give us an array and we just undo it.
-                    let one_phrase = "gains " + _keyword_gains.map((x: string) => x.slice(x.indexOf(" ")+1));
+                    let one_phrase = "gains " + _keyword_gains.map((x: string) => x.slice(x.indexOf(" ") + 1));
                     let keyword_gains = one_phrase;
                     let s1 = parse_give_status(keyword_gains, card!);
                     if (s1) {

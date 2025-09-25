@@ -1020,7 +1020,7 @@
     "form": "Ultimate",
     "type": "Sword/Shield",
     "digiXros": "-",
-    "aceEffect": "Overflow \uff1c-5\uff1e (As this card would move from the field or from under a card to another area, lose 4 memory.)",
+    "aceEffect": "Overflow \uff1c-5\uff1e (As this card would move from the field or from under a card to another area, lose 5 memory.)",
     "burstEvolve": "-",
     "rarity": "Secret Rare"
    },
@@ -1122,7 +1122,8 @@
     "color": "Green",
     "digiXros": "-",
       "evolveCondition": [{ "color": "Green", "cost": "1", "level": "2" } ],
-    "evolveEffect": "",
+      "havenoevovlveeffect since it has a securityeffect": "note",
+      "evolveEffect": "",
     "dnaEvolve": "-",
     "dp": "4000",
     "effect": "[All Turns] While this Monster is suspended, it gets -45000 DP.\n\uff1cBlocker\uff1e \n[On Play] Activate 2 of the effects below:\n\u30fb1 of your Monsters gets +2000 DP until the end of your turn.\n\u30fb2 of your opponent's monsters gets -1000 DP until the end of your turn.\u30fbDelete 1 of your opponent's Monsters with 2000 DP or less.\n",
@@ -1136,7 +1137,7 @@
     },
     "playCost": "5",
     "rarity": "Perculiar",
-    "securityEffect": "-",
+    "securityEffect": "[Security] Return 1 of your opponent's Monster to the top of the deck.",
     "specialEvolve": "[Evolve] Green Lv.3: Cost 3 ",
     "type": "Spellcaster",
     "version": "Normal"

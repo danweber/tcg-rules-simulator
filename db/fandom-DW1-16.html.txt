@@ -1,7 +1,7 @@
 Sign in to edit
     * View_history
     * Talk_(0)
-***** Mem Watcher (DW1-16) *****
+***** Old Zero (DW1-16) *****
 [DW1-16]
 Card Info
 Name                Old Zero
@@ -19,5 +19,6 @@ Colour         Purple
 Level          0
 Evolve Cost 0
 Card Effect(s)
+[On Play] 1 Monster gets -100 DP for the turn.
 Security Effect
 Card Restriction

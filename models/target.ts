@@ -378,15 +378,17 @@ function split_names(name: string): string[] {
 
 export function ForEachTargetCreator(foreach: string): ForEachTarget {
 
+    // why isn't this using "MultiTargetDesc" in every single clause??
+       
     if (foreach.length < 2) {
         // nothing
         return new ForEachTarget("bob", new TargetDesc(foreach));
     }
     logger.info("fet creator: " + foreach);
     let n;
-    if (n = foreach.match(/color (?:of|in) (.*)/)) {
+    if (n = foreach.match(/^color (?:of|in) (.*)/)) {
         return new ForEachTarget("bob", new TargetDesc(n[1]), "color");
-    } else if (n = foreach.match(/its evolution cards/)) {
+    } else if (n = foreach.match(/(each of )?its evolution cards/)) {
         return new ForEachTarget("bob", new MultiTargetDesc("this Monster's evolution cards"));
         // N colors your tamers have
     } else if (n = foreach.match(/(\d+)?.?color.? (.*) ha(ve|s)/)) {
@@ -396,9 +398,9 @@ export function ForEachTargetCreator(foreach: string): ForEachTarget {
     } else if (n = foreach.match(/(Tamer you have in play) with a (different color)/)) {
         return new ForEachTarget("different", new TargetDesc("your Tamer"), "color");
         // (N of) your tamers' colors... this match is very aggressive without the apostrophe
-    } else if (n = foreach.match(/(\d+)?( of)? (.*)' color.?$/)) {
+    } else if (n = foreach.match(/(\d+)?(of )? ?(.*)'s? color.?$/)) {
         let count = parseInt(n[1]) || 1;
-        return new ForEachTarget("bob", new TargetDesc(n[3]), "color", count);
+        return new ForEachTarget("bob", new MultiTargetDesc(n[3]), "color", count);
     } else if (n = foreach.match(/(\d+) (.*)( in play)?/)) {
         let count = parseInt(n[1]);
         return new ForEachTarget("bob", new MultiTargetDesc("a " + n[2]), "instance", count);
@@ -427,6 +429,7 @@ export class ForEachTarget {
     get_count(game: Game, ts: TargetSource, sel?: SolidEffectLoop): number {
         // STACK_ADD seems bad since it includes cards in hand :<
 
+        
         let kind = this.target.raw_text.includes("card") ? GameEvent.PLAY : GameEvent.DELETE;
         if (this.target.raw_text.includes("evolution card")) kind = GameEvent.TARGETED_CARD_MOVE;
         let mtd = this.target as MultiTargetDesc;

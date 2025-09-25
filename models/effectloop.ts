@@ -3580,6 +3580,8 @@ export class InterrupterLoop {
                     let x = (immune_test.can_do(sub));
                     cant_do = !x;
                 }
+                // status effects are always done, but something else might ignore it
+                if (sub.game_event === GameEvent.GIVE_STATUS_CONDITION) cant_do = false;
                 if (cant_do) {
                     this.game.fancy.add_string(this.depth, `P${sub.n_player} ${gerund(sub.game_event, sub.status_condition)} ${txt} but can't`);
                     this.game.log(txt + " tried but can't " + effect.toLowerCase());

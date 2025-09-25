@@ -1017,7 +1017,7 @@ export class Game {
                 //                console.error(956, "test " + immune_test.id + " " + immune_test.get_name());
                 let can = immune_test.can_do(sub);
                 if (!can) {
-                    console.error(958, "skipping");
+                    logger.debug(  "skipping");
                     continue;
                 }
             }
@@ -1586,6 +1586,10 @@ export class Game {
 
     // common tests to see if this last_thing is one we can return
     static verify_last_thing(chosen_target: any, parse_matches: any, s: TargetSource) {
+        if (chosen_target && chosen_target.kind === "CardLocation") {
+            // not implemented yet
+        }
+        
         // is instance is a function but just its existence is checked
         if (chosen_target && chosen_target.kind === "Instance"
             && chosen_target.in_play() // if the instance isn't there any more, no match: should this end the search, or do we keep searching for something else?
@@ -1621,7 +1625,6 @@ export class Game {
 
     static get_last_thing_from_sel(sel: SolidEffectLoop | false, s: TargetSource, parse_matches?: any): (Instance | CardLocation)[] {
 
-
         if (!sel) {
             // I'm not sure why we want the old pronoun logic, but some tests fail without it
             // we're searching on the NIL event which is worrisome.
@@ -1634,7 +1637,7 @@ export class Game {
             // the targets of both of those in turn
             let _solid = sel.effect;
 
-            // short-circuit, if we are in td2, td1 could be a match
+             // short-circuit, if we are in td2, td1 could be a match
             if (sel.chosen_targets && sel.chosen_targets.length > 0) {
                 let first = sel.chosen_targets[0];
                 let test = Game.verify_last_thing(first, parse_matches, s);
@@ -1664,26 +1667,26 @@ export class Game {
 
                 // if this was a set pending effect, look back in the effect that started us
                 // does this clause belong inside the loop or not?
-                logger.info("no prior found in effect, should check trigger clause");
                 // if we couldn't find it in effects, search for triggers
                 // Right here we capture the problem that we might need to react to 2 different played monsters 
 
                 let ti = solid.trigger_incidents;
+                logger.info("no prior found in effect, should check trigger clause " + ti?.length);
                 if (ti && ti.length > 0) {
 
                     // if the triggering incident was "attacking" we're going
-                    // to cheat and assume the attacker was the pronoun. We
-                    // probably determine this in posteffect / preflight and that's 
+                    // to cheat and assume the attacker was the pronoun.
+                    // we probably determine this in posteffect / preflight and that's 
                     // where we should get our answer
-                    let ret = (ti[0].game_event == GameEvent.ATTACK_DECLARE) ?
+                 
+                    let ret = (ti[0].game_event === GameEvent.ATTACK_DECLARE) ? 
                         ti.map(e => e.spec_source) :
                         ti.map(e => e.chosen_target);
-                    logger.info("returning " + ret.length + " pronouns");
                     if (ti[0].game_event === GameEvent.EVOLVE) {
-                        ret = ti[0].chosen_target2 as (Instance | CardLocation)[];
+                        ret.push(ti[0].chosen_target2![0] );
                     }
 
-                    logger.info(ret.map(x => x.get_name()).join(":::"));
+                    logger.info("returning from gltfs: " + ret.map(x => x.get_name()).join(":::"));
 
                     //        if (parse_matches) {
                     //          ret = ret.filter((x: any) => verify_special_evo(x, parse_matches, s));
@@ -1740,6 +1743,8 @@ export class Game {
         logger.info(`FINDING FOR TARGET: ${t.toString()} Event ${GameEvent[ge]} TargetSource ${s.id()},${s.card_id()},${s.location()} `);
         let master_location: Location = Location.NIL;
 
+        let mtd = t as MultiTargetDesc;
+        let pm = mtd.parse_matches;
 
         let search_cards: boolean = [
             GameEvent.TRASH_FROM_HAND,
@@ -1766,8 +1771,6 @@ export class Game {
 
             // calculating "entity" doesn't always work, because "1 [Vanillamon]" could be either.
             
-            let mtd = t as MultiTargetDesc;
-            let pm = mtd.parse_matches;
             let entity = "";
             if (pm) {
                 // we have a modern mtd
@@ -1835,6 +1838,8 @@ export class Game {
             // TODO:
         }
         if (t.conjunction == Conjunction.LAST_THING) {
+            // this short-circuit works on some legacy effects but modern effects should
+            // be iterating through last_thing *until* they find one that matches.
             if (sel) return Game.get_last_thing_from_sel(sel, s);
             // a b c
         }
@@ -1874,8 +1879,9 @@ export class Game {
             return ret;
         }
 
-        let pm, froms: string = "";
-        if (pm = (t as any).parse_matches!) {
+        let froms: string = "";
+//        let pm, froms: string = "";
+        if (pm) { //  = (t as any).parse_matches!) {
             //  console.log(1632, pm.length);
             //console.log(1633, pm);
             //     console.dir(pm, {depth: 7});

@@ -295,7 +295,8 @@ export class InterruptCondition {
 		this.td = new TargetDesc("");
 	}
 	toString(): string {
-		return `<${gerund(this.ge)}> <${this.td.toString()}> <${this.cause && EventCause[this.cause]}> `;
+		let ge = this.ge;
+		return `<${gerund(ge)}> <${this.td.toString()}> <${this.cause && EventCause[this.cause]}> `;
 	}
 };
 // also useful for trigger condition?
